@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/noaa_marine_data" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
