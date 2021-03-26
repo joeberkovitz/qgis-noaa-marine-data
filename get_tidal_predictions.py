@@ -249,7 +249,6 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
             return
 
         # style the output layer here
-        # TODO: but only if we freshly created it...
         suffix = self.algorithm.startDate.toString('yyyy-MM-dd')
         if self.algorithm.endDate != self.algorithm.startDate:
             suffix = suffix + ' ' + self.algorithm.endDate.toString('yyyy-MM-dd')
