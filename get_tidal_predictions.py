@@ -2,6 +2,7 @@ import os
 import math
 import requests
 from datetime import *
+import xml.etree.ElementTree as ET
 
 from qgis.core import (
     QgsPointXY, QgsPoint, QgsFeature, QgsGeometry, QgsField, QgsFields,
@@ -26,7 +27,7 @@ from qgis.core import (
     QgsNetworkContentFetcher)
 
 from qgis.PyQt.QtGui import QIcon, QColor
-from qgis.PyQt.QtCore import QVariant, QUrl, QUrlQuery, QDateTime
+from qgis.PyQt.QtCore import QVariant, QUrl, QUrlQuery, QDateTime, QTime
 from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.PyQt.QtXml import QDomDocument
 
@@ -37,9 +38,18 @@ from .utils import *
 class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
     PrmStationsLayer = 'StationsLayer'
     PrmOutputLayer = 'OutputLayer'
+    PrmCurrentInterval = 'CurrentInterval'
+    PrmCurrentVelType = 'CurrentVelType'
     PrmVisibleOnly = 'VisibleOnly'
     PrmStartDate = 'StartDate'
     PrmEndDate = 'EndDate'
+    PrmUseUTC = 'UseUTC'
+
+    CURRENT_INTERVAL_OPTIONS = [tr('Max and slack'), tr('60 minutes'), tr('30 minutes'), tr('6 minutes')]
+    CURRENT_INTERVAL_VALUES = ['MAX_SLACK', '60', '30', '6']
+
+    CURRENT_VEL_TYPE_OPTIONS = [tr('Flood/ebb speed'), tr('Speed and direction (Harmonic only)')]
+    CURRENT_VEL_TYPE_VALUES = ['default', 'speed_dir']
 
 # boilerplate methods
     def name(self):
@@ -77,20 +87,51 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
                 tr('Features visible on main map only'),
                 True)
         )
+
+        self.addParameter(
+            QgsProcessingParameterEnum(
+                self.PrmCurrentInterval,
+                tr('Prediction interval'),
+                options=self.CURRENT_INTERVAL_OPTIONS,
+                defaultValue=0,
+                optional=False)
+        )
+        self.addParameter(
+            QgsProcessingParameterEnum(
+                self.PrmCurrentVelType,
+                tr('Prediction speeds and directions'),
+                options=self.CURRENT_VEL_TYPE_OPTIONS,
+                defaultValue=0,
+                optional=False)
+        )
+
+        today_start = QDateTime.currentDateTime()
+        today_start.setTime(QTime(0, 0))        
         self.addParameter(
             QgsProcessingParameterDateTime(
                 self.PrmStartDate,
-                tr('Start date'),
-                QgsProcessingParameterDateTime.Date,
-                None)
+                tr('Start time'),
+                QgsProcessingParameterDateTime.DateTime,
+                today_start)
         )
+
+        today_end = QDateTime.currentDateTime()
+        today_end.setTime(QTime(23, 59))        
         self.addParameter(
             QgsProcessingParameterDateTime(
                 self.PrmEndDate,
-                tr('End date'),
-                QgsProcessingParameterDateTime.Date,
-                None)
+                tr('End time'),
+                QgsProcessingParameterDateTime.DateTime,
+                today_end)
         )
+
+        self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.PrmUseUTC,
+                tr('Predictions in UTC'),
+                False)
+        )
+
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.PrmOutputLayer,
@@ -104,16 +145,22 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
         # gather parameters
         self.startDate = self.parameterAsDateTime(parameters, self.PrmStartDate, context)
         self.endDate = self.parameterAsDateTime(parameters, self.PrmEndDate, context)
+        self.useUTC = self.parameterAsBool(parameters, self.PrmUseUTC, context)
         self.currentsSource = self.parameterAsSource(parameters, self.PrmStationsLayer, context)
         self.filterVisible = self.parameterAsBool(parameters, self.PrmVisibleOnly, context)
+        self.velType = self.CURRENT_VEL_TYPE_VALUES[self.parameterAsInt(parameters, self.PrmCurrentVelType, context)]
+        self.interval = self.CURRENT_INTERVAL_VALUES[self.parameterAsInt(parameters, self.PrmCurrentInterval, context)]
 
         # obtain our output sink
         fields = QgsFields()
-        fields.append(QgsField("id", QVariant.String))
+        fields.append(QgsField("id_bin", QVariant.String,'',16))
+        fields.append(QgsField("id", QVariant.String,'',12))
+        fields.append(QgsField("bin", QVariant.String,'',4))
         fields.append(QgsField("depth",  QVariant.Double))
         fields.append(QgsField("time",  QVariant.DateTime))
         fields.append(QgsField("date_break",  QVariant.Bool))
         fields.append(QgsField("velocity", QVariant.Double))
+        fields.append(QgsField("velocity_major", QVariant.Double))  # signed velocity along flood/ebb psuedo-dimension
         fields.append(QgsField("dir", QVariant.Double))
         fields.append(QgsField("type", QVariant.String))
         self.fields = fields
@@ -138,13 +185,20 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
 
         self.feedback.pushInfo('Starting...')
 
+        requestList = []
         for index, feature in enumerate(self.currentsSource.getFeatures()):
             if rect and not feature.geometry().intersects(rect):
                 continue                
-            cpr = CurrentPredictionRequest(self, sink, QgsFeature(feature))
+            requestList.append(CurrentPredictionRequest(self, sink, QgsFeature(feature)))
+
+        index = 0
+        for cpr in requestList:
             cpr.requestContent()
             if self.feedback.isCanceled():
                 break
+
+            index += 1
+            self.feedback.setProgress(100*index/len(requestList))
 
         # all done
         return {self.PrmOutputLayer: dest_id}        
@@ -162,16 +216,17 @@ class CurrentPredictionRequest:
         query = QUrlQuery()
         query.addQueryItem('station',self.stationId)
         query.addQueryItem('bin',str(self.feature['bin']))
-        query.addQueryItem('begin_date',self.algorithm.startDate.toString('yyyyMMdd'))
-        query.addQueryItem('end_date',self.algorithm.endDate.toString('yyyyMMdd'))
+        query.addQueryItem('begin_date',self.algorithm.startDate.toString('yyyyMMdd hh:mm'))
+        query.addQueryItem('end_date',self.algorithm.endDate.toString('yyyyMMdd hh:mm'))
         query.addQueryItem('product','currents_predictions')
         query.addQueryItem('units','english')
-        query.addQueryItem('time_zone','lst_ldt')
-#        query.addQueryItem('interval','30')
-#        query.addQueryItem('vel_type','speed_dir')
-        query.addQueryItem('interval','MAX_SLACK')
+        query.addQueryItem('time_zone','gmt' if self.algorithm.useUTC else 'lst_ldt')
+        query.addQueryItem('vel_type',self.algorithm.velType)
+        query.addQueryItem('interval',self.algorithm.interval)
         query.addQueryItem('format','xml')
         url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?' + query.query()
+
+        self.algorithm.feedback.pushInfo('URL: {}'.format(url))
 
         r = requests.get(url)
         if r.status_code != 200:
@@ -180,28 +235,29 @@ class CurrentPredictionRequest:
         content = r.text
         if len(content) == 0:
             return
-            
-        self.dom = QDomDocument()
-        self.dom.setContent(content)
-        cp = self.dom.documentElement().elementsByTagName('cp')
+        
+        # Parse the XML file into a DOM up front
+        root = ET.fromstring(content) 
+
+        # Get the list of stations
+        cp = root.findall('cp')
+
         f = None
         last_date = None
         
-        for i in range(0, cp.count()):
+        for i in range(0, len(cp)):
             try:
-                prediction = cp.item(i).toElement()
+                prediction = cp[i]
 
-                dt = QDateTime.fromSecsSinceEpoch(round(float(datetime.fromisoformat(self.tagValue(prediction, 'Time')).timestamp())))
+                dt = QDateTime.fromSecsSinceEpoch(round(float(datetime.fromisoformat(prediction.find('Time').text).timestamp())))
 
                 f = QgsFeature(self.algorithm.fields)
                 f.setGeometry(QgsGeometry(self.feature.geometry()))
                 f['id'] = self.feature['id']
-                try:
-                    f['depth'] = float(self.tagValue(prediction, 'Depth'))
-                except:
-                    f['depth'] = 0
-                    
-                f['time'] = dt
+                f['bin'] = self.feature['bin']
+                f['id_bin'] = f['id'] + '_' + f['bin']
+                f['depth'] = parseFloatNullable(prediction.find('Depth').text)
+                f['time'] = dt   # TODO: time zone adjustment?
                 f['date_break'] = (last_date == None) or (last_date != dt.date())
                 last_date = dt.date()
                 
@@ -209,32 +265,30 @@ class CurrentPredictionRequest:
                 #  - timed measurement, flood/ebb, signed velocity
                 #  - max/slack measurement, flood/ebb, signed velocity
                 #  - timed measurement, varying angle, unsigned velocity
-                direction = self.tagValue(prediction, 'Direction')
-                if len(direction) > 0:
-                    f['dir'] = float(self.tagValue(prediction, 'Direction'))
-                    f['velocity'] = float(self.tagValue(prediction, 'Speed'))
+                directionElement = prediction.find('Direction')
+                if directionElement != None:
+                    f['dir'] = parseFloatNullable(directionElement.text)
+                    f['velocity'] = float(prediction.find('Speed').text)
                     f['type'] = 'current'
                 else:
-                    vel = float(self.tagValue(prediction, 'Velocity_Major'))
+                    vel = float(prediction.find('Velocity_Major').text)
                     if (vel >= 0):
-                        f['dir'] = float(self.tagValue(prediction, 'meanFloodDir'))
+                        f['dir'] = parseFloatNullable(prediction.find('meanFloodDir').text)
                     else:
-                        f['dir'] = float(self.tagValue(prediction, 'meanEbbDir'))                    
+                        f['dir'] = parseFloatNullable(prediction.find('meanEbbDir').text)                    
+                    f['velocity_major'] = vel
                     f['velocity'] = abs(vel)
-                    type = self.tagValue(prediction, 'Type')
-                    if len(type) == 0:
-                        f['type'] = 'current'
+                    typeElement = prediction.find('Type')
+                    if typeElement != None:
+                        f['type'] = typeElement.text
                     else:
-                        f['type'] = type
+                        f['type'] = 'current'
 
                 self.sink.addFeature(f)
 
             except Exception as err:
                 self.algorithm.feedback.pushInfo('Error handling station{}'.format(self.feature['id']))
                 raise err    
-
-    def tagValue(self, element, tagName):
-        return element.elementsByTagName(tagName).item(0).toElement().firstChild().nodeValue()
 
 class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
     instance = None
