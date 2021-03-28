@@ -502,16 +502,17 @@ tr.slack td.velocity {
 		[%
 			with_variable('station_id',id,
 				concatenate(format('
-				  &lt;tr class="%3 %5">
-				    &lt;td class="date %5">%1&lt;/td>
-					&lt;td class="time">%2&lt;/td>
-					&lt;td class="type">%3&lt;/td>
-					&lt;td class="velocity">%4&lt;/td>
+				  &lt;tr class="%1 %6">
+				    &lt;td class="date %6">%2&lt;/td>
+					&lt;td class="time">%3&lt;/td>
+					&lt;td class="type">%4&lt;/td>
+					&lt;td class="velocity">%5&lt;/td>
 				  &lt;/tr>',
+					   type,
 					   format_date(time,'MM/dd'),
 					   format_date(time,'hh:mm'),
-					   type,
-					   velocity_major,
+					   if(type='current',to_string(dir)+'º',type),
+					   if(type='current',velocity,velocity_major),
 					   if(date_break,'date_break','')),
 				filter:= id = @station_id
 			             and (@map_start_time is null
