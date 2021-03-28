@@ -13,3 +13,5 @@ def tr(string):
     return QCoreApplication.translate('@default', string)
 
 
+def parseFloatNullable(str):
+    return float(str) if str and str != 'null' else None
