@@ -511,8 +511,8 @@ tr.slack td.velocity {
 					   type,
 					   format_date(time,'MM/dd'),
 					   format_date(time,'hh:mm'),
-					   if(type='current',to_string(dir)+'º',type),
-					   if(type='current',velocity,velocity_major),
+					   if(velocity_major is null,to_string(dir)+'º',type),
+					   if(velocity_major is null,velocity,velocity_major),
 					   if(date_break,'date_break','')),
 				filter:= id = @station_id
 			             and (@map_start_time is null
