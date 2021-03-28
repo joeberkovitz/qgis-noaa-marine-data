@@ -441,7 +441,7 @@
     <field length="-1" expression="min(8,max(0.5,4*log(2,velocity + 1)))" type="6" typeName="double precision" comment="" name="vector_display_width" precision="0" subType="0"/>
     <field length="0" expression="format_date(time,'MM/yy mm:dd')" type="10" typeName="string" comment="" name="display_time" precision="0" subType="0"/>
   </expressionfields>
-  <previewExpression>"vector_display_length"</previewExpression>
+  <previewExpression>"id_bin"</previewExpression>
   <mapTip>&lt;!-- archived tip display for non-aggregatable current records -->
 &lt;!--
 &lt;style>
