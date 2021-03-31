@@ -226,7 +226,7 @@ class CurrentPredictionRequest:
         query.addQueryItem('format','xml')
         url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?' + query.query()
 
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         if r.status_code != 200:
             return
 
