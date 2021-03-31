@@ -309,6 +309,12 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
         joinInfo.setPrefix('station_')
         layer.addJoin(joinInfo)
 
+        # force the new layer in the UI tree to be collapsed because its legend is ugly
+        root = QgsProject.instance().layerTreeRoot()
+        layerTreeNode = root.findLayer(layer)
+        if layerTreeNode:
+            layerTreeNode.setExpanded(False)
+
         # style the output layer here
         suffix = self.algorithm.startDate.toString('yyyy-MM-dd')
         if self.algorithm.endDate != self.algorithm.startDate:
