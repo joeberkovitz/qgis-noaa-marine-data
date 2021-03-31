@@ -204,6 +204,8 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
         return {self.PrmOutputLayer: dest_id}        
             
 class CurrentPredictionRequest:
+    session = None
+
     def __init__(self, alg, sink, feature):
         self.algorithm = alg
         self.sink = sink
@@ -226,7 +228,10 @@ class CurrentPredictionRequest:
         query.addQueryItem('format','xml')
         url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?' + query.query()
 
-        r = requests.get(url, timeout=30)
+        if self.session == None:
+            self.session = requests.Session()
+
+        r = self.session.get(url, timeout=30)
         if r.status_code != 200:
             return
 
