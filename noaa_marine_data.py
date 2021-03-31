@@ -39,6 +39,7 @@ import math
 from .resources import *
 from .utils import *
 from .provider import NoaaMarineDataProvider
+from .create_prediction_annotations import CreatePredictionAnnotationsTool
 
 import os.path
 import processing
@@ -171,6 +172,16 @@ class NoaaMarineData:
             callback=self.getTidalPredictions,
             parent=self.iface.mainWindow())
 
+        self.add_action(
+            icon_path,
+            text=tr(u'Annotate Predictions'),
+            callback=self.annotateTidalPredictions,
+            parent=self.iface.mainWindow())
+
+        self.annotationTool = CreatePredictionAnnotationsTool(self.canvas)
+
+        self.savedMapTool = self.canvas.mapTool()
+
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -182,6 +193,9 @@ class NoaaMarineData:
 
         QgsApplication.processingRegistry().removeProvider(self.provider)
 
+        if self.canvas.mapTool() == self.annotationTool:
+            self.canvas.setMapTool(self.savedMapTool)
+
 
     def addStationLayers(self):
         processing.execAlgorithmDialog('noaamarinedata:addstationlayers', {})
@@ -190,4 +204,7 @@ class NoaaMarineData:
         processing.execAlgorithmDialog('noaamarinedata:gettidalpredictions', {
             'mapSettings': iface.mapCanvas().mapSettings()
         })
+
+    def annotateTidalPredictions(self):
+        self.canvas.setMapTool(self.annotationTool)
 
