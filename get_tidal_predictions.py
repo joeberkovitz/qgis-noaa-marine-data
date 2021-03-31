@@ -216,6 +216,7 @@ class CurrentPredictionRequest:
         self.algorithm.feedback.pushInfo('Requesting predictions from {}'.format(self.feature['name']))
 
         query = QUrlQuery()
+        query.addQueryItem('application',CoopsApplicationName)
         query.addQueryItem('station',self.stationId)
         query.addQueryItem('bin',str(self.feature['bin']))
         query.addQueryItem('begin_date',self.algorithm.startDate.toString('yyyyMMdd hh:mm'))
