@@ -8,7 +8,7 @@ from qgis.core import (
     QgsPointXY, QgsPoint, QgsFeature, QgsGeometry, QgsField, QgsFields,
     QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform,
     QgsLineString, QgsDistanceArea, QgsPalLayerSettings,
-    QgsLabelLineSettings, QgsVectorLayer, QgsVectorLayerSimpleLabeling,
+    QgsLabelLineSettings, QgsVectorLayer, QgsVectorLayerSimpleLabeling, QgsVectorLayerJoinInfo
 )
 
 from qgis.core import (
@@ -20,7 +20,7 @@ from qgis.core import (
     QgsProcessingParameterDateTime,
     QgsProcessingParameterNumber,
     QgsProcessingParameterEnum,
-    QgsProcessingParameterFeatureSource,
+    QgsProcessingParameterVectorLayer,
     QgsProcessingParameterField,
     QgsProcessingParameterExtent,
     QgsProcessingParameterFeatureSink,
@@ -66,20 +66,20 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
 
     # Set up this algorithm
     def initAlgorithm(self, config):
-        stationsLayer = 'Current stations'
+        stationsLayerName = 'Current stations'
         projectVars = QgsProject.instance().customVariables()
 
         if CurrentStationsLayerVar in projectVars:
-            stationsLayer = projectVars[CurrentStationsLayerVar]
+            stationsLayerName = projectVars[CurrentStationsLayerVar]
 
         self.mapSettings = iface.mapCanvas().mapSettings()
 
         self.addParameter(
-            QgsProcessingParameterFeatureSource(
+            QgsProcessingParameterVectorLayer(
                 self.PrmStationsLayer,
                 tr('Current stations input layer'),
                 [QgsProcessing.TypeVectorPoint],
-                stationsLayer)
+                stationsLayerName)
         )
         self.addParameter(
             QgsProcessingParameterBoolean(
@@ -146,7 +146,7 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
         self.startDate = self.parameterAsDateTime(parameters, self.PrmStartDate, context)
         self.endDate = self.parameterAsDateTime(parameters, self.PrmEndDate, context)
         self.useUTC = self.parameterAsBool(parameters, self.PrmUseUTC, context)
-        self.currentsSource = self.parameterAsSource(parameters, self.PrmStationsLayer, context)
+        self.currentsLayer = self.parameterAsVectorLayer(parameters, self.PrmStationsLayer, context)
         self.filterVisible = self.parameterAsBool(parameters, self.PrmVisibleOnly, context)
         self.velType = self.CURRENT_VEL_TYPE_VALUES[self.parameterAsInt(parameters, self.PrmCurrentVelType, context)]
         self.interval = self.CURRENT_INTERVAL_VALUES[self.parameterAsInt(parameters, self.PrmCurrentInterval, context)]
@@ -186,7 +186,7 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
         self.feedback.pushInfo('Starting...')
 
         requestList = []
-        for index, feature in enumerate(self.currentsSource.getFeatures()):
+        for index, feature in enumerate(self.currentsLayer.getFeatures()):
             if rect and not feature.geometry().intersects(rect):
                 continue                
             requestList.append(CurrentPredictionRequest(self, sink, QgsFeature(feature)))
@@ -299,6 +299,15 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
 
         if not isinstance(layer, QgsVectorLayer):
             return
+
+        # add a join to the station layer from which these predictions were derived
+        joinInfo = QgsVectorLayerJoinInfo()
+        joinInfo.setTargetFieldName('id_bin')
+        joinInfo.setJoinFieldName('id_bin')
+        joinInfo.setJoinLayer(self.algorithm.currentsLayer)
+        joinInfo.setJoinFieldNamesSubset(['name'])
+        joinInfo.setPrefix('station_')
+        layer.addJoin(joinInfo)
 
         # style the output layer here
         suffix = self.algorithm.startDate.toString('yyyy-MM-dd')
