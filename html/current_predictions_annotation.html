@@ -2,7 +2,7 @@
 <head>
   <style>
   .annotation {
-      font-size: 12px;
+      font-size: 16px;
       font-family: sans-serif;
   }
   .name {
@@ -15,58 +15,59 @@
       border-collapse:collapse;
   }
   td {
-      font-size: 12px;
-      padding: 0px 10px 0px 10px;
-  }
-  td.date {
-      padding-right: 0px;
+    font-size: 16px;
+    padding: 1px 5px 1px 15px;
   }
   tr.flood{
-      background-color: #A0D8FF
+    background-color: #A0D8FF
   }
   tr.ebb{
-      background-color: #A0ffD8
+    background-color: #A0ffD8
   }
   tr.date_break {
-      border-top: 1px solid #999;
+    border-top: 1px solid #999;
+  }
+  tr.date_break td {
+    font-weight: bold;
+    padding-left: 0px;
   }
   td.velocity {
-      text-align: right;
+    text-align: right;
   }
   tr.slack td.velocity {
-      visibility: hidden;
+    visibility: hidden;
   }
   </style>
 </head>
 <body>
 <div class="annotation">
-    <span class="name">[% station_name %]</span>
-    <div class="predict">
-        <table>
-        <tbody>
-        [%
-            with_variable('station_id',id,
-                concatenate(format('
-                  <tr class="%1 %6">
-                    <td class="date %6">%2</td>
-                    <td class="time">%3</td>
-                    <td class="type">%4</td>
-                    <td class="velocity">%5</td>
-                  </tr>',
-                       type,
-                       format_date(time,'MM/dd'),
-                       format_date(time,'hh:mm'),
-                       if(velocity_major is null,to_string(dir)+'º',type),
-                       if(velocity_major is null,velocity,velocity_major),
-                       if(date_break,'date_break','')),
-                filter:= id = @station_id
-                         and (@map_start_time is null
-                              or (time >= @map_start_time and time < @map_end_time))
-        ))
-        %]
-        </tbody>
-        </table>
-    </div>
+    <table>
+    <tbody>
+    [%
+      with_variable('station_id',id,
+        concatenate(
+          if(date_break,
+             '<tr class="date_break"><td colspan="3">'+
+             format_date(time,'MM/dd/yyyy')+
+             '</td></tr>','')+
+          format('
+          <tr class="%1">
+          <td class="time">%2</td>
+          <td class="type">%3</td>
+          <td class="velocity">%4</td>
+          </tr>',
+             type,
+             format_date(time,'hh:mm'),
+             if(velocity_major is null,to_string(dir)+'º',type),
+             if(velocity_major is null,velocity,velocity_major),
+             if(date_break,'date_break','')),
+        filter:= id = @station_id
+                   and (@map_start_time is null
+                or (time >= @map_start_time and time < @map_end_time))
+    ))
+    %]
+    </tbody>
+    </table>
 </div>
 </body>
 </html>

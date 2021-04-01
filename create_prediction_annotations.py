@@ -33,8 +33,13 @@ class CreatePredictionAnnotationsTool(QgsMapToolIdentify):
             a.setSourceFile(html)
             a.setAssociatedFeature(feature)
 
-            a.setFrameSize(QSizeF(100, 50))
-            a.setFrameOffsetFromReferencePoint(QPointF(30, 30))
+            # TODO: big problem in that temporal scope is not used to evaluate the HTML. may have to
+            # hack this by saving any temporal scope here to layer variables that can be accessed by the template...
+            # or to auxiliary storage attributes (ugh, but probably has correct behavior)
+
+            # TODO: this size and offset are wack. Can we dynamically calculate from the content somehow?
+            a.setFrameSize(QSizeF(200, 160))
+            a.setFrameOffsetFromReferencePoint(QPointF(-200,-200))
             a.setMapPosition(feature.geometry().asPoint())
             a.setMapPositionCrs(QgsCoordinateReferenceSystem(layer.crs()))
 
