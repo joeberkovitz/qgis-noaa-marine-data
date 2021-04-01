@@ -137,9 +137,10 @@ class CreatePredictionAnnotationsTool(QgsMapToolIdentify):
             QgsProject.instance().annotationManager().addAnnotation(a)
 
             # select the just-created annotation to make it easy to move or resize
-            items = self.canvas.annotationItems()
-            if len(items) > 0:
-                items[-1].setSelected(True)
+            item = self.itemForAnnotation(a)
+            if item:
+                self.canvas.scene().clearSelection()
+                item.setSelected(True)
             break
 
     def keyPressEvent(self, keyEvent):
@@ -162,4 +163,9 @@ class CreatePredictionAnnotationsTool(QgsMapToolIdentify):
                 return item
         return None
 
+    def itemForAnnotation(self, annotation):
+        for item in self.canvas.annotationItems():
+            if item.annotation() == annotation:
+                return item
+        return None
 
