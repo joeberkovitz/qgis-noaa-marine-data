@@ -2,12 +2,15 @@
 <head>
   <style>
   .annotation {
-      font-size: 16px;
+      font-size: 14px;
       font-family: sans-serif;
   }
   .name {
       font-weight: bold;
-  }
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }  }
   .predict {
       padding-top: 5px;
   }
@@ -40,6 +43,7 @@
   </style>
 </head>
 <body>
+<div class="name">[% station_name %]</div>
 <div class="annotation">
     <table>
     <tbody>
