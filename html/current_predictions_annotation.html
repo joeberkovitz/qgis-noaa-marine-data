@@ -7,10 +7,8 @@
   }
   .name {
       font-weight: bold;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }  }
+      font-family: sans-serif;
+  }
   .predict {
       padding-top: 5px;
   }
@@ -20,6 +18,7 @@
   td {
     font-size: 16px;
     padding: 1px 5px 1px 15px;
+    white-space: nowrap;
   }
   tr.flood{
     background-color: #A0D8FF
@@ -28,11 +27,7 @@
     background-color: #A0ffD8
   }
   tr.date_break {
-    border-top: 1px solid #999;
-  }
-  tr.date_break td {
-    font-weight: bold;
-    padding-left: 0px;
+    border-top: 2px solid #999;
   }
   td.velocity {
     text-align: right;
@@ -43,32 +38,30 @@
   </style>
 </head>
 <body>
-<div class="name">[% station_name %]</div>
-<div class="annotation">
+  <div class="name">[% station_name %] ([% format_time_zone(local_time,2) %])</div>
+  <div class="annotation">
     <table>
     <tbody>
     [%
       with_variable('station_id',id,
         concatenate(
-          if(date_break,
-             '<tr class="date_break"><td colspan="3">'+
-             format_date(time,'MM/dd/yyyy')+
-             '</td></tr>','')+
           format('
-          <tr class="%1">
-          <td class="time">%2</td>
-          <td class="type">%3</td>
-          <td class="velocity">%4</td>
+          <tr class="%1 %6">
+          <td class="day">%2</td>
+          <td class="time">%3</td>
+          <td class="type">%4</td>
+          <td class="velocity">%5</td>
           </tr>',
              type,
-             format_date(time,'hh:mm'),
+             format_date(local_time,'ddd dd'),
+             format_date(local_time,'hh:mm'),
              if(velocity_major is null,to_string(dir)+'º',type),
-             if(velocity_major is null,velocity,velocity_major),
+             format_number(if(velocity_major is null,velocity,velocity_major),1),
              if(date_break,'date_break','')),
         filter:= id = @station_id
-                   and (@map_start_time is null
-                or (time >= @map_start_time and time < @map_end_time))
-    ))
+                   and is_time_visible(time),
+        order_by:= time
+       ))
     %]
     </tbody>
     </table>

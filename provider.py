@@ -1,7 +1,8 @@
 import os
 from qgis.core import QgsProcessingProvider
 from qgis.PyQt.QtGui import QIcon
-from .add_station_layers import AddStationLayersAlgorithm
+from .add_station_layers import AddCurrentStationsLayerAlgorithm
+#, AddTimeZonesLayerAlgorithm
 from .get_tidal_predictions import GetTidalPredictionsAlgorithm
 
 class NoaaMarineDataProvider(QgsProcessingProvider):
@@ -9,7 +10,8 @@ class NoaaMarineDataProvider(QgsProcessingProvider):
         QgsProcessingProvider.unload(self)
 
     def loadAlgorithms(self):
-        self.addAlgorithm(AddStationLayersAlgorithm())
+        #self.addAlgorithm(AddTimeZonesLayerAlgorithm())
+        self.addAlgorithm(AddCurrentStationsLayerAlgorithm())
         self.addAlgorithm(GetTidalPredictionsAlgorithm())
 
     def id(self):

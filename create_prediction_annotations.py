@@ -83,6 +83,17 @@ class CreatePredictionAnnotationsTool(QgsMapToolIdentify):
                     self.currentMoveAction == QgsMapCanvasAnnotationItem.ResizeFrameRightDown):
                 ymax += pixelToMmScale * ( mouseEvent.pos().y() - self.lastMousePosition.y() )
 
+            if (self.currentMoveAction == QgsMapCanvasAnnotationItem.ResizeFrameLeft or
+                    self.currentMoveAction == QgsMapCanvasAnnotationItem.ResizeFrameLeftUp or
+                    self.currentMoveAction == QgsMapCanvasAnnotationItem.ResizeFrameLeftDown):
+                xmin += pixelToMmScale * ( mouseEvent.pos().x() - self.lastMousePosition.x() )
+                relPosX = ( relPosX * self.canvas.width() + mouseEvent.pos().x() - self.lastMousePosition.x() ) / self.canvas.width()
+
+            if (self.currentMoveAction == QgsMapCanvasAnnotationItem.ResizeFrameRight or
+                    self.currentMoveAction == QgsMapCanvasAnnotationItem.ResizeFrameRightUp or
+                    self.currentMoveAction == QgsMapCanvasAnnotationItem.ResizeFrameRightDown):
+                xmax += pixelToMmScale * ( mouseEvent.pos().x() - self.lastMousePosition.x() )
+
             # switch min / max if necessary
             if xmax < xmin:
                 tmp = xmax
@@ -124,15 +135,15 @@ class CreatePredictionAnnotationsTool(QgsMapToolIdentify):
             a.setSourceFile(html)
             a.setAssociatedFeature(feature)
 
-            # TODO: big problem in that temporal scope is not used to evaluate the HTML. may have to
-            # hack this by saving any temporal scope here to layer variables that can be accessed by the templatmouseEvent...
-            # or to auxiliary storage attributes (ugh, but probably has correct behavior)
-
             # TODO: this size and offset are wack. Can we dynamically calculate from the content somehow?
-            a.setFrameSize(QSizeF(200, 160))
-            a.setFrameOffsetFromReferencePoint(QPointF(-200,-200))
+            a.setFrameSize(QSizeF(270, 160))
+            a.setFrameOffsetFromReferencePoint(QPointF(-300,-200))
             a.setMapPosition(feature.geometry().asPoint())
             a.setMapPositionCrs(QgsCoordinateReferenceSystem(layer.crs()))
+
+            # disable its symbol
+            for symbol in a.markerSymbol().symbolLayers():
+                symbol.setEnabled(False)
 
             QgsProject.instance().annotationManager().addAnnotation(a)
 

@@ -1,44 +1,44 @@
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
-<qgis readOnly="0" styleCategories="LayerConfiguration|Symbology|Labeling|Fields|MapTips|Temporal" labelsEnabled="1" version="3.16.4-Hannover">
+<qgis version="3.16.4-Hannover" styleCategories="LayerConfiguration|Symbology|Labeling|Fields|MapTips|Temporal" readOnly="0" labelsEnabled="1">
   <flags>
     <Identifiable>1</Identifiable>
     <Removable>1</Removable>
     <Searchable>1</Searchable>
   </flags>
-  <temporal durationField="" startExpression="" startField="time" durationUnit="min" endExpression="" enabled="1" endField="" mode="1" fixedDuration="0" accumulate="0">
+  <temporal enabled="1" endField="" mode="1" startExpression="" fixedDuration="0" startField="time" endExpression="" durationUnit="min" accumulate="0" durationField="">
     <fixedRange>
       <start></start>
       <end></end>
     </fixedRange>
   </temporal>
-  <renderer-v2 type="RuleRenderer" enableorderby="1" symbollevels="0" forceraster="0">
+  <renderer-v2 type="RuleRenderer" symbollevels="0" forceraster="0" enableorderby="1">
     <rules key="{f82f9c0a-11c0-4463-a530-1848d9ec9562}">
-      <rule label="slack" key="{db1cb4ea-3e7e-45d5-ae99-18be4af351b9}" symbol="0" filter="type='slack'"/>
-      <rule label="current" key="{c3f9e513-78d6-4d83-88b6-8fcf3a2be92f}" symbol="1" filter="velocity_major is null"/>
-      <rule label="flood" key="{880197ea-b2a5-4567-aeea-b1d0267480b1}" symbol="2" filter="velocity_major > 0"/>
-      <rule label="ebb" key="{baa31596-80f6-4974-a7ca-bee6dc792d6b}" symbol="3" filter="velocity_major &lt; 0"/>
+      <rule symbol="0" filter="type='slack'" key="{db1cb4ea-3e7e-45d5-ae99-18be4af351b9}" label="slack"/>
+      <rule symbol="1" filter="velocity_major is null" key="{c3f9e513-78d6-4d83-88b6-8fcf3a2be92f}" label="current"/>
+      <rule symbol="2" filter="type='flood'" key="{880197ea-b2a5-4567-aeea-b1d0267480b1}" label="flood"/>
+      <rule symbol="3" filter="type='ebb'" key="{baa31596-80f6-4974-a7ca-bee6dc792d6b}" label="ebb"/>
     </rules>
     <symbols>
-      <symbol force_rhr="0" alpha="1" clip_to_extent="1" type="marker" name="0">
-        <layer class="SimpleMarker" locked="0" enabled="1" pass="0">
-          <prop v="0" k="angle"/>
-          <prop v="0,0,0,255" k="color"/>
-          <prop v="1" k="horizontal_anchor_point"/>
-          <prop v="bevel" k="joinstyle"/>
-          <prop v="circle" k="name"/>
-          <prop v="0,0" k="offset"/>
-          <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-          <prop v="MM" k="offset_unit"/>
-          <prop v="35,35,35,255" k="outline_color"/>
-          <prop v="solid" k="outline_style"/>
-          <prop v="0" k="outline_width"/>
-          <prop v="3x:0,0,0,0,0,0" k="outline_width_map_unit_scale"/>
-          <prop v="MM" k="outline_width_unit"/>
-          <prop v="diameter" k="scale_method"/>
-          <prop v="4" k="size"/>
-          <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
-          <prop v="MM" k="size_unit"/>
-          <prop v="1" k="vertical_anchor_point"/>
+      <symbol type="marker" clip_to_extent="1" force_rhr="0" alpha="1" name="0">
+        <layer enabled="1" pass="0" class="SimpleMarker" locked="0">
+          <prop k="angle" v="0"/>
+          <prop k="color" v="0,0,0,0"/>
+          <prop k="horizontal_anchor_point" v="1"/>
+          <prop k="joinstyle" v="miter"/>
+          <prop k="name" v="triangle"/>
+          <prop k="offset" v="0,0"/>
+          <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="offset_unit" v="MM"/>
+          <prop k="outline_color" v="35,35,35,255"/>
+          <prop k="outline_style" v="solid"/>
+          <prop k="outline_width" v="0.4"/>
+          <prop k="outline_width_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="outline_width_unit" v="MM"/>
+          <prop k="scale_method" v="diameter"/>
+          <prop k="size" v="5"/>
+          <prop k="size_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="size_unit" v="MM"/>
+          <prop k="vertical_anchor_point" v="1"/>
           <data_defined_properties>
             <Option type="Map">
               <Option value="" type="QString" name="name"/>
@@ -48,22 +48,22 @@
           </data_defined_properties>
         </layer>
       </symbol>
-      <symbol force_rhr="0" alpha="0.97" clip_to_extent="1" type="marker" name="1">
-        <layer class="VectorField" locked="0" enabled="1" pass="0">
-          <prop v="0" k="angle_orientation"/>
-          <prop v="0" k="angle_units"/>
-          <prop v="3x:0,0,0,0,0,0" k="distance_map_unit_scale"/>
-          <prop v="MM" k="distance_unit"/>
-          <prop v="0,0" k="offset"/>
-          <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-          <prop v="MM" k="offset_unit"/>
-          <prop v="1" k="scale"/>
-          <prop v="2" k="size"/>
-          <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
-          <prop v="MM" k="size_unit"/>
-          <prop v="1" k="vector_field_type"/>
-          <prop v="vector_display_length" k="x_attribute"/>
-          <prop v="dir" k="y_attribute"/>
+      <symbol type="marker" clip_to_extent="1" force_rhr="0" alpha="0.97" name="1">
+        <layer enabled="1" pass="0" class="VectorField" locked="0">
+          <prop k="angle_orientation" v="0"/>
+          <prop k="angle_units" v="0"/>
+          <prop k="distance_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="distance_unit" v="MM"/>
+          <prop k="offset" v="0,0"/>
+          <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="offset_unit" v="MM"/>
+          <prop k="scale" v="1"/>
+          <prop k="size" v="2"/>
+          <prop k="size_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="size_unit" v="MM"/>
+          <prop k="vector_field_type" v="1"/>
+          <prop k="x_attribute" v="vector_display_length"/>
+          <prop k="y_attribute" v="dir"/>
           <data_defined_properties>
             <Option type="Map">
               <Option value="" type="QString" name="name"/>
@@ -71,28 +71,28 @@
               <Option value="collection" type="QString" name="type"/>
             </Option>
           </data_defined_properties>
-          <symbol force_rhr="0" alpha="1" clip_to_extent="1" type="line" name="@1@0">
-            <layer class="ArrowLine" locked="0" enabled="1" pass="0">
-              <prop v="3" k="arrow_start_width"/>
-              <prop v="MM" k="arrow_start_width_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="arrow_start_width_unit_scale"/>
-              <prop v="0" k="arrow_type"/>
-              <prop v="3" k="arrow_width"/>
-              <prop v="MM" k="arrow_width_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="arrow_width_unit_scale"/>
-              <prop v="3" k="head_length"/>
-              <prop v="MM" k="head_length_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="head_length_unit_scale"/>
-              <prop v="3" k="head_thickness"/>
-              <prop v="MM" k="head_thickness_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="head_thickness_unit_scale"/>
-              <prop v="0" k="head_type"/>
-              <prop v="1" k="is_curved"/>
-              <prop v="1" k="is_repeated"/>
-              <prop v="0" k="offset"/>
-              <prop v="MM" k="offset_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="offset_unit_scale"/>
-              <prop v="0" k="ring_filter"/>
+          <symbol type="line" clip_to_extent="1" force_rhr="0" alpha="1" name="@1@0">
+            <layer enabled="1" pass="0" class="ArrowLine" locked="0">
+              <prop k="arrow_start_width" v="3"/>
+              <prop k="arrow_start_width_unit" v="MM"/>
+              <prop k="arrow_start_width_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="arrow_type" v="0"/>
+              <prop k="arrow_width" v="3"/>
+              <prop k="arrow_width_unit" v="MM"/>
+              <prop k="arrow_width_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="head_length" v="3"/>
+              <prop k="head_length_unit" v="MM"/>
+              <prop k="head_length_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="head_thickness" v="3"/>
+              <prop k="head_thickness_unit" v="MM"/>
+              <prop k="head_thickness_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="head_type" v="0"/>
+              <prop k="is_curved" v="1"/>
+              <prop k="is_repeated" v="1"/>
+              <prop k="offset" v="0"/>
+              <prop k="offset_unit" v="MM"/>
+              <prop k="offset_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="ring_filter" v="0"/>
               <data_defined_properties>
                 <Option type="Map">
                   <Option value="" type="QString" name="name"/>
@@ -121,19 +121,19 @@
                   <Option value="collection" type="QString" name="type"/>
                 </Option>
               </data_defined_properties>
-              <symbol force_rhr="0" alpha="1" clip_to_extent="1" type="fill" name="@@1@0@0">
-                <layer class="SimpleFill" locked="0" enabled="1" pass="0">
-                  <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
-                  <prop v="55,160,201,255" k="color"/>
-                  <prop v="bevel" k="joinstyle"/>
-                  <prop v="0,0" k="offset"/>
-                  <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-                  <prop v="MM" k="offset_unit"/>
-                  <prop v="35,35,35,255" k="outline_color"/>
-                  <prop v="solid" k="outline_style"/>
-                  <prop v="0.26" k="outline_width"/>
-                  <prop v="MM" k="outline_width_unit"/>
-                  <prop v="solid" k="style"/>
+              <symbol type="fill" clip_to_extent="1" force_rhr="0" alpha="1" name="@@1@0@0">
+                <layer enabled="1" pass="0" class="SimpleFill" locked="0">
+                  <prop k="border_width_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+                  <prop k="color" v="55,160,201,255"/>
+                  <prop k="joinstyle" v="bevel"/>
+                  <prop k="offset" v="0,0"/>
+                  <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+                  <prop k="offset_unit" v="MM"/>
+                  <prop k="outline_color" v="35,35,35,255"/>
+                  <prop k="outline_style" v="solid"/>
+                  <prop k="outline_width" v="0.26"/>
+                  <prop k="outline_width_unit" v="MM"/>
+                  <prop k="style" v="solid"/>
                   <data_defined_properties>
                     <Option type="Map">
                       <Option value="" type="QString" name="name"/>
@@ -158,22 +158,22 @@
           </symbol>
         </layer>
       </symbol>
-      <symbol force_rhr="0" alpha="0.97" clip_to_extent="1" type="marker" name="2">
-        <layer class="VectorField" locked="0" enabled="1" pass="0">
-          <prop v="0" k="angle_orientation"/>
-          <prop v="0" k="angle_units"/>
-          <prop v="3x:0,0,0,0,0,0" k="distance_map_unit_scale"/>
-          <prop v="MM" k="distance_unit"/>
-          <prop v="0,0" k="offset"/>
-          <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-          <prop v="MM" k="offset_unit"/>
-          <prop v="1" k="scale"/>
-          <prop v="2" k="size"/>
-          <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
-          <prop v="MM" k="size_unit"/>
-          <prop v="1" k="vector_field_type"/>
-          <prop v="vector_display_length" k="x_attribute"/>
-          <prop v="dir" k="y_attribute"/>
+      <symbol type="marker" clip_to_extent="1" force_rhr="0" alpha="0.97" name="2">
+        <layer enabled="1" pass="0" class="VectorField" locked="0">
+          <prop k="angle_orientation" v="0"/>
+          <prop k="angle_units" v="0"/>
+          <prop k="distance_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="distance_unit" v="MM"/>
+          <prop k="offset" v="0,0"/>
+          <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="offset_unit" v="MM"/>
+          <prop k="scale" v="1"/>
+          <prop k="size" v="2"/>
+          <prop k="size_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="size_unit" v="MM"/>
+          <prop k="vector_field_type" v="1"/>
+          <prop k="x_attribute" v="vector_display_length"/>
+          <prop k="y_attribute" v="dir"/>
           <data_defined_properties>
             <Option type="Map">
               <Option value="" type="QString" name="name"/>
@@ -181,28 +181,28 @@
               <Option value="collection" type="QString" name="type"/>
             </Option>
           </data_defined_properties>
-          <symbol force_rhr="0" alpha="1" clip_to_extent="1" type="line" name="@2@0">
-            <layer class="ArrowLine" locked="0" enabled="1" pass="0">
-              <prop v="3" k="arrow_start_width"/>
-              <prop v="MM" k="arrow_start_width_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="arrow_start_width_unit_scale"/>
-              <prop v="0" k="arrow_type"/>
-              <prop v="3" k="arrow_width"/>
-              <prop v="MM" k="arrow_width_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="arrow_width_unit_scale"/>
-              <prop v="3" k="head_length"/>
-              <prop v="MM" k="head_length_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="head_length_unit_scale"/>
-              <prop v="3" k="head_thickness"/>
-              <prop v="MM" k="head_thickness_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="head_thickness_unit_scale"/>
-              <prop v="0" k="head_type"/>
-              <prop v="1" k="is_curved"/>
-              <prop v="1" k="is_repeated"/>
-              <prop v="0" k="offset"/>
-              <prop v="MM" k="offset_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="offset_unit_scale"/>
-              <prop v="0" k="ring_filter"/>
+          <symbol type="line" clip_to_extent="1" force_rhr="0" alpha="1" name="@2@0">
+            <layer enabled="1" pass="0" class="ArrowLine" locked="0">
+              <prop k="arrow_start_width" v="3"/>
+              <prop k="arrow_start_width_unit" v="MM"/>
+              <prop k="arrow_start_width_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="arrow_type" v="0"/>
+              <prop k="arrow_width" v="3"/>
+              <prop k="arrow_width_unit" v="MM"/>
+              <prop k="arrow_width_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="head_length" v="3"/>
+              <prop k="head_length_unit" v="MM"/>
+              <prop k="head_length_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="head_thickness" v="3"/>
+              <prop k="head_thickness_unit" v="MM"/>
+              <prop k="head_thickness_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="head_type" v="0"/>
+              <prop k="is_curved" v="1"/>
+              <prop k="is_repeated" v="1"/>
+              <prop k="offset" v="0"/>
+              <prop k="offset_unit" v="MM"/>
+              <prop k="offset_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="ring_filter" v="0"/>
               <data_defined_properties>
                 <Option type="Map">
                   <Option value="" type="QString" name="name"/>
@@ -231,19 +231,19 @@
                   <Option value="collection" type="QString" name="type"/>
                 </Option>
               </data_defined_properties>
-              <symbol force_rhr="0" alpha="1" clip_to_extent="1" type="fill" name="@@2@0@0">
-                <layer class="SimpleFill" locked="0" enabled="1" pass="0">
-                  <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
-                  <prop v="55,98,255,255" k="color"/>
-                  <prop v="bevel" k="joinstyle"/>
-                  <prop v="0,0" k="offset"/>
-                  <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-                  <prop v="MM" k="offset_unit"/>
-                  <prop v="35,35,35,255" k="outline_color"/>
-                  <prop v="solid" k="outline_style"/>
-                  <prop v="0.26" k="outline_width"/>
-                  <prop v="MM" k="outline_width_unit"/>
-                  <prop v="solid" k="style"/>
+              <symbol type="fill" clip_to_extent="1" force_rhr="0" alpha="1" name="@@2@0@0">
+                <layer enabled="1" pass="0" class="SimpleFill" locked="0">
+                  <prop k="border_width_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+                  <prop k="color" v="55,98,255,255"/>
+                  <prop k="joinstyle" v="bevel"/>
+                  <prop k="offset" v="0,0"/>
+                  <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+                  <prop k="offset_unit" v="MM"/>
+                  <prop k="outline_color" v="35,35,35,255"/>
+                  <prop k="outline_style" v="solid"/>
+                  <prop k="outline_width" v="0.26"/>
+                  <prop k="outline_width_unit" v="MM"/>
+                  <prop k="style" v="solid"/>
                   <data_defined_properties>
                     <Option type="Map">
                       <Option value="" type="QString" name="name"/>
@@ -268,22 +268,22 @@
           </symbol>
         </layer>
       </symbol>
-      <symbol force_rhr="0" alpha="0.97" clip_to_extent="1" type="marker" name="3">
-        <layer class="VectorField" locked="0" enabled="1" pass="0">
-          <prop v="0" k="angle_orientation"/>
-          <prop v="0" k="angle_units"/>
-          <prop v="3x:0,0,0,0,0,0" k="distance_map_unit_scale"/>
-          <prop v="MM" k="distance_unit"/>
-          <prop v="0,0" k="offset"/>
-          <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-          <prop v="MM" k="offset_unit"/>
-          <prop v="1" k="scale"/>
-          <prop v="2" k="size"/>
-          <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
-          <prop v="MM" k="size_unit"/>
-          <prop v="1" k="vector_field_type"/>
-          <prop v="vector_display_length" k="x_attribute"/>
-          <prop v="dir" k="y_attribute"/>
+      <symbol type="marker" clip_to_extent="1" force_rhr="0" alpha="0.97" name="3">
+        <layer enabled="1" pass="0" class="VectorField" locked="0">
+          <prop k="angle_orientation" v="0"/>
+          <prop k="angle_units" v="0"/>
+          <prop k="distance_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="distance_unit" v="MM"/>
+          <prop k="offset" v="0,0"/>
+          <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="offset_unit" v="MM"/>
+          <prop k="scale" v="1"/>
+          <prop k="size" v="2"/>
+          <prop k="size_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+          <prop k="size_unit" v="MM"/>
+          <prop k="vector_field_type" v="1"/>
+          <prop k="x_attribute" v="vector_display_length"/>
+          <prop k="y_attribute" v="dir"/>
           <data_defined_properties>
             <Option type="Map">
               <Option value="" type="QString" name="name"/>
@@ -291,28 +291,28 @@
               <Option value="collection" type="QString" name="type"/>
             </Option>
           </data_defined_properties>
-          <symbol force_rhr="0" alpha="1" clip_to_extent="1" type="line" name="@3@0">
-            <layer class="ArrowLine" locked="0" enabled="1" pass="0">
-              <prop v="3" k="arrow_start_width"/>
-              <prop v="MM" k="arrow_start_width_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="arrow_start_width_unit_scale"/>
-              <prop v="0" k="arrow_type"/>
-              <prop v="3" k="arrow_width"/>
-              <prop v="MM" k="arrow_width_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="arrow_width_unit_scale"/>
-              <prop v="3" k="head_length"/>
-              <prop v="MM" k="head_length_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="head_length_unit_scale"/>
-              <prop v="3" k="head_thickness"/>
-              <prop v="MM" k="head_thickness_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="head_thickness_unit_scale"/>
-              <prop v="0" k="head_type"/>
-              <prop v="1" k="is_curved"/>
-              <prop v="1" k="is_repeated"/>
-              <prop v="0" k="offset"/>
-              <prop v="MM" k="offset_unit"/>
-              <prop v="3x:0,0,0,0,0,0" k="offset_unit_scale"/>
-              <prop v="0" k="ring_filter"/>
+          <symbol type="line" clip_to_extent="1" force_rhr="0" alpha="1" name="@3@0">
+            <layer enabled="1" pass="0" class="ArrowLine" locked="0">
+              <prop k="arrow_start_width" v="3"/>
+              <prop k="arrow_start_width_unit" v="MM"/>
+              <prop k="arrow_start_width_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="arrow_type" v="0"/>
+              <prop k="arrow_width" v="3"/>
+              <prop k="arrow_width_unit" v="MM"/>
+              <prop k="arrow_width_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="head_length" v="3"/>
+              <prop k="head_length_unit" v="MM"/>
+              <prop k="head_length_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="head_thickness" v="3"/>
+              <prop k="head_thickness_unit" v="MM"/>
+              <prop k="head_thickness_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="head_type" v="0"/>
+              <prop k="is_curved" v="1"/>
+              <prop k="is_repeated" v="1"/>
+              <prop k="offset" v="0"/>
+              <prop k="offset_unit" v="MM"/>
+              <prop k="offset_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="ring_filter" v="0"/>
               <data_defined_properties>
                 <Option type="Map">
                   <Option value="" type="QString" name="name"/>
@@ -341,19 +341,19 @@
                   <Option value="collection" type="QString" name="type"/>
                 </Option>
               </data_defined_properties>
-              <symbol force_rhr="0" alpha="1" clip_to_extent="1" type="fill" name="@@3@0@0">
-                <layer class="SimpleFill" locked="0" enabled="1" pass="0">
-                  <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
-                  <prop v="56,255,176,255" k="color"/>
-                  <prop v="bevel" k="joinstyle"/>
-                  <prop v="0,0" k="offset"/>
-                  <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-                  <prop v="MM" k="offset_unit"/>
-                  <prop v="35,35,35,255" k="outline_color"/>
-                  <prop v="solid" k="outline_style"/>
-                  <prop v="0.26" k="outline_width"/>
-                  <prop v="MM" k="outline_width_unit"/>
-                  <prop v="solid" k="style"/>
+              <symbol type="fill" clip_to_extent="1" force_rhr="0" alpha="1" name="@@3@0@0">
+                <layer enabled="1" pass="0" class="SimpleFill" locked="0">
+                  <prop k="border_width_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+                  <prop k="color" v="56,255,176,255"/>
+                  <prop k="joinstyle" v="bevel"/>
+                  <prop k="offset" v="0,0"/>
+                  <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+                  <prop k="offset_unit" v="MM"/>
+                  <prop k="outline_color" v="35,35,35,255"/>
+                  <prop k="outline_style" v="solid"/>
+                  <prop k="outline_width" v="0.26"/>
+                  <prop k="outline_width_unit" v="MM"/>
+                  <prop k="style" v="solid"/>
                   <data_defined_properties>
                     <Option type="Map">
                       <Option value="" type="QString" name="name"/>
@@ -385,30 +385,30 @@
   </renderer-v2>
   <labeling type="simple">
     <settings calloutType="simple">
-      <text-style fontLetterSpacing="0" fontKerning="1" isExpression="1" fontWeight="50" fontFamily=".AppleSystemUIFont" fontSize="10" fontSizeUnit="Point" textColor="0,0,0,255" fontUnderline="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" fontItalic="0" allowHtml="0" fontWordSpacing="0" multilineHeight="1" capitalization="0" fieldName="format('%1;%2kt',format_date(time,'hh:mm'),format_number(velocity,1))" textOpacity="1" fontStrikeout="0" useSubstitutions="0" previewBkgrdColor="255,255,255,255" textOrientation="horizontal" namedStyle="Regular" blendMode="0">
-        <text-buffer bufferColor="255,255,255,255" bufferNoFill="1" bufferSizeUnits="MM" bufferBlendMode="0" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferOpacity="1" bufferDraw="1" bufferJoinStyle="128" bufferSize="1"/>
-        <text-mask maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskOpacity="1" maskType="0" maskJoinStyle="128" maskSizeUnits="MM" maskedSymbolLayers="" maskEnabled="0" maskSize="1.5"/>
-        <background shapeRadiiX="0" shapeRotation="0" shapeJoinStyle="64" shapeFillColor="255,255,255,255" shapeDraw="0" shapeRadiiY="0" shapeOffsetMapUnitScale="3x:0,0,0,0,0,0" shapeBorderWidthMapUnitScale="3x:0,0,0,0,0,0" shapeSizeType="0" shapeBlendMode="0" shapeRotationType="0" shapeRadiiUnit="MM" shapeRadiiMapUnitScale="3x:0,0,0,0,0,0" shapeBorderWidth="0" shapeBorderWidthUnit="MM" shapeSVGFile="" shapeSizeUnit="MM" shapeType="0" shapeBorderColor="128,128,128,255" shapeOffsetX="0" shapeSizeY="0" shapeOpacity="1" shapeSizeX="0" shapeOffsetY="0" shapeSizeMapUnitScale="3x:0,0,0,0,0,0" shapeOffsetUnit="MM">
-          <symbol force_rhr="0" alpha="1" clip_to_extent="1" type="marker" name="markerSymbol">
-            <layer class="SimpleMarker" locked="0" enabled="1" pass="0">
-              <prop v="0" k="angle"/>
-              <prop v="229,182,54,255" k="color"/>
-              <prop v="1" k="horizontal_anchor_point"/>
-              <prop v="bevel" k="joinstyle"/>
-              <prop v="circle" k="name"/>
-              <prop v="0,0" k="offset"/>
-              <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-              <prop v="MM" k="offset_unit"/>
-              <prop v="35,35,35,255" k="outline_color"/>
-              <prop v="solid" k="outline_style"/>
-              <prop v="0" k="outline_width"/>
-              <prop v="3x:0,0,0,0,0,0" k="outline_width_map_unit_scale"/>
-              <prop v="MM" k="outline_width_unit"/>
-              <prop v="diameter" k="scale_method"/>
-              <prop v="2" k="size"/>
-              <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
-              <prop v="MM" k="size_unit"/>
-              <prop v="1" k="vertical_anchor_point"/>
+      <text-style fontUnderline="0" fontWeight="50" namedStyle="Regular" previewBkgrdColor="255,255,255,255" fontItalic="0" textColor="0,0,0,255" fontKerning="1" blendMode="0" textOpacity="1" fontLetterSpacing="0" fieldName="format('%1;%2kt',format_date(local_time,'hh:mm'),format_number(velocity,1))" textOrientation="horizontal" fontSize="10" fontWordSpacing="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" fontSizeUnit="Point" useSubstitutions="0" isExpression="1" fontStrikeout="0" multilineHeight="1" allowHtml="0" capitalization="0" fontFamily=".AppleSystemUIFont">
+        <text-buffer bufferDraw="1" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferSizeUnits="MM" bufferJoinStyle="128" bufferBlendMode="0" bufferSize="1" bufferNoFill="1" bufferColor="255,255,255,255" bufferOpacity="1"/>
+        <text-mask maskJoinStyle="128" maskEnabled="0" maskType="0" maskSizeUnits="MM" maskOpacity="1" maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskedSymbolLayers="" maskSize="1.5"/>
+        <background shapeJoinStyle="64" shapeBorderWidthMapUnitScale="3x:0,0,0,0,0,0" shapeSizeType="0" shapeSizeMapUnitScale="3x:0,0,0,0,0,0" shapeOffsetMapUnitScale="3x:0,0,0,0,0,0" shapeRotation="0" shapeBorderColor="128,128,128,255" shapeRadiiUnit="MM" shapeRadiiMapUnitScale="3x:0,0,0,0,0,0" shapeOffsetY="0" shapeBlendMode="0" shapeBorderWidthUnit="MM" shapeRotationType="0" shapeOpacity="1" shapeSizeX="0" shapeRadiiX="0" shapeType="0" shapeSizeY="0" shapeDraw="0" shapeOffsetX="0" shapeBorderWidth="0" shapeSizeUnit="MM" shapeOffsetUnit="MM" shapeRadiiY="0" shapeSVGFile="" shapeFillColor="255,255,255,255">
+          <symbol type="marker" clip_to_extent="1" force_rhr="0" alpha="1" name="markerSymbol">
+            <layer enabled="1" pass="0" class="SimpleMarker" locked="0">
+              <prop k="angle" v="0"/>
+              <prop k="color" v="229,182,54,255"/>
+              <prop k="horizontal_anchor_point" v="1"/>
+              <prop k="joinstyle" v="bevel"/>
+              <prop k="name" v="circle"/>
+              <prop k="offset" v="0,0"/>
+              <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="offset_unit" v="MM"/>
+              <prop k="outline_color" v="35,35,35,255"/>
+              <prop k="outline_style" v="solid"/>
+              <prop k="outline_width" v="0"/>
+              <prop k="outline_width_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="outline_width_unit" v="MM"/>
+              <prop k="scale_method" v="diameter"/>
+              <prop k="size" v="2"/>
+              <prop k="size_map_unit_scale" v="3x:0,0,0,0,0,0"/>
+              <prop k="size_unit" v="MM"/>
+              <prop k="vertical_anchor_point" v="1"/>
               <data_defined_properties>
                 <Option type="Map">
                   <Option value="" type="QString" name="name"/>
@@ -419,7 +419,7 @@
             </layer>
           </symbol>
         </background>
-        <shadow shadowUnder="0" shadowOffsetMapUnitScale="3x:0,0,0,0,0,0" shadowColor="0,0,0,255" shadowRadius="1.5" shadowRadiusMapUnitScale="3x:0,0,0,0,0,0" shadowOffsetAngle="135" shadowOffsetGlobal="1" shadowRadiusAlphaOnly="0" shadowDraw="0" shadowBlendMode="6" shadowScale="100" shadowOpacity="0.69999999999999996" shadowRadiusUnit="MM" shadowOffsetDist="1" shadowOffsetUnit="MM"/>
+        <shadow shadowOpacity="0.69999999999999996" shadowOffsetUnit="MM" shadowOffsetDist="1" shadowColor="0,0,0,255" shadowRadius="1.5" shadowScale="100" shadowRadiusUnit="MM" shadowDraw="0" shadowUnder="0" shadowOffsetMapUnitScale="3x:0,0,0,0,0,0" shadowRadiusAlphaOnly="0" shadowOffsetAngle="135" shadowRadiusMapUnitScale="3x:0,0,0,0,0,0" shadowOffsetGlobal="1" shadowBlendMode="6"/>
         <dd_properties>
           <Option type="Map">
             <Option value="" type="QString" name="name"/>
@@ -429,9 +429,9 @@
         </dd_properties>
         <substitutions/>
       </text-style>
-      <text-format rightDirectionSymbol=">" reverseDirectionSymbol="0" decimals="3" wrapChar=";" useMaxLineLengthForAutoWrap="1" leftDirectionSymbol="&lt;" autoWrapLength="0" multilineAlign="3" formatNumbers="0" addDirectionSymbol="0" placeDirectionSymbol="0" plussign="0"/>
-      <placement centroidInside="0" geometryGenerator="" polygonPlacementFlags="2" maxCurvedCharAngleIn="25" geometryGeneratorType="PointGeometry" xOffset="0" repeatDistance="0" lineAnchorType="0" placementFlags="10" priority="5" labelOffsetMapUnitScale="3x:0,0,0,0,0,0" repeatDistanceUnits="MM" yOffset="0" offsetType="0" preserveRotation="1" rotationAngle="0" repeatDistanceMapUnitScale="3x:0,0,0,0,0,0" offsetUnits="MM" predefinedPositionOrder="TR,TL,BR,BL,R,L,TSR,BSR" overrunDistanceMapUnitScale="3x:0,0,0,0,0,0" overrunDistanceUnit="MM" lineAnchorPercent="0.5" overrunDistance="0" layerType="PointGeometry" centroidWhole="0" quadOffset="4" distUnits="MM" maxCurvedCharAngleOut="-25" placement="1" fitInPolygonOnly="0" geometryGeneratorEnabled="0" distMapUnitScale="3x:0,0,0,0,0,0" dist="10"/>
-      <rendering displayAll="0" fontMinPixelSize="3" fontLimitPixelSize="0" obstacleFactor="1" obstacleType="1" zIndex="0" maxNumLabels="2000" obstacle="1" mergeLines="0" fontMaxPixelSize="10000" scaleMax="0" scaleMin="0" limitNumLabels="0" upsidedownLabels="0" labelPerPart="0" scaleVisibility="0" minFeatureSize="0" drawLabels="1"/>
+      <text-format placeDirectionSymbol="0" multilineAlign="3" plussign="0" formatNumbers="0" addDirectionSymbol="0" wrapChar=";" useMaxLineLengthForAutoWrap="1" autoWrapLength="0" leftDirectionSymbol="&lt;" rightDirectionSymbol=">" reverseDirectionSymbol="0" decimals="3"/>
+      <placement distUnits="MM" geometryGeneratorType="PointGeometry" distMapUnitScale="3x:0,0,0,0,0,0" overrunDistance="0" preserveRotation="1" repeatDistanceUnits="MM" predefinedPositionOrder="TR,TL,BR,BL,R,L,TSR,BSR" repeatDistance="0" geometryGeneratorEnabled="0" lineAnchorPercent="0.5" offsetUnits="MM" priority="5" layerType="PointGeometry" labelOffsetMapUnitScale="3x:0,0,0,0,0,0" xOffset="0" yOffset="0" lineAnchorType="0" placement="1" overrunDistanceUnit="MM" rotationAngle="0" centroidWhole="0" dist="10" polygonPlacementFlags="2" placementFlags="10" maxCurvedCharAngleOut="-25" centroidInside="0" fitInPolygonOnly="0" maxCurvedCharAngleIn="25" overrunDistanceMapUnitScale="3x:0,0,0,0,0,0" offsetType="0" geometryGenerator="" quadOffset="4" repeatDistanceMapUnitScale="3x:0,0,0,0,0,0"/>
+      <rendering fontMaxPixelSize="10000" scaleVisibility="0" upsidedownLabels="0" drawLabels="1" scaleMax="0" fontLimitPixelSize="0" fontMinPixelSize="3" displayAll="0" obstacleType="1" minFeatureSize="0" obstacle="1" mergeLines="0" maxNumLabels="2000" zIndex="0" limitNumLabels="0" obstacleFactor="1" scaleMin="0" labelPerPart="0"/>
       <dd_properties>
         <Option type="Map">
           <Option value="" type="QString" name="name"/>
@@ -461,7 +461,7 @@
           <Option value="false" type="bool" name="drawToAllParts"/>
           <Option value="0" type="QString" name="enabled"/>
           <Option value="point_on_exterior" type="QString" name="labelAnchorPoint"/>
-          <Option value="&lt;symbol force_rhr=&quot;0&quot; alpha=&quot;1&quot; clip_to_extent=&quot;1&quot; type=&quot;line&quot; name=&quot;symbol&quot;>&lt;layer class=&quot;SimpleLine&quot; locked=&quot;0&quot; enabled=&quot;1&quot; pass=&quot;0&quot;>&lt;prop v=&quot;0&quot; k=&quot;align_dash_pattern&quot;/>&lt;prop v=&quot;square&quot; k=&quot;capstyle&quot;/>&lt;prop v=&quot;5;2&quot; k=&quot;customdash&quot;/>&lt;prop v=&quot;3x:0,0,0,0,0,0&quot; k=&quot;customdash_map_unit_scale&quot;/>&lt;prop v=&quot;MM&quot; k=&quot;customdash_unit&quot;/>&lt;prop v=&quot;0&quot; k=&quot;dash_pattern_offset&quot;/>&lt;prop v=&quot;3x:0,0,0,0,0,0&quot; k=&quot;dash_pattern_offset_map_unit_scale&quot;/>&lt;prop v=&quot;MM&quot; k=&quot;dash_pattern_offset_unit&quot;/>&lt;prop v=&quot;0&quot; k=&quot;draw_inside_polygon&quot;/>&lt;prop v=&quot;bevel&quot; k=&quot;joinstyle&quot;/>&lt;prop v=&quot;60,60,60,255&quot; k=&quot;line_color&quot;/>&lt;prop v=&quot;solid&quot; k=&quot;line_style&quot;/>&lt;prop v=&quot;0.3&quot; k=&quot;line_width&quot;/>&lt;prop v=&quot;MM&quot; k=&quot;line_width_unit&quot;/>&lt;prop v=&quot;0&quot; k=&quot;offset&quot;/>&lt;prop v=&quot;3x:0,0,0,0,0,0&quot; k=&quot;offset_map_unit_scale&quot;/>&lt;prop v=&quot;MM&quot; k=&quot;offset_unit&quot;/>&lt;prop v=&quot;0&quot; k=&quot;ring_filter&quot;/>&lt;prop v=&quot;0&quot; k=&quot;tweak_dash_pattern_on_corners&quot;/>&lt;prop v=&quot;0&quot; k=&quot;use_custom_dash&quot;/>&lt;prop v=&quot;3x:0,0,0,0,0,0&quot; k=&quot;width_map_unit_scale&quot;/>&lt;data_defined_properties>&lt;Option type=&quot;Map&quot;>&lt;Option value=&quot;&quot; type=&quot;QString&quot; name=&quot;name&quot;/>&lt;Option name=&quot;properties&quot;/>&lt;Option value=&quot;collection&quot; type=&quot;QString&quot; name=&quot;type&quot;/>&lt;/Option>&lt;/data_defined_properties>&lt;/layer>&lt;/symbol>" type="QString" name="lineSymbol"/>
+          <Option value="&lt;symbol type=&quot;line&quot; clip_to_extent=&quot;1&quot; force_rhr=&quot;0&quot; alpha=&quot;1&quot; name=&quot;symbol&quot;>&lt;layer enabled=&quot;1&quot; pass=&quot;0&quot; class=&quot;SimpleLine&quot; locked=&quot;0&quot;>&lt;prop k=&quot;align_dash_pattern&quot; v=&quot;0&quot;/>&lt;prop k=&quot;capstyle&quot; v=&quot;square&quot;/>&lt;prop k=&quot;customdash&quot; v=&quot;5;2&quot;/>&lt;prop k=&quot;customdash_map_unit_scale&quot; v=&quot;3x:0,0,0,0,0,0&quot;/>&lt;prop k=&quot;customdash_unit&quot; v=&quot;MM&quot;/>&lt;prop k=&quot;dash_pattern_offset&quot; v=&quot;0&quot;/>&lt;prop k=&quot;dash_pattern_offset_map_unit_scale&quot; v=&quot;3x:0,0,0,0,0,0&quot;/>&lt;prop k=&quot;dash_pattern_offset_unit&quot; v=&quot;MM&quot;/>&lt;prop k=&quot;draw_inside_polygon&quot; v=&quot;0&quot;/>&lt;prop k=&quot;joinstyle&quot; v=&quot;bevel&quot;/>&lt;prop k=&quot;line_color&quot; v=&quot;60,60,60,255&quot;/>&lt;prop k=&quot;line_style&quot; v=&quot;solid&quot;/>&lt;prop k=&quot;line_width&quot; v=&quot;0.3&quot;/>&lt;prop k=&quot;line_width_unit&quot; v=&quot;MM&quot;/>&lt;prop k=&quot;offset&quot; v=&quot;0&quot;/>&lt;prop k=&quot;offset_map_unit_scale&quot; v=&quot;3x:0,0,0,0,0,0&quot;/>&lt;prop k=&quot;offset_unit&quot; v=&quot;MM&quot;/>&lt;prop k=&quot;ring_filter&quot; v=&quot;0&quot;/>&lt;prop k=&quot;tweak_dash_pattern_on_corners&quot; v=&quot;0&quot;/>&lt;prop k=&quot;use_custom_dash&quot; v=&quot;0&quot;/>&lt;prop k=&quot;width_map_unit_scale&quot; v=&quot;3x:0,0,0,0,0,0&quot;/>&lt;data_defined_properties>&lt;Option type=&quot;Map&quot;>&lt;Option value=&quot;&quot; type=&quot;QString&quot; name=&quot;name&quot;/>&lt;Option name=&quot;properties&quot;/>&lt;Option value=&quot;collection&quot; type=&quot;QString&quot; name=&quot;type&quot;/>&lt;/Option>&lt;/data_defined_properties>&lt;/layer>&lt;/symbol>" type="QString" name="lineSymbol"/>
           <Option value="0" type="double" name="minLength"/>
           <Option value="3x:0,0,0,0,0,0" type="QString" name="minLengthMapUnitScale"/>
           <Option value="MM" type="QString" name="minLengthUnit"/>
@@ -489,83 +489,99 @@
     <field configurationFlags="None" name="dir"/>
     <field configurationFlags="None" name="type"/>
     <field configurationFlags="None" name="station_name"/>
+    <field configurationFlags="None" name="station_timeZoneId"/>
+    <field configurationFlags="None" name="station_timeZoneUTC"/>
     <field configurationFlags="None" name="vector_display_length"/>
     <field configurationFlags="None" name="vector_display_width"/>
-    <field configurationFlags="None" name="display_time"/>
+    <field configurationFlags="None" name="local_time"/>
+    <field configurationFlags="None" name="local_date_str"/>
   </fieldConfiguration>
   <aliases>
-    <alias field="id_bin" index="0" name=""/>
-    <alias field="id" index="1" name=""/>
-    <alias field="bin" index="2" name=""/>
-    <alias field="depth" index="3" name=""/>
-    <alias field="time" index="4" name=""/>
-    <alias field="date_break" index="5" name=""/>
-    <alias field="velocity" index="6" name=""/>
-    <alias field="velocity_major" index="7" name=""/>
-    <alias field="dir" index="8" name=""/>
-    <alias field="type" index="9" name=""/>
-    <alias field="station_name" index="10" name=""/>
-    <alias field="vector_display_length" index="11" name=""/>
-    <alias field="vector_display_width" index="12" name=""/>
-    <alias field="display_time" index="13" name=""/>
+    <alias index="0" field="id_bin" name=""/>
+    <alias index="1" field="id" name=""/>
+    <alias index="2" field="bin" name=""/>
+    <alias index="3" field="depth" name=""/>
+    <alias index="4" field="time" name=""/>
+    <alias index="5" field="date_break" name=""/>
+    <alias index="6" field="velocity" name=""/>
+    <alias index="7" field="velocity_major" name=""/>
+    <alias index="8" field="dir" name=""/>
+    <alias index="9" field="type" name=""/>
+    <alias index="10" field="station_name" name=""/>
+    <alias index="11" field="station_timeZoneId" name=""/>
+    <alias index="12" field="station_timeZoneUTC" name=""/>
+    <alias index="13" field="vector_display_length" name=""/>
+    <alias index="14" field="vector_display_width" name=""/>
+    <alias index="15" field="local_time" name=""/>
+    <alias index="16" field="local_date_str" name=""/>
   </aliases>
   <defaults>
-    <default field="id_bin" applyOnUpdate="0" expression=""/>
-    <default field="id" applyOnUpdate="0" expression=""/>
-    <default field="bin" applyOnUpdate="0" expression=""/>
-    <default field="depth" applyOnUpdate="0" expression=""/>
-    <default field="time" applyOnUpdate="0" expression=""/>
-    <default field="date_break" applyOnUpdate="0" expression=""/>
-    <default field="velocity" applyOnUpdate="0" expression=""/>
-    <default field="velocity_major" applyOnUpdate="0" expression=""/>
-    <default field="dir" applyOnUpdate="0" expression=""/>
-    <default field="type" applyOnUpdate="0" expression=""/>
-    <default field="station_name" applyOnUpdate="0" expression=""/>
-    <default field="vector_display_length" applyOnUpdate="0" expression=""/>
-    <default field="vector_display_width" applyOnUpdate="0" expression=""/>
-    <default field="display_time" applyOnUpdate="0" expression=""/>
+    <default expression="" field="id_bin" applyOnUpdate="0"/>
+    <default expression="" field="id" applyOnUpdate="0"/>
+    <default expression="" field="bin" applyOnUpdate="0"/>
+    <default expression="" field="depth" applyOnUpdate="0"/>
+    <default expression="" field="time" applyOnUpdate="0"/>
+    <default expression="" field="date_break" applyOnUpdate="0"/>
+    <default expression="" field="velocity" applyOnUpdate="0"/>
+    <default expression="" field="velocity_major" applyOnUpdate="0"/>
+    <default expression="" field="dir" applyOnUpdate="0"/>
+    <default expression="" field="type" applyOnUpdate="0"/>
+    <default expression="" field="station_name" applyOnUpdate="0"/>
+    <default expression="" field="station_timeZoneId" applyOnUpdate="0"/>
+    <default expression="" field="station_timeZoneUTC" applyOnUpdate="0"/>
+    <default expression="" field="vector_display_length" applyOnUpdate="0"/>
+    <default expression="" field="vector_display_width" applyOnUpdate="0"/>
+    <default expression="" field="local_time" applyOnUpdate="0"/>
+    <default expression="" field="local_date_str" applyOnUpdate="0"/>
   </defaults>
   <constraints>
-    <constraint field="id_bin" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="id" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="bin" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="depth" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="time" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="date_break" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="velocity" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="velocity_major" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="dir" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="type" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="station_name" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="vector_display_length" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="vector_display_width" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
-    <constraint field="display_time" exp_strength="0" constraints="0" notnull_strength="0" unique_strength="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="id_bin" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="id" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="bin" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="depth" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="time" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="date_break" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="velocity" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="velocity_major" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="dir" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="type" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="station_name" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="station_timeZoneId" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="station_timeZoneUTC" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="vector_display_length" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="vector_display_width" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="local_time" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="local_date_str" notnull_strength="0" constraints="0"/>
   </constraints>
   <constraintExpressions>
-    <constraint field="id_bin" desc="" exp=""/>
-    <constraint field="id" desc="" exp=""/>
-    <constraint field="bin" desc="" exp=""/>
-    <constraint field="depth" desc="" exp=""/>
-    <constraint field="time" desc="" exp=""/>
-    <constraint field="date_break" desc="" exp=""/>
-    <constraint field="velocity" desc="" exp=""/>
-    <constraint field="velocity_major" desc="" exp=""/>
-    <constraint field="dir" desc="" exp=""/>
-    <constraint field="type" desc="" exp=""/>
-    <constraint field="station_name" desc="" exp=""/>
-    <constraint field="vector_display_length" desc="" exp=""/>
-    <constraint field="vector_display_width" desc="" exp=""/>
-    <constraint field="display_time" desc="" exp=""/>
+    <constraint exp="" field="id_bin" desc=""/>
+    <constraint exp="" field="id" desc=""/>
+    <constraint exp="" field="bin" desc=""/>
+    <constraint exp="" field="depth" desc=""/>
+    <constraint exp="" field="time" desc=""/>
+    <constraint exp="" field="date_break" desc=""/>
+    <constraint exp="" field="velocity" desc=""/>
+    <constraint exp="" field="velocity_major" desc=""/>
+    <constraint exp="" field="dir" desc=""/>
+    <constraint exp="" field="type" desc=""/>
+    <constraint exp="" field="station_name" desc=""/>
+    <constraint exp="" field="station_timeZoneId" desc=""/>
+    <constraint exp="" field="station_timeZoneUTC" desc=""/>
+    <constraint exp="" field="vector_display_length" desc=""/>
+    <constraint exp="" field="vector_display_width" desc=""/>
+    <constraint exp="" field="local_time" desc=""/>
+    <constraint exp="" field="local_date_str" desc=""/>
   </constraintExpressions>
   <expressionfields>
-    <field typeName="integer" length="10" type="2" comment="" precision="0" subType="0" expression="10" name="vector_display_length"/>
-    <field typeName="double precision" length="-1" type="6" comment="" precision="0" subType="0" expression="min(8,max(0.5,4*log(2,velocity + 1)))" name="vector_display_width"/>
-    <field typeName="string" length="0" type="10" comment="" precision="0" subType="0" expression="format_date(time,'MM/yy mm:dd')" name="display_time"/>
+    <field expression="10" type="2" length="10" subType="0" precision="0" typeName="integer" comment="" name="vector_display_length"/>
+    <field expression="min(8,max(0.5,4*log(2,velocity + 1)))" type="6" length="-1" subType="0" precision="0" typeName="double precision" comment="" name="vector_display_width"/>
+    <field expression="convert_to_time_zone(time,station_timeZoneUTC,station_timeZoneId)" type="16" length="-1" subType="0" precision="0" typeName="datetime" comment="" name="local_time"/>
+    <field expression="format_date(local_time,'yyyyMMdd')" type="10" length="0" subType="0" precision="0" typeName="string" comment="" name="local_date_str"/>
   </expressionfields>
   <previewExpression>id_bin + ' ' + format_date(time,'yyyyMMdd hh:mm')</previewExpression>
   <mapTip>&lt;style>
 .tip {
-	width: 160px;
+	width: 200px;
 	max-height: 200px;
 	overflow-y: auto;
 	font-size: 12px;
@@ -573,6 +589,9 @@
 }
 .name {
 	font-weight: bold;
+}
+.date {
+	padding-top: 5px;
 }
 .predict {
     padding-top: 5px;
@@ -582,7 +601,7 @@ table {
 }
 td {
     font-size: 12px;
-	padding: 1px 5px 1px 15px;
+	padding: 1px 5px 1px 5px;
 }
 tr.flood{
 	background-color: #A0D8FF
@@ -591,11 +610,7 @@ tr.ebb{
 	background-color: #A0ffD8
 }
 tr.date_break {
-	border-top: 1px solid #999;
-}
-tr.date_break td {
-	font-weight: bold;
-	padding-left: 0px;
+  border-top: 2px solid #999;
 }
 td.velocity {
 	text-align: right;
@@ -605,34 +620,31 @@ tr.slack td.velocity {
 }
 &lt;/style>
 &lt;div class="tip">
-	&lt;span class="name">[% station_name %]&lt;/span>
-	&lt;br/>
-	&lt;a href="https://tidesandcurrents.noaa.gov/noaacurrents/Predictions?id=[% id_bin %]&amp;d=[% format_date(minimum(time), 'yyyy-MM-dd') %]">Station [% id_bin %]&lt;/a>
+	&lt;div class="name">[% station_name %] ([% format_time_zone(local_time,2) %])&lt;/div>
+	&lt;div class="station">&lt;a href="https://tidesandcurrents.noaa.gov/noaacurrents/Predictions?id=[% id_bin %]&amp;d=[% format_date(minimum(time), 'yyyy-MM-dd') %]">Station [% id_bin %]&lt;/a>&lt;/div>
 	&lt;div class="predict">
 		&lt;table>
 		&lt;tbody>
 		[%
-			with_variable('station_id',id,
+		  with_variable('station_id',id,
 				concatenate(
-				  if(date_break,
-				     '&lt;tr class="date_break">&lt;td colspan="3">'+
-					   format_date(time,'MM/dd/yyyy')+
-					   '&lt;/td>&lt;/tr>','')+
 				  format('
-				  &lt;tr class="%1">
-					&lt;td class="time">%2&lt;/td>
-					&lt;td class="type">%3&lt;/td>
-					&lt;td class="velocity">%4&lt;/td>
+				  &lt;tr class="%1 %6">
+					&lt;td class="day">%2&lt;/td>
+					&lt;td class="time">%3&lt;/td>
+					&lt;td class="type">%4&lt;/td>
+					&lt;td class="velocity">%5&lt;/td>
 				  &lt;/tr>',
 					   type,
-					   format_date(time,'hh:mm'),
+					   format_date(local_time,'ddd dd'),
+					   format_date(local_time,'hh:mm'),
 					   if(velocity_major is null,to_string(dir)+'º',type),
-					   if(velocity_major is null,velocity,velocity_major),
-					   if(date_break,'date_break','')),
+					   format_number(if(velocity_major is null,velocity,velocity_major),1),
+             if(date_break,'date_break','')),
 				filter:= id = @station_id
-			             and (@map_start_time is null
-							  or (time >= @map_start_time and time &lt; @map_end_time))
-		))
+			             and is_time_visible(time),
+				order_by:= time
+		   ))
 		%]
 		&lt;/tbody>
 		&lt;/table>

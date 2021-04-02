@@ -28,30 +28,32 @@ from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import QVariant, QUrl
 
 from .utils import *
+from .time_zone_lookup import TimeZoneLookup
 
-class AddStationLayersAlgorithm(QgsProcessingAlgorithm):
+class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
     PrmOnlyShallowestStations = 'OnlyShallowestStations'
+    PrmTimeZonesLayer = 'TimeZonesLayer'
     PrmCurrentStationsLayer = 'CurrentStationsLayer'
 
 # boilerplate methods
     def name(self):
-        return 'addstationlayers'
+        return 'addcurrentstationslayer'
 
     def displayName(self):
-        return tr('Add Station Layers')
+        return tr('Add Current Stations Layer')
 
     def helpUrl(self):
         return ''
 
     def createInstance(self):
-        return AddStationLayersAlgorithm()
+        return AddCurrentStationsLayerAlgorithm()
 
     # Set up this algorithm
     def initAlgorithm(self, config):
         self.addParameter(
             QgsProcessingParameterBoolean(
                 self.PrmOnlyShallowestStations,
-                tr('Use only stations nearest the surface'),
+                tr('Use only current stations nearest the surface'),
                 True)
         )
         self.addParameter(
@@ -86,16 +88,17 @@ class AddStationLayersAlgorithm(QgsProcessingAlgorithm):
 
         # obtain our current stations output sink          
         fields = QgsFields()
-        fields.append(QgsField("id_bin", QVariant.String,'',16))
-        fields.append(QgsField("id", QVariant.String,'',12))
-        fields.append(QgsField("bin", QVariant.String,'',4))
+        fields.append(QgsField("id_bin", QVariant.String,'', 16))
+        fields.append(QgsField("id", QVariant.String,'', 12))
+        fields.append(QgsField("bin", QVariant.String,'', 4))
         fields.append(QgsField("name", QVariant.String))
         fields.append(QgsField("depth",  QVariant.Double))
         fields.append(QgsField("depthType",  QVariant.String, '', 1))
         fields.append(QgsField("type", QVariant.String,'',1))
-        fields.append(QgsField("timezone_offset", QVariant.Double))
-        fields.append(QgsField("refStationId", QVariant.String,'',12))
-        fields.append(QgsField("refStationBin", QVariant.String,'',12))
+        fields.append(QgsField("timeZoneId", QVariant.String, '', 32))
+        fields.append(QgsField("timeZoneUTC", QVariant.String, '', 32))
+        fields.append(QgsField("refStationId", QVariant.String,'', 12))
+        fields.append(QgsField("refStationBin", QVariant.String,'', 12))
         fields.append(QgsField("meanFloodDir", QVariant.Double))
         fields.append(QgsField("meanEbbDir", QVariant.Double))
         fields.append(QgsField("mfcTimeAdjMin", QVariant.Double))
@@ -152,11 +155,14 @@ class AddStationLayersAlgorithm(QgsProcessingAlgorithm):
                 stationMap[stationId] = s
 
         if self.context.willLoadLayerOnCompletion(current_dest_id):
-            self.context.layerToLoadOnCompletionDetails(current_dest_id).setPostProcessor(CurrentStylePostProcessor.create(self))
+            proc = StylePostProcessor.create(self, tr('Current Stations'), CurrentStationsLayerVar, 'current_stations.qml')
+            self.context.layerToLoadOnCompletionDetails(current_dest_id).setPostProcessor(proc)
 
         # Now build the features for all stations in the map.
 
         progress_count = 0
+
+        tzl = TimeZoneLookup()
 
         if self.onlyShallowest:
             iterMap = stationMap
@@ -169,7 +175,9 @@ class AddStationLayersAlgorithm(QgsProcessingAlgorithm):
 
             f = QgsFeature(fields)
 
-            geom = QgsGeometry(QgsPoint(float(s.find('lng').text), float(s.find('lat').text)))
+            lng = float(s.find('lng').text)
+            lat = float(s.find('lat').text)
+            geom = QgsGeometry(QgsPoint(lng, lat))
             f.setGeometry(geom)
 
             f['id'] = s.find('id').text
@@ -183,12 +191,7 @@ class AddStationLayersAlgorithm(QgsProcessingAlgorithm):
             f['refStationId'] = cpo.find('refStationId').text
             f['refStationBin'] = cpo.find('refStationBin').text
 
-            tz = parseFloatNullable(s.find('timezone_offset').text)
-            if not tz:
-                refStation = stationsByIdBin.get(f['refStationId'] + '_' + f['refStationBin'])
-                if refStation:
-                    tz = parseFloatNullable(refStation.find('timezone_offset').text)
-            f['timezone_offset'] = tz
+            (f['timeZoneId'], f['timeZoneUTC']) = tzl.getZoneByCoordinates(lat, lng)
 
             f['meanFloodDir'] = parseFloatNullable(cpo.find('meanFloodDir').text)
             f['meanEbbDir'] = parseFloatNullable(cpo.find('meanEbbDir').text)
@@ -206,28 +209,30 @@ class AddStationLayersAlgorithm(QgsProcessingAlgorithm):
  
         return {self.PrmCurrentStationsLayer: current_dest_id}
 
-
-class CurrentStylePostProcessor(QgsProcessingLayerPostProcessorInterface):
+class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
     instance = None
 
-    def __init__(self, proc):
-        super(CurrentStylePostProcessor, self).__init__()
-        self.processor = proc
+    def __init__(self, alg, layerName, varName, styleName):
+        super(StylePostProcessor, self).__init__()
+        self.algorithm = alg
+        self.layerName = layerName
+        self.varName = varName
+        self.styleName = styleName
 
     def postProcessLayer(self, layer, context, feedback):
         if not isinstance(layer, QgsVectorLayer):
             return
 
         # style the output layer here
-        layer.setName(tr('Current Stations'))
-        layer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles','current_stations.qml'))
+        layer.setName(self.layerName)
+        layer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles',self.styleName))
         layer.triggerRepaint()
 
         # set up the project variable pointing to it
-        QgsProject.instance().setCustomVariables({CurrentStationsLayerVar: layer.id()})
+        QgsProject.instance().setCustomVariables({self.varName: layer.id()})
 
     @staticmethod
-    def create(proc) -> 'CurrentStylePostProcessor':
-        CurrentStylePostProcessor.instance = CurrentStylePostProcessor(proc)
-        return CurrentStylePostProcessor.instance
+    def create(alg, layerName, varName, styleName) -> 'StylePostProcessor':
+        StylePostProcessor.instance = StylePostProcessor(alg, layerName, varName, styleName)
+        return StylePostProcessor.instance
 

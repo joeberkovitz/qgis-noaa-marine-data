@@ -27,7 +27,7 @@ from qgis.core import (
     QgsNetworkContentFetcher)
 
 from qgis.PyQt.QtGui import QIcon, QColor
-from qgis.PyQt.QtCore import QVariant, QUrl, QUrlQuery, QDateTime, QTime
+from qgis.PyQt.QtCore import QVariant, QUrl, QUrlQuery, QDateTime, QTime, Qt, QTimeZone, QByteArray
 from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.PyQt.QtXml import QDomDocument
 
@@ -43,7 +43,6 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
     PrmVisibleOnly = 'VisibleOnly'
     PrmStartDate = 'StartDate'
     PrmEndDate = 'EndDate'
-    PrmUseUTC = 'UseUTC'
 
     CURRENT_INTERVAL_OPTIONS = [tr('Max and slack'), tr('60 minutes'), tr('30 minutes'), tr('6 minutes')]
     CURRENT_INTERVAL_VALUES = ['MAX_SLACK', '60', '30', '6']
@@ -126,13 +125,6 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
-            QgsProcessingParameterBoolean(
-                self.PrmUseUTC,
-                tr('Predictions in UTC'),
-                False)
-        )
-
-        self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.PrmOutputLayer,
                 tr('Output layer'))
@@ -145,7 +137,6 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
         # gather parameters
         self.startDate = self.parameterAsDateTime(parameters, self.PrmStartDate, context)
         self.endDate = self.parameterAsDateTime(parameters, self.PrmEndDate, context)
-        self.useUTC = self.parameterAsBool(parameters, self.PrmUseUTC, context)
         self.currentsLayer = self.parameterAsVectorLayer(parameters, self.PrmStationsLayer, context)
         self.filterVisible = self.parameterAsBool(parameters, self.PrmVisibleOnly, context)
         self.velType = self.CURRENT_VEL_TYPE_VALUES[self.parameterAsInt(parameters, self.PrmCurrentVelType, context)]
@@ -213,17 +204,28 @@ class CurrentPredictionRequest:
         
     def requestContent(self):
         self.stationId = self.feature['id']
+
+        timeZoneId = self.feature['timeZoneId']
+        timeZoneUTC = self.feature['timeZoneUTC']
+        tz = None
+        if timeZoneId:
+            tz = QTimeZone(QByteArray(timeZoneId.encode()))
+            if not tz.isValid():
+                tz = None
+        if not tz:
+            tz = QTimeZone(QByteArray(timeZoneUTC.encode()))
+
         self.algorithm.feedback.pushInfo('Requesting predictions from {}'.format(self.feature['name']))
 
         query = QUrlQuery()
         query.addQueryItem('application',CoopsApplicationName)
         query.addQueryItem('station',self.stationId)
         query.addQueryItem('bin',str(self.feature['bin']))
-        query.addQueryItem('begin_date',self.algorithm.startDate.toString('yyyyMMdd hh:mm'))
-        query.addQueryItem('end_date',self.algorithm.endDate.toString('yyyyMMdd hh:mm'))
+        query.addQueryItem('begin_date',self.algorithm.startDate.toUTC().toString('yyyyMMdd hh:mm'))
+        query.addQueryItem('end_date',self.algorithm.endDate.toUTC().toString('yyyyMMdd hh:mm'))
         query.addQueryItem('product','currents_predictions')
         query.addQueryItem('units','english')
-        query.addQueryItem('time_zone','gmt' if self.algorithm.useUTC else 'lst_ldt')
+        query.addQueryItem('time_zone','gmt')
         query.addQueryItem('vel_type',self.algorithm.velType)
         query.addQueryItem('interval',self.algorithm.interval)
         query.addQueryItem('format','xml')
@@ -254,6 +256,8 @@ class CurrentPredictionRequest:
                 prediction = cp[i]
 
                 dt = QDateTime.fromSecsSinceEpoch(round(float(datetime.fromisoformat(prediction.find('Time').text).timestamp())))
+                dt.setTimeSpec(Qt.TimeSpec.UTC)   # just to be clear on this, this is a UTC time
+                local_date = dt.toTimeZone(tz).date()
 
                 f = QgsFeature(self.algorithm.fields)
                 f.setGeometry(QgsGeometry(self.feature.geometry()))
@@ -262,8 +266,8 @@ class CurrentPredictionRequest:
                 f['id_bin'] = f['id'] + '_' + f['bin']
                 f['depth'] = parseFloatNullable(prediction.find('Depth').text)
                 f['time'] = dt   # TODO: time zone adjustment?
-                f['date_break'] = (last_date == None) or (last_date != dt.date())
-                last_date = dt.date()
+                f['date_break'] = (last_date == None) or (last_date != local_date)
+                last_date = local_date
                 
                 # we have one of several different possibilities:
                 #  - timed measurement, flood/ebb, signed velocity
@@ -311,7 +315,7 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
         joinInfo.setTargetFieldName('id_bin')
         joinInfo.setJoinFieldName('id_bin')
         joinInfo.setJoinLayer(self.algorithm.currentsLayer)
-        joinInfo.setJoinFieldNamesSubset(['name'])
+        joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC'])
         joinInfo.setPrefix('station_')
         layer.addJoin(joinInfo)
 
@@ -322,9 +326,7 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
             layerTreeNode.setExpanded(False)
 
         # style the output layer here
-        suffix = self.algorithm.startDate.toString('yyyy-MM-dd')
-        if self.algorithm.endDate != self.algorithm.startDate:
-            suffix = suffix + ' ' + self.algorithm.endDate.toString('yyyy-MM-dd')
+        suffix = self.algorithm.startDate.toString('yyyy-MM-dd hh:mm')
         layer.setName(tr('Currents') + ' ' + suffix)
         layer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles','current_predictions.qml'))
         layer.triggerRepaint()
