@@ -32,7 +32,6 @@ from .time_zone_lookup import TimeZoneLookup
 
 class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
     PrmOnlyShallowestStations = 'OnlyShallowestStations'
-    PrmTimeZonesLayer = 'TimeZonesLayer'
     PrmCurrentStationsLayer = 'CurrentStationsLayer'
 
 # boilerplate methods
