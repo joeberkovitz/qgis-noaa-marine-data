@@ -14,7 +14,7 @@
   <renderer-v2 type="RuleRenderer" symbollevels="0" forceraster="0" enableorderby="1">
     <rules key="{f82f9c0a-11c0-4463-a530-1848d9ec9562}">
       <rule symbol="0" filter="type='slack'" key="{db1cb4ea-3e7e-45d5-ae99-18be4af351b9}" label="slack"/>
-      <rule symbol="1" filter="velocity_major is null" key="{c3f9e513-78d6-4d83-88b6-8fcf3a2be92f}" label="current"/>
+      <rule symbol="1" filter="type='current'" key="{c3f9e513-78d6-4d83-88b6-8fcf3a2be92f}" label="current"/>
       <rule symbol="2" filter="type='flood'" key="{880197ea-b2a5-4567-aeea-b1d0267480b1}" label="flood"/>
       <rule symbol="3" filter="type='ebb'" key="{baa31596-80f6-4974-a7ca-bee6dc792d6b}" label="ebb"/>
     </rules>
