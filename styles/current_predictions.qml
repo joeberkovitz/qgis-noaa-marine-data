@@ -14,9 +14,9 @@
   <renderer-v2 type="RuleRenderer" symbollevels="0" forceraster="0" enableorderby="1">
     <rules key="{f82f9c0a-11c0-4463-a530-1848d9ec9562}">
       <rule symbol="0" filter="type='slack'" key="{db1cb4ea-3e7e-45d5-ae99-18be4af351b9}" label="slack"/>
-      <rule symbol="1" filter="type='current'" key="{c3f9e513-78d6-4d83-88b6-8fcf3a2be92f}" label="current"/>
-      <rule symbol="2" filter="type='flood'" key="{880197ea-b2a5-4567-aeea-b1d0267480b1}" label="flood"/>
-      <rule symbol="3" filter="type='ebb'" key="{baa31596-80f6-4974-a7ca-bee6dc792d6b}" label="ebb"/>
+      <rule symbol="1" filter="velocity_major is null" key="{c3f9e513-78d6-4d83-88b6-8fcf3a2be92f}" label="current"/>
+      <rule symbol="2" filter="type&lt;>'slack' and velocity_major is not null and velocity_major > 0" key="{880197ea-b2a5-4567-aeea-b1d0267480b1}" label="flood"/>
+      <rule symbol="3" filter="type&lt;>'slack' and velocity_major is not null and velocity_major &lt; 0" key="{baa31596-80f6-4974-a7ca-bee6dc792d6b}" label="ebb"/>
     </rules>
     <symbols>
       <symbol type="marker" clip_to_extent="1" force_rhr="0" alpha="1" name="0">
@@ -73,11 +73,11 @@
           </data_defined_properties>
           <symbol type="line" clip_to_extent="1" force_rhr="0" alpha="1" name="@1@0">
             <layer enabled="1" pass="0" class="ArrowLine" locked="0">
-              <prop k="arrow_start_width" v="3"/>
+              <prop k="arrow_start_width" v="2"/>
               <prop k="arrow_start_width_unit" v="MM"/>
               <prop k="arrow_start_width_unit_scale" v="3x:0,0,0,0,0,0"/>
               <prop k="arrow_type" v="0"/>
-              <prop k="arrow_width" v="3"/>
+              <prop k="arrow_width" v="2"/>
               <prop k="arrow_width_unit" v="MM"/>
               <prop k="arrow_width_unit_scale" v="3x:0,0,0,0,0,0"/>
               <prop k="head_length" v="3"/>
@@ -98,24 +98,24 @@
                   <Option value="" type="QString" name="name"/>
                   <Option type="Map" name="properties">
                     <Option type="Map" name="arrowHeadLength">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                     <Option type="Map" name="arrowHeadThickness">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                     <Option type="Map" name="arrowStartWidth">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                     <Option type="Map" name="arrowWidth">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                   </Option>
                   <Option value="collection" type="QString" name="type"/>
@@ -124,12 +124,12 @@
               <symbol type="fill" clip_to_extent="1" force_rhr="0" alpha="1" name="@@1@0@0">
                 <layer enabled="1" pass="0" class="SimpleFill" locked="0">
                   <prop k="border_width_map_unit_scale" v="3x:0,0,0,0,0,0"/>
-                  <prop k="color" v="55,160,201,255"/>
+                  <prop k="color" v="115,201,232,255"/>
                   <prop k="joinstyle" v="bevel"/>
                   <prop k="offset" v="0,0"/>
                   <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
                   <prop k="offset_unit" v="MM"/>
-                  <prop k="outline_color" v="35,35,35,255"/>
+                  <prop k="outline_color" v="255,255,255,255"/>
                   <prop k="outline_style" v="solid"/>
                   <prop k="outline_width" v="0.26"/>
                   <prop k="outline_width_unit" v="MM"/>
@@ -144,8 +144,8 @@
                           <Option value="3" type="int" name="type"/>
                         </Option>
                         <Option type="Map" name="fillColor">
-                          <Option value="false" type="bool" name="active"/>
-                          <Option value="" type="QString" name="expression"/>
+                          <Option value="true" type="bool" name="active"/>
+                          <Option value="color_hsv(196,vector_saturation,90)" type="QString" name="expression"/>
                           <Option value="3" type="int" name="type"/>
                         </Option>
                       </Option>
@@ -183,11 +183,11 @@
           </data_defined_properties>
           <symbol type="line" clip_to_extent="1" force_rhr="0" alpha="1" name="@2@0">
             <layer enabled="1" pass="0" class="ArrowLine" locked="0">
-              <prop k="arrow_start_width" v="3"/>
+              <prop k="arrow_start_width" v="2"/>
               <prop k="arrow_start_width_unit" v="MM"/>
               <prop k="arrow_start_width_unit_scale" v="3x:0,0,0,0,0,0"/>
               <prop k="arrow_type" v="0"/>
-              <prop k="arrow_width" v="3"/>
+              <prop k="arrow_width" v="2"/>
               <prop k="arrow_width_unit" v="MM"/>
               <prop k="arrow_width_unit_scale" v="3x:0,0,0,0,0,0"/>
               <prop k="head_length" v="3"/>
@@ -208,24 +208,24 @@
                   <Option value="" type="QString" name="name"/>
                   <Option type="Map" name="properties">
                     <Option type="Map" name="arrowHeadLength">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                     <Option type="Map" name="arrowHeadThickness">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                     <Option type="Map" name="arrowStartWidth">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                     <Option type="Map" name="arrowWidth">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                   </Option>
                   <Option value="collection" type="QString" name="type"/>
@@ -239,7 +239,7 @@
                   <prop k="offset" v="0,0"/>
                   <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
                   <prop k="offset_unit" v="MM"/>
-                  <prop k="outline_color" v="35,35,35,255"/>
+                  <prop k="outline_color" v="255,255,255,255"/>
                   <prop k="outline_style" v="solid"/>
                   <prop k="outline_width" v="0.26"/>
                   <prop k="outline_width_unit" v="MM"/>
@@ -254,8 +254,8 @@
                           <Option value="3" type="int" name="type"/>
                         </Option>
                         <Option type="Map" name="fillColor">
-                          <Option value="false" type="bool" name="active"/>
-                          <Option value="" type="QString" name="expression"/>
+                          <Option value="true" type="bool" name="active"/>
+                          <Option value="color_hsv(227,vector_saturation,100)" type="QString" name="expression"/>
                           <Option value="3" type="int" name="type"/>
                         </Option>
                       </Option>
@@ -293,11 +293,11 @@
           </data_defined_properties>
           <symbol type="line" clip_to_extent="1" force_rhr="0" alpha="1" name="@3@0">
             <layer enabled="1" pass="0" class="ArrowLine" locked="0">
-              <prop k="arrow_start_width" v="3"/>
+              <prop k="arrow_start_width" v="2"/>
               <prop k="arrow_start_width_unit" v="MM"/>
               <prop k="arrow_start_width_unit_scale" v="3x:0,0,0,0,0,0"/>
               <prop k="arrow_type" v="0"/>
-              <prop k="arrow_width" v="3"/>
+              <prop k="arrow_width" v="2"/>
               <prop k="arrow_width_unit" v="MM"/>
               <prop k="arrow_width_unit_scale" v="3x:0,0,0,0,0,0"/>
               <prop k="head_length" v="3"/>
@@ -318,24 +318,24 @@
                   <Option value="" type="QString" name="name"/>
                   <Option type="Map" name="properties">
                     <Option type="Map" name="arrowHeadLength">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                     <Option type="Map" name="arrowHeadThickness">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                     <Option type="Map" name="arrowStartWidth">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                     <Option type="Map" name="arrowWidth">
-                      <Option value="true" type="bool" name="active"/>
-                      <Option value="vector_display_width" type="QString" name="field"/>
-                      <Option value="2" type="int" name="type"/>
+                      <Option value="false" type="bool" name="active"/>
+                      <Option value="1" type="int" name="type"/>
+                      <Option value="" type="QString" name="val"/>
                     </Option>
                   </Option>
                   <Option value="collection" type="QString" name="type"/>
@@ -344,12 +344,12 @@
               <symbol type="fill" clip_to_extent="1" force_rhr="0" alpha="1" name="@@3@0@0">
                 <layer enabled="1" pass="0" class="SimpleFill" locked="0">
                   <prop k="border_width_map_unit_scale" v="3x:0,0,0,0,0,0"/>
-                  <prop k="color" v="56,255,176,255"/>
+                  <prop k="color" v="33,152,104,255"/>
                   <prop k="joinstyle" v="bevel"/>
                   <prop k="offset" v="0,0"/>
                   <prop k="offset_map_unit_scale" v="3x:0,0,0,0,0,0"/>
                   <prop k="offset_unit" v="MM"/>
-                  <prop k="outline_color" v="35,35,35,255"/>
+                  <prop k="outline_color" v="255,255,255,255"/>
                   <prop k="outline_style" v="solid"/>
                   <prop k="outline_width" v="0.26"/>
                   <prop k="outline_width_unit" v="MM"/>
@@ -364,8 +364,8 @@
                           <Option value="3" type="int" name="type"/>
                         </Option>
                         <Option type="Map" name="fillColor">
-                          <Option value="false" type="bool" name="active"/>
-                          <Option value="" type="QString" name="expression"/>
+                          <Option value="true" type="bool" name="active"/>
+                          <Option value="color_hsv(155,vector_saturation,80)" type="QString" name="expression"/>
                           <Option value="3" type="int" name="type"/>
                         </Option>
                       </Option>
@@ -492,9 +492,9 @@
     <field configurationFlags="None" name="station_timeZoneId"/>
     <field configurationFlags="None" name="station_timeZoneUTC"/>
     <field configurationFlags="None" name="vector_display_length"/>
-    <field configurationFlags="None" name="vector_display_width"/>
     <field configurationFlags="None" name="local_time"/>
     <field configurationFlags="None" name="local_date_str"/>
+    <field configurationFlags="None" name="vector_saturation"/>
   </fieldConfiguration>
   <aliases>
     <alias index="0" field="id_bin" name=""/>
@@ -511,9 +511,9 @@
     <alias index="11" field="station_timeZoneId" name=""/>
     <alias index="12" field="station_timeZoneUTC" name=""/>
     <alias index="13" field="vector_display_length" name=""/>
-    <alias index="14" field="vector_display_width" name=""/>
-    <alias index="15" field="local_time" name=""/>
-    <alias index="16" field="local_date_str" name=""/>
+    <alias index="14" field="local_time" name=""/>
+    <alias index="15" field="local_date_str" name=""/>
+    <alias index="16" field="vector_saturation" name=""/>
   </aliases>
   <defaults>
     <default expression="" field="id_bin" applyOnUpdate="0"/>
@@ -530,9 +530,9 @@
     <default expression="" field="station_timeZoneId" applyOnUpdate="0"/>
     <default expression="" field="station_timeZoneUTC" applyOnUpdate="0"/>
     <default expression="" field="vector_display_length" applyOnUpdate="0"/>
-    <default expression="" field="vector_display_width" applyOnUpdate="0"/>
     <default expression="" field="local_time" applyOnUpdate="0"/>
     <default expression="" field="local_date_str" applyOnUpdate="0"/>
+    <default expression="" field="vector_saturation" applyOnUpdate="0"/>
   </defaults>
   <constraints>
     <constraint unique_strength="0" exp_strength="0" field="id_bin" notnull_strength="0" constraints="0"/>
@@ -549,9 +549,9 @@
     <constraint unique_strength="0" exp_strength="0" field="station_timeZoneId" notnull_strength="0" constraints="0"/>
     <constraint unique_strength="0" exp_strength="0" field="station_timeZoneUTC" notnull_strength="0" constraints="0"/>
     <constraint unique_strength="0" exp_strength="0" field="vector_display_length" notnull_strength="0" constraints="0"/>
-    <constraint unique_strength="0" exp_strength="0" field="vector_display_width" notnull_strength="0" constraints="0"/>
     <constraint unique_strength="0" exp_strength="0" field="local_time" notnull_strength="0" constraints="0"/>
     <constraint unique_strength="0" exp_strength="0" field="local_date_str" notnull_strength="0" constraints="0"/>
+    <constraint unique_strength="0" exp_strength="0" field="vector_saturation" notnull_strength="0" constraints="0"/>
   </constraints>
   <constraintExpressions>
     <constraint exp="" field="id_bin" desc=""/>
@@ -568,15 +568,15 @@
     <constraint exp="" field="station_timeZoneId" desc=""/>
     <constraint exp="" field="station_timeZoneUTC" desc=""/>
     <constraint exp="" field="vector_display_length" desc=""/>
-    <constraint exp="" field="vector_display_width" desc=""/>
     <constraint exp="" field="local_time" desc=""/>
     <constraint exp="" field="local_date_str" desc=""/>
+    <constraint exp="" field="vector_saturation" desc=""/>
   </constraintExpressions>
   <expressionfields>
     <field expression="10" type="2" length="10" subType="0" precision="0" typeName="integer" comment="" name="vector_display_length"/>
-    <field expression="min(8,max(0.5,4*log(2,velocity + 1)))" type="6" length="-1" subType="0" precision="0" typeName="double precision" comment="" name="vector_display_width"/>
     <field expression="convert_to_time_zone(time,station_timeZoneUTC,station_timeZoneId)" type="16" length="-1" subType="0" precision="0" typeName="datetime" comment="" name="local_time"/>
     <field expression="format_date(local_time,'yyyyMMdd')" type="10" length="0" subType="0" precision="0" typeName="string" comment="" name="local_date_str"/>
+    <field expression="100/(1+exp(-(velocity-1.5)))" type="2" length="10" subType="0" precision="0" typeName="integer" comment="" name="vector_saturation"/>
   </expressionfields>
   <previewExpression>id_bin + ' ' + format_date(time,'yyyyMMdd hh:mm')</previewExpression>
   <mapTip>&lt;style>
