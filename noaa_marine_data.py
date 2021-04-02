@@ -63,6 +63,8 @@ class NoaaMarineData:
         self.iface = iface
         self.canvas = iface.mapCanvas()
         self.provider = NoaaMarineDataProvider()
+        self.toolbar = self.iface.addToolBar('NOAA Marine Data Toolbar')
+        self.toolbar.setObjectName('NoaaMarineDataToolbar')
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
@@ -152,7 +154,7 @@ class NoaaMarineData:
 
         if add_to_toolbar:
             # Adds plugin icon to Plugins toolbar
-            self.iface.addToolBarIcon(action)
+            self.toolbar.addAction(action)
 
         if add_to_menu:
             self.iface.addPluginToMenu(
@@ -166,23 +168,21 @@ class NoaaMarineData:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/noaa_marine_data/icon.png'
-
         self.add_action(
-            icon_path,
+            os.path.join(self.plugin_dir, 'svg/add_current_stations_layer.svg'),
             text=tr(u'Add Current Stations Layer'),
             callback=self.addCurrentStationsLayer,
             parent=self.iface.mainWindow())
 
         self.add_action(
-            icon_path,
+            os.path.join(self.plugin_dir, 'svg/get_tidal_predictions.svg'),
             text=tr(u'Get Tidal Predictions'),
             callback=self.getTidalPredictions,
             parent=self.iface.mainWindow())
 
         self.add_action(
-            icon_path,
-            text=tr(u'Annotate Predictions'),
+            os.path.join(self.plugin_dir, 'svg/create_prediction_annotations.svg'),
+            text=tr(u'Create Annotations From Predictions'),
             callback=self.annotateTidalPredictions,
             parent=self.iface.mainWindow())
 
