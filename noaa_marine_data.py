@@ -270,7 +270,12 @@ class NoaaMarineData:
         if canvas and feature:
             if canvas.mapSettings().isTemporal():
                 range = canvas.mapSettings().temporalRange()
-                return (values[0] >= range.begin() and values[0] < range.end())
+                values[0].setTimeSpec(Qt.TimeSpec.UTC)
+                if (values[0] >= range.begin() and values[0] < range.end()):
+                    print(values,range.begin(),range.end())
+                    return True
+                else:
+                    return False
             else:
                 return True
 
