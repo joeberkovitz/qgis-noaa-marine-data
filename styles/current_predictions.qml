@@ -443,7 +443,7 @@
             </Option>
             <Option type="Map" name="Show">
               <Option value="true" type="bool" name="active"/>
-              <Option value="(@map_start_time is not null) and (type = 'ebb' or type = 'flood')" type="QString" name="expression"/>
+              <Option value="(@map_start_time is not null)" type="QString" name="expression"/>
               <Option value="3" type="int" name="type"/>
             </Option>
           </Option>
