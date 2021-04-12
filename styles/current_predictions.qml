@@ -27,7 +27,7 @@
           <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
           <prop v="MM" k="size_unit"/>
           <prop v="1" k="vector_field_type"/>
-          <prop v="velocity" k="x_attribute"/>
+          <prop v="magnitude" k="x_attribute"/>
           <prop v="dir" k="y_attribute"/>
           <data_defined_properties>
             <Option type="Map">
@@ -253,12 +253,12 @@
     <rotation/>
     <sizescale/>
     <orderby>
-      <orderByClause nullsFirst="0" asc="1">"velocity"</orderByClause>
+      <orderByClause nullsFirst="0" asc="1">"magnitude"</orderByClause>
     </orderby>
   </renderer-v2>
   <labeling type="simple">
     <settings calloutType="simple">
-      <text-style fontSizeMapUnitScale="3x:0,0,0,0,0,0" fontWordSpacing="0" blendMode="0" fontWeight="50" fontSizeUnit="Point" fontItalic="0" allowHtml="0" fontLetterSpacing="0" fontFamily=".AppleSystemUIFont" previewBkgrdColor="255,255,255,255" fontKerning="1" useSubstitutions="0" fontUnderline="0" textOrientation="horizontal" capitalization="0" fontStrikeout="0" textColor="0,0,0,255" isExpression="1" fontSize="10" multilineHeight="1" fieldName="format('%1;%2kt',format_date(local_time,'hh:mm'),format_number(velocity,1))" textOpacity="1" namedStyle="Regular">
+      <text-style fontSizeMapUnitScale="3x:0,0,0,0,0,0" fontWordSpacing="0" blendMode="0" fontWeight="50" fontSizeUnit="Point" fontItalic="0" allowHtml="0" fontLetterSpacing="0" fontFamily=".AppleSystemUIFont" previewBkgrdColor="255,255,255,255" fontKerning="1" useSubstitutions="0" fontUnderline="0" textOrientation="horizontal" capitalization="0" fontStrikeout="0" textColor="0,0,0,255" isExpression="1" fontSize="10" multilineHeight="1" fieldName="format('%1;%2kt',format_date(local_time,'hh:mm'),format_number(magnitude,1))" textOpacity="1" namedStyle="Regular">
         <text-buffer bufferNoFill="1" bufferDraw="1" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferBlendMode="0" bufferColor="255,255,255,255" bufferSizeUnits="MM" bufferSize="1" bufferJoinStyle="128" bufferOpacity="1"/>
         <text-mask maskJoinStyle="128" maskOpacity="1" maskedSymbolLayers="" maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskType="0" maskSize="1.5" maskSizeUnits="MM" maskEnabled="0"/>
         <background shapeBorderWidth="0" shapeSizeType="0" shapeOffsetMapUnitScale="3x:0,0,0,0,0,0" shapeRadiiMapUnitScale="3x:0,0,0,0,0,0" shapeBorderColor="128,128,128,255" shapeRotationType="0" shapeDraw="0" shapeFillColor="255,255,255,255" shapeSizeUnit="MM" shapeOffsetUnit="MM" shapeOffsetY="0" shapeOpacity="1" shapeBlendMode="0" shapeSVGFile="" shapeSizeY="0" shapeJoinStyle="64" shapeRadiiY="0" shapeSizeX="0" shapeRadiiX="0" shapeOffsetX="0" shapeRotation="0" shapeBorderWidthMapUnitScale="3x:0,0,0,0,0,0" shapeType="0" shapeRadiiUnit="MM" shapeBorderWidthUnit="MM" shapeSizeMapUnitScale="3x:0,0,0,0,0,0">
@@ -357,8 +357,8 @@
     <field name="depth" configurationFlags="None"/>
     <field name="time" configurationFlags="None"/>
     <field name="date_break" configurationFlags="None"/>
-    <field name="velocity" configurationFlags="None"/>
-    <field name="velocity_major" configurationFlags="None"/>
+    <field name="magnitude" configurationFlags="None"/>
+    <field name="value" configurationFlags="None"/>
     <field name="dir" configurationFlags="None"/>
     <field name="type" configurationFlags="None"/>
     <field name="station_name" configurationFlags="None"/>
@@ -374,8 +374,8 @@
     <alias name="" field="depth" index="3"/>
     <alias name="" field="time" index="4"/>
     <alias name="" field="date_break" index="5"/>
-    <alias name="" field="velocity" index="6"/>
-    <alias name="" field="velocity_major" index="7"/>
+    <alias name="" field="magnitude" index="6"/>
+    <alias name="" field="value" index="7"/>
     <alias name="" field="dir" index="8"/>
     <alias name="" field="type" index="9"/>
     <alias name="" field="station_name" index="10"/>
@@ -391,8 +391,8 @@
     <default field="depth" expression="" applyOnUpdate="0"/>
     <default field="time" expression="" applyOnUpdate="0"/>
     <default field="date_break" expression="" applyOnUpdate="0"/>
-    <default field="velocity" expression="" applyOnUpdate="0"/>
-    <default field="velocity_major" expression="" applyOnUpdate="0"/>
+    <default field="magnitude" expression="" applyOnUpdate="0"/>
+    <default field="value" expression="" applyOnUpdate="0"/>
     <default field="dir" expression="" applyOnUpdate="0"/>
     <default field="type" expression="" applyOnUpdate="0"/>
     <default field="station_name" expression="" applyOnUpdate="0"/>
@@ -408,8 +408,8 @@
     <constraint exp_strength="0" field="depth" notnull_strength="0" unique_strength="0" constraints="0"/>
     <constraint exp_strength="0" field="time" notnull_strength="0" unique_strength="0" constraints="0"/>
     <constraint exp_strength="0" field="date_break" notnull_strength="0" unique_strength="0" constraints="0"/>
-    <constraint exp_strength="0" field="velocity" notnull_strength="0" unique_strength="0" constraints="0"/>
-    <constraint exp_strength="0" field="velocity_major" notnull_strength="0" unique_strength="0" constraints="0"/>
+    <constraint exp_strength="0" field="magnitude" notnull_strength="0" unique_strength="0" constraints="0"/>
+    <constraint exp_strength="0" field="value" notnull_strength="0" unique_strength="0" constraints="0"/>
     <constraint exp_strength="0" field="dir" notnull_strength="0" unique_strength="0" constraints="0"/>
     <constraint exp_strength="0" field="type" notnull_strength="0" unique_strength="0" constraints="0"/>
     <constraint exp_strength="0" field="station_name" notnull_strength="0" unique_strength="0" constraints="0"/>
@@ -425,8 +425,8 @@
     <constraint desc="" field="depth" exp=""/>
     <constraint desc="" field="time" exp=""/>
     <constraint desc="" field="date_break" exp=""/>
-    <constraint desc="" field="velocity" exp=""/>
-    <constraint desc="" field="velocity_major" exp=""/>
+    <constraint desc="" field="magnitude" exp=""/>
+    <constraint desc="" field="value" exp=""/>
     <constraint desc="" field="dir" exp=""/>
     <constraint desc="" field="type" exp=""/>
     <constraint desc="" field="station_name" exp=""/>
@@ -473,10 +473,10 @@ tr.ebb{
 tr.date_break {
   border-top: 2px solid #999;
 }
-td.velocity {
+td.vel {
 	text-align: right;
 }
-tr.slack td.velocity {
+tr.slack td.vel {
 	visibility: hidden;
 }
 &lt;/style>
@@ -494,13 +494,13 @@ tr.slack td.velocity {
 					&lt;td class="day">%2&lt;/td>
 					&lt;td class="time">%3&lt;/td>
 					&lt;td class="type">%4&lt;/td>
-					&lt;td class="velocity">%5&lt;/td>
+					&lt;td class="vel">%5&lt;/td>
 				  &lt;/tr>',
 					   type,
 					   format_date(local_time,'ddd dd'),
 					   format_date(local_time,'hh:mm'),
-					   if(velocity_major is null,to_string(dir)+'º',type),
-					   format_number(if(velocity_major is null,velocity,velocity_major),1),
+					   if(type='current',dir||'º',type),
+					   format_number(if(type='current',magnitude,value),1),
              if(date_break,'date_break','')),
 				filter:= id = @station_id
 			             and is_time_visible(time),

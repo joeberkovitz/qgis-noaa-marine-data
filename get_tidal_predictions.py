@@ -150,9 +150,9 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
         fields.append(QgsField("depth",  QVariant.Double))
         fields.append(QgsField("time",  QVariant.DateTime))
         fields.append(QgsField("date_break",  QVariant.Bool))
-        fields.append(QgsField("velocity", QVariant.Double))
-        fields.append(QgsField("velocity_major", QVariant.Double))  # signed velocity along flood/ebb psuedo-dimension
+        fields.append(QgsField("value", QVariant.Double))  # signed value, on flood/ebb dimension for current
         fields.append(QgsField("dir", QVariant.Double))
+        fields.append(QgsField("magnitude", QVariant.Double))  # value along direction if known
         fields.append(QgsField("type", QVariant.String))
         self.fields = fields
 
@@ -207,6 +207,9 @@ class CurrentPredictionRequest:
 
         timeZoneId = self.feature['timeZoneId']
         timeZoneUTC = self.feature['timeZoneUTC']
+        floodDir = self.feature['meanFloodDir']
+        ebbDir = self.feature['meanEbbDir']
+
         tz = None
         if timeZoneId:
             tz = QTimeZone(QByteArray(timeZoneId.encode()))
@@ -275,17 +278,28 @@ class CurrentPredictionRequest:
                 #  - timed measurement, varying angle, unsigned velocity
                 directionElement = prediction.find('Direction')
                 if directionElement != None:
-                    f['dir'] = parseFloatNullable(directionElement.text)
-                    f['velocity'] = float(prediction.find('Speed').text)
+                    dir = parseFloatNullable(directionElement.text)
+                    magnitude = float(prediction.find('Speed').text)
+                    f['dir'] = dir
+                    f['magnitude'] = magnitude
                     f['type'] = 'current'
+
+                    # synthesize the value along flood/ebb dimension
+                    floodFactor = math.cos(math.radians(floodDir - dir))
+                    ebbFactor = math.cos(math.radians(ebbDir - dir))
+                    if floodFactor > ebbFactor:
+                        f['value'] = magnitude * floodFactor
+                    else:
+                        f['value'] = -magnitude * ebbFactor
+
                 else:
                     vel = float(prediction.find('Velocity_Major').text)
                     if (vel >= 0):
-                        f['dir'] = parseFloatNullable(prediction.find('meanFloodDir').text)
+                        f['dir'] = floodDir
                     else:
-                        f['dir'] = parseFloatNullable(prediction.find('meanEbbDir').text)                    
-                    f['velocity_major'] = vel
-                    f['velocity'] = abs(vel)
+                        f['dir'] = ebbDir
+                    f['value'] = vel
+                    f['magnitude'] = abs(vel)
                     typeElement = prediction.find('Type')
                     if typeElement != None:
                         f['type'] = typeElement.text
