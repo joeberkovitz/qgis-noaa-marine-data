@@ -42,13 +42,13 @@ import math
 # Initialize Qt resources from file resources.py
 from .resources import *
 from .utils import *
-from .provider import NoaaMarineDataProvider
+from .provider import NoaaTidalPredictionsProvider
 from .create_prediction_annotations import CreatePredictionAnnotationsTool
 
 import os.path
 import processing
 
-class NoaaMarineData:
+class NoaaTidalPredictions:
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
@@ -62,9 +62,9 @@ class NoaaMarineData:
         # Save reference to the QGIS interface
         self.iface = iface
         self.canvas = iface.mapCanvas()
-        self.provider = NoaaMarineDataProvider()
-        self.toolbar = self.iface.addToolBar('NOAA Marine Data Toolbar')
-        self.toolbar.setObjectName('NoaaMarineDataToolbar')
+        self.provider = NoaaTidalPredictionsProvider()
+        self.toolbar = self.iface.addToolBar('NOAA Tidal Predictions Toolbar')
+        self.toolbar.setObjectName('NoaaTidalPredictionsToolbar')
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
@@ -74,7 +74,7 @@ class NoaaMarineData:
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
-            'NoaaMarineData_{}.qm'.format(locale))
+            'NoaaTidalPredictions_{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             translator = QTranslator()
@@ -83,7 +83,7 @@ class NoaaMarineData:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = tr(u'&NOAA Marine Data')
+        self.menu = tr(u'&NOAA Tidal Predictions')
 
         QgsApplication.processingRegistry().addProvider(self.provider)
 
@@ -210,10 +210,10 @@ class NoaaMarineData:
 
 
     def addCurrentStationsLayer(self):
-        processing.execAlgorithmDialog('noaamarinedata:addcurrentstationslayer', {})
+        processing.execAlgorithmDialog('NoaaTidalPredictions:addcurrentstationslayer', {})
 
     def getTidalPredictions(self):
-        processing.execAlgorithmDialog('noaamarinedata:gettidalpredictions', {
+        processing.execAlgorithmDialog('NoaaTidalPredictions:gettidalpredictions', {
             'mapSettings': iface.mapCanvas().mapSettings()
         })
 

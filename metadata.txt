@@ -5,18 +5,18 @@
 # Mandatory items:
 
 [general]
-name=NOAA Marine Data
+name=NOAA Tidal Predictions
 qgisMinimumVersion=3.16
 description=This plugin creates vector layers that work with magnetic variation.
 version=0.2.1
 author=Joe Berkovitz
 email=joseph.berkovitz@gmail.com
-about=Commands in this plugin are available under Plugins > NOAA Marine Data
+about=Commands in this plugin are available under Plugins > NOAA Tidal Predictions
     "Add Station Layers"
     "Get Tidal Predictions"
 
-tracker=https://github.com/joeberkovitz/qgis-noaa-marine-data/issues
-repository=https://github.com/joeberkovitz/qgis-noaa-marine-data
+tracker=https://github.com/joeberkovitz/qgis-noaa-tidal-predictions/issues
+repository=https://github.com/joeberkovitz/qgis-noaa-tidal-predictions
 # End of mandatory metadata
 
 # Recommended items:
@@ -28,7 +28,7 @@ changelog=0.2: add percentage progress feedback to mag. north lines, default the
 # Tags are comma separated with spaces allowed
 tags=magnetic, north, bearing, compass, declination, world magnetic model, route, navigation
 
-homepage=https://joeberkovitz.github.io/qgis-noaa-marine-data
+homepage=https://joeberkovitz.github.io/qgis-noaa-tidal-predictions
 category=Vector
 icon=icon.png
 # experimental flag

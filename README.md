@@ -1,7 +1,7 @@
 ---
 permalink: index.html
 ---
-## qgis-noaa-marine-data
+## qgis-noaa-tidal-predictions
 
 ### Contributions
 

@@ -4,7 +4,7 @@ from qgis.PyQt.QtGui import QIcon
 from .add_station_layers import AddCurrentStationsLayerAlgorithm
 from .get_tidal_predictions import GetTidalPredictionsAlgorithm
 
-class NoaaMarineDataProvider(QgsProcessingProvider):
+class NoaaTidalPredictionsProvider(QgsProcessingProvider):
     def unload(self):
         QgsProcessingProvider.unload(self)
 
@@ -13,10 +13,10 @@ class NoaaMarineDataProvider(QgsProcessingProvider):
         self.addAlgorithm(GetTidalPredictionsAlgorithm())
 
     def id(self):
-        return 'noaamarinedata'
+        return 'NoaaTidalPredictions'
 
     def name(self):
-        return 'NOAA Marine Data'
+        return 'NOAA Tidal Predictions'
 
     def longName(self):
         return self.name()

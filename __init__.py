@@ -32,5 +32,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
     #
-    from .noaa_marine_data import NoaaMarineData
-    return NoaaMarineData(iface)
+    from .noaa_tidal_predictions import NoaaTidalPredictions
+    return NoaaTidalPredictions(iface)
