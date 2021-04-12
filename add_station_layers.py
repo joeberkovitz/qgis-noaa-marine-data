@@ -33,7 +33,6 @@ from .time_zone_lookup import TimeZoneLookup
 class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
     PrmOnlyShallowestStations = 'OnlyShallowestStations'
     PrmCurrentStationsLayer = 'CurrentStationsLayer'
-
 # boilerplate methods
     def name(self):
         return 'addcurrentstationslayer'
@@ -67,7 +66,11 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         self.feedback = feedback
         self.parameters = parameters
 
-        return self.getCurrentStations()
+        current_dest_id = self.getCurrentStations()
+
+        return {
+            self.PrmCurrentStationsLayer: current_dest_id
+        }
 
     def getCurrentStations(self):
         self.feedback.pushInfo("Requesting metadata for NOAA current stations...")
@@ -154,7 +157,7 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
                 stationMap[stationId] = s
 
         if self.context.willLoadLayerOnCompletion(current_dest_id):
-            proc = StylePostProcessor.create(self, tr('Current Stations'), CurrentStationsLayerVar, 'current_stations.qml')
+            proc = CurrentStationsStylePostProcessor.create(tr('Current Stations'), CurrentStationsLayerVar, 'current_stations.qml')
             self.context.layerToLoadOnCompletionDetails(current_dest_id).setPostProcessor(proc)
 
         # Now build the features for all stations in the map.
@@ -206,14 +209,11 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
             progress_count += 1
             self.feedback.setProgress(100*progress_count/len(stationMap))
  
-        return {self.PrmCurrentStationsLayer: current_dest_id}
+        return current_dest_id
 
 class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
-    instance = None
-
-    def __init__(self, alg, layerName, varName, styleName):
+    def __init__(self, layerName, varName, styleName):
         super(StylePostProcessor, self).__init__()
-        self.algorithm = alg
         self.layerName = layerName
         self.varName = varName
         self.styleName = styleName
@@ -228,10 +228,15 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
         layer.triggerRepaint()
 
         # set up the project variable pointing to it
-        QgsProject.instance().setCustomVariables({self.varName: layer.id()})
+        vars = QgsProject.instance().customVariables()
+        vars[self.varName] = layer.id()
+        QgsProject.instance().setCustomVariables(vars)
+
+class CurrentStationsStylePostProcessor(StylePostProcessor):
+    instance = None
 
     @staticmethod
-    def create(alg, layerName, varName, styleName) -> 'StylePostProcessor':
-        StylePostProcessor.instance = StylePostProcessor(alg, layerName, varName, styleName)
-        return StylePostProcessor.instance
+    def create(layerName, varName, styleName) -> 'CurrentStationsStylePostProcessor':
+        CurrentStationsStylePostProcessor.instance = CurrentStationsStylePostProcessor(layerName, varName, styleName)
+        return CurrentStationsStylePostProcessor.instance
 
