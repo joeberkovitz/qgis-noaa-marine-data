@@ -87,7 +87,7 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
         # obtain our current stations output sink          
         fields = QgsFields()
-        fields.append(QgsField("id_bin", QVariant.String,'', 16))
+        fields.append(QgsField("station", QVariant.String,'', 16))
         fields.append(QgsField("id", QVariant.String,'', 12))
         fields.append(QgsField("bin", QVariant.String,'', 4))
         fields.append(QgsField("name", QVariant.String))
@@ -125,7 +125,7 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         stations = root.findall('Station')
 
         # Get a map that will track the metadata for the least-depth bin for each station.
-        # Also maintain a map by id_bin key.
+        # Also maintain a map by station key.
         stationMap = {}
         stationsByIdBin = {}
 
@@ -181,7 +181,7 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
             f['id'] = s.find('id').text
             f['bin'] = s.find('currbin').text
-            f['id_bin'] = f['id'] + '_' + f['bin']
+            f['station'] = f['id'] + '_' + f['bin']
             f['name'] = s.find('name').text
             f['type'] = s.find('type').text
             f['depth'] = parseFloatNullable(s.find('depth').text)

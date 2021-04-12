@@ -144,7 +144,7 @@ class GetTidalPredictionsAlgorithm(QgsProcessingAlgorithm):
 
         # obtain our output sink
         fields = QgsFields()
-        fields.append(QgsField("id_bin", QVariant.String,'',16))
+        fields.append(QgsField("station", QVariant.String,'',16))
         fields.append(QgsField("id", QVariant.String,'',12))
         fields.append(QgsField("bin", QVariant.String,'',4))
         fields.append(QgsField("depth",  QVariant.Double))
@@ -263,7 +263,7 @@ class CurrentPredictionRequest:
                 f.setGeometry(QgsGeometry(self.feature.geometry()))
                 f['id'] = self.feature['id']
                 f['bin'] = self.feature['bin']
-                f['id_bin'] = f['id'] + '_' + f['bin']
+                f['station'] = f['id'] + '_' + f['bin']
                 f['depth'] = parseFloatNullable(prediction.find('Depth').text)
                 f['time'] = dt   # TODO: time zone adjustment?
                 f['date_break'] = (last_date == None) or (last_date != local_date)
@@ -312,8 +312,8 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
 
         # add a join to the station layer from which these predictions were derived
         joinInfo = QgsVectorLayerJoinInfo()
-        joinInfo.setTargetFieldName('id_bin')
-        joinInfo.setJoinFieldName('id_bin')
+        joinInfo.setTargetFieldName('station')
+        joinInfo.setJoinFieldName('station')
         joinInfo.setJoinLayer(self.algorithm.currentsLayer)
         joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC'])
         joinInfo.setPrefix('station_')

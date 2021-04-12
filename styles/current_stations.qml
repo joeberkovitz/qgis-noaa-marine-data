@@ -153,7 +153,7 @@
   <featureBlendMode>0</featureBlendMode>
   <fieldConfiguration>
     <field name="fid" configurationFlags="None"/>
-    <field name="id_bin" configurationFlags="None"/>
+    <field name="station" configurationFlags="None"/>
     <field name="id" configurationFlags="None"/>
     <field name="bin" configurationFlags="None"/>
     <field name="name" configurationFlags="None"/>
@@ -174,7 +174,7 @@
   </fieldConfiguration>
   <aliases>
     <alias field="fid" index="0" name=""/>
-    <alias field="id_bin" index="1" name=""/>
+    <alias field="station" index="1" name=""/>
     <alias field="id" index="2" name=""/>
     <alias field="bin" index="3" name=""/>
     <alias field="name" index="4" name=""/>
@@ -195,7 +195,7 @@
   </aliases>
   <defaults>
     <default field="fid" expression="" applyOnUpdate="0"/>
-    <default field="id_bin" expression="" applyOnUpdate="0"/>
+    <default field="station" expression="" applyOnUpdate="0"/>
     <default field="id" expression="" applyOnUpdate="0"/>
     <default field="bin" expression="" applyOnUpdate="0"/>
     <default field="name" expression="" applyOnUpdate="0"/>
@@ -216,7 +216,7 @@
   </defaults>
   <constraints>
     <constraint notnull_strength="1" constraints="3" field="fid" unique_strength="1" exp_strength="0"/>
-    <constraint notnull_strength="0" constraints="0" field="id_bin" unique_strength="0" exp_strength="0"/>
+    <constraint notnull_strength="0" constraints="0" field="station" unique_strength="0" exp_strength="0"/>
     <constraint notnull_strength="0" constraints="0" field="id" unique_strength="0" exp_strength="0"/>
     <constraint notnull_strength="0" constraints="0" field="bin" unique_strength="0" exp_strength="0"/>
     <constraint notnull_strength="0" constraints="0" field="name" unique_strength="0" exp_strength="0"/>
@@ -237,7 +237,7 @@
   </constraints>
   <constraintExpressions>
     <constraint exp="" field="fid" desc=""/>
-    <constraint exp="" field="id_bin" desc=""/>
+    <constraint exp="" field="station" desc=""/>
     <constraint exp="" field="id" desc=""/>
     <constraint exp="" field="bin" desc=""/>
     <constraint exp="" field="name" desc=""/>
@@ -257,7 +257,6 @@
     <constraint exp="" field="mecAmpAdj" desc=""/>
   </constraintExpressions>
   <expressionfields>
-    <field length="0" expression="id || '_' || bin" type="10" typeName="string" comment="" name="id_bin" precision="0" subType="0"/>
   </expressionfields>
   <previewExpression>"name"</previewExpression>
   <mapTip>&lt;style>
@@ -275,7 +274,7 @@
 &lt;div class="tip">
 	&lt;span class="name">[% name %]&lt;/span>
 	&lt;br/>
-	&lt;a href="https://tidesandcurrents.noaa.gov/noaacurrents/Predictions?id=[% id_bin %]">Station [% id_bin %]&lt;/a>
+	&lt;a href="https://tidesandcurrents.noaa.gov/noaacurrents/Predictions?id=[% station %]">Station [% station %]&lt;/a>
 &lt;/div></mapTip>
   <layerGeometryType>0</layerGeometryType>
 </qgis>
