@@ -253,6 +253,8 @@ class CurrentPredictionRequest:
 
         f = None
         last_date = None
+        last_difference = None
+        last_value = None
         
         for i in range(0, len(cp)):
             try:
@@ -278,33 +280,51 @@ class CurrentPredictionRequest:
                 #  - timed measurement, varying angle, unsigned velocity
                 directionElement = prediction.find('Direction')
                 if directionElement != None:
-                    dir = parseFloatNullable(directionElement.text)
+                    direction = parseFloatNullable(directionElement.text)
                     magnitude = float(prediction.find('Speed').text)
-                    f['dir'] = dir
-                    f['magnitude'] = magnitude
-                    f['type'] = 'current'
+                    valtype = 'current'
 
                     # synthesize the value along flood/ebb dimension
-                    floodFactor = math.cos(math.radians(floodDir - dir))
-                    ebbFactor = math.cos(math.radians(ebbDir - dir))
+                    floodFactor = math.cos(math.radians(floodDir - direction))
+                    ebbFactor = math.cos(math.radians(ebbDir - direction))
                     if floodFactor > ebbFactor:
-                        f['value'] = magnitude * floodFactor
+                        value = magnitude * floodFactor
                     else:
-                        f['value'] = -magnitude * ebbFactor
+                        value = -magnitude * ebbFactor
 
                 else:
                     vel = float(prediction.find('Velocity_Major').text)
                     if (vel >= 0):
-                        f['dir'] = floodDir
+                        direction = floodDir
                     else:
-                        f['dir'] = ebbDir
-                    f['value'] = vel
-                    f['magnitude'] = abs(vel)
+                        direction = ebbDir
+                    value = vel
+                    magnitude = abs(vel)
                     typeElement = prediction.find('Type')
                     if typeElement != None:
-                        f['type'] = typeElement.text
+                        valtype = typeElement.text
                     else:
-                        f['type'] = 'current'
+                        valtype = 'current'
+
+                # synthesize a max/slack type if we are at an extremum or zero crossing
+                # --for now this is unused since it needs debouncing, is one element off,
+                #   and may cause times to vary from NOAA's announced times, so fie upon it.
+                #
+                # if valtype == 'current':
+                #     if last_value != None:
+                #         if math.copysign(1, value) != math.copysign(1, last_value):
+                #             valtype = 'slack'
+                #         difference = value - last_value
+                #         if last_difference != None:
+                #             if math.copysign(1, difference) != math.copysign(1, last_difference):
+                #                 valtype = 'ebb' if value < 0 else 'flood'
+                #         last_difference = difference
+                #     last_value = value
+
+                f['value'] = value
+                f['dir'] = direction
+                f['magnitude'] = magnitude
+                f['type'] = valtype
 
                 self.sink.addFeature(f)
 
