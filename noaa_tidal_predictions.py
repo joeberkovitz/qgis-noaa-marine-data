@@ -43,7 +43,8 @@ import math
 from .resources import *
 from .utils import *
 from .provider import NoaaTidalPredictionsProvider
-from .create_prediction_annotations import CreatePredictionAnnotationsTool
+from .tidal_prediction_tool import TidalPredictionTool
+from .tidal_prediction_widget import TidalPredictionWidget
 
 import os.path
 import processing
@@ -85,6 +86,12 @@ class NoaaTidalPredictions:
         self.actions = []
         self.menu = tr(u'&NOAA Tidal Predictions')
 
+        self.dock = TidalPredictionWidget()
+        self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dock)
+        self.dock.hide()
+
+        self.predictionTool = None
+
         QgsApplication.processingRegistry().addProvider(self.provider)
 
         QgsExpression.registerFunction(self.format_time_zone)
@@ -97,49 +104,12 @@ class NoaaTidalPredictions:
         text,
         callback,
         enabled_flag=True,
+        checkable_flag=False,
         add_to_menu=True,
         add_to_toolbar=True,
         status_tip=None,
         whats_this=None,
         parent=None):
-        """Add a toolbar icon to the toolbar.
-
-        :param icon_path: Path to the icon for this action. Can be a resource
-            path (e.g. ':/plugins/foo/bar.png') or a normal file system path.
-        :type icon_path: str
-
-        :param text: Text that should be shown in menu items for this action.
-        :type text: str
-
-        :param callback: Function to be called when the action is triggered.
-        :type callback: function
-
-        :param enabled_flag: A flag indicating if the action should be enabled
-            by default. Defaults to True.
-        :type enabled_flag: bool
-
-        :param add_to_menu: Flag indicating whether the action should also
-            be added to the menu. Defaults to True.
-        :type add_to_menu: bool
-
-        :param add_to_toolbar: Flag indicating whether the action should also
-            be added to the toolbar. Defaults to True.
-        :type add_to_toolbar: bool
-
-        :param status_tip: Optional text to show in a popup when mouse pointer
-            hovers over the action.
-        :type status_tip: str
-
-        :param parent: Parent widget for the new action. Defaults None.
-        :type parent: QWidget
-
-        :param whats_this: Optional text to show in the status bar when the
-            mouse pointer hovers over the action.
-
-        :returns: The action that was created. Note that the action is also
-            added to self.actions list.
-        :rtype: QAction
-        """
 
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
@@ -161,6 +131,9 @@ class NoaaTidalPredictions:
                 self.menu,
                 action)
 
+        if checkable_flag:
+            action.setCheckable(True)
+
         self.actions.append(action)
 
         return action
@@ -174,22 +147,25 @@ class NoaaTidalPredictions:
             callback=self.addCurrentStationsLayer,
             parent=self.iface.mainWindow())
 
-        self.add_action(
+        self.predictionAction = self.add_action(
             os.path.join(self.plugin_dir, 'svg/get_tidal_predictions.svg'),
             text=tr(u'Get Tidal Predictions'),
             callback=self.getTidalPredictions,
+            checkable_flag=True,
             parent=self.iface.mainWindow())
-
-        self.add_action(
-            os.path.join(self.plugin_dir, 'svg/create_prediction_annotations.svg'),
-            text=tr(u'Create Annotations From Predictions'),
-            callback=self.annotateTidalPredictions,
-            parent=self.iface.mainWindow())
-
-        self.annotationTool = CreatePredictionAnnotationsTool(self.canvas)
 
         self.savedMapTool = self.canvas.mapTool()
+        if self.predictionTool == None:
+            self.predictionTool = TidalPredictionTool(self.canvas, self.dock)
 
+        self.canvas.mapToolSet.connect(self.unsetTool)
+
+    def unsetTool(self, tool):
+        try:
+            if not isinstance(tool, TidalPredictionTool):
+                self.predictionAction.setChecked(False)
+        except Exception:
+            pass
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -205,7 +181,7 @@ class NoaaTidalPredictions:
         QgsExpression.unregisterFunction('is_time_visible')
         QgsExpression.unregisterFunction('convert_to_time_zone')
 
-        if self.canvas.mapTool() == self.annotationTool:
+        if self.canvas.mapTool() == self.predictionTool:
             self.canvas.setMapTool(self.savedMapTool)
 
 
@@ -213,12 +189,8 @@ class NoaaTidalPredictions:
         processing.execAlgorithmDialog('NoaaTidalPredictions:addcurrentstationslayer', {})
 
     def getTidalPredictions(self):
-        processing.execAlgorithmDialog('NoaaTidalPredictions:gettidalpredictions', {
-            'mapSettings': iface.mapCanvas().mapSettings()
-        })
-
-    def annotateTidalPredictions(self):
-        self.canvas.setMapTool(self.annotationTool)
+        self.predictionAction.setChecked(True)
+        self.canvas.setMapTool(self.predictionTool)
 
     # Custom expression function to determine whether a prediction feature's time is subject to temporal filtering or not
     @qgsfunction(args=-1, group='Date and Time', register=False)
