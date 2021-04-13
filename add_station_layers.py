@@ -7,8 +7,7 @@ import xml.etree.ElementTree as ET
 from qgis.core import (
     QgsPointXY, QgsPoint, QgsFeature, QgsGeometry, QgsField, QgsFields,
     QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform,
-    QgsLineString, QgsDistanceArea, QgsPalLayerSettings,
-    QgsLabelLineSettings, QgsVectorLayer, QgsVectorLayerSimpleLabeling)
+    QgsLineString, QgsDistanceArea, QgsVectorLayer, QgsVectorLayerJoinInfo)
 
 from qgis.core import (
     QgsProcessing,
@@ -72,6 +71,32 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
             self.PrmCurrentStationsLayer: current_dest_id
         }
 
+    def baseStationFields(self):
+        fields = QgsFields()
+        fields.append(QgsField("station", QVariant.String,'', 16))
+        fields.append(QgsField("id", QVariant.String,'', 12))
+        fields.append(QgsField("name", QVariant.String))
+        fields.append(QgsField("type", QVariant.String,'',1))
+        fields.append(QgsField("timeZoneId", QVariant.String, '', 32))
+        fields.append(QgsField("timeZoneUTC", QVariant.String, '', 32))
+        fields.append(QgsField("refStation", QVariant.String,'', 12))
+        return fields
+
+    def basePredictionFields(self):
+        fields = QgsFields()
+        fields.append(QgsField("station", QVariant.String,'',16))
+        fields.append(QgsField("depth",  QVariant.Double))
+        fields.append(QgsField("time",  QVariant.DateTime))
+        fields.append(QgsField("value", QVariant.Double))  # signed value, on flood/ebb dimension for current
+        fields.append(QgsField("type", QVariant.String))
+        return fields
+
+    def currentPredictionFields(self):
+        fields = self.basePredictionFields()
+        fields.append(QgsField("dir", QVariant.Double))
+        fields.append(QgsField("magnitude", QVariant.Double))  # value along direction if known
+        return fields
+
     def getCurrentStations(self):
         self.feedback.pushInfo("Requesting metadata for NOAA current stations...")
         url = 'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets'
@@ -89,18 +114,10 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         self.feedback.pushInfo('Read {} bytes'.format(len(content)))
 
         # obtain our current stations output sink          
-        fields = QgsFields()
-        fields.append(QgsField("station", QVariant.String,'', 16))
-        fields.append(QgsField("id", QVariant.String,'', 12))
+        fields = self.baseStationFields()
         fields.append(QgsField("bin", QVariant.String,'', 4))
-        fields.append(QgsField("name", QVariant.String))
         fields.append(QgsField("depth",  QVariant.Double))
         fields.append(QgsField("depthType",  QVariant.String, '', 1))
-        fields.append(QgsField("type", QVariant.String,'',1))
-        fields.append(QgsField("timeZoneId", QVariant.String, '', 32))
-        fields.append(QgsField("timeZoneUTC", QVariant.String, '', 32))
-        fields.append(QgsField("refStationId", QVariant.String,'', 12))
-        fields.append(QgsField("refStationBin", QVariant.String,'', 12))
         fields.append(QgsField("meanFloodDir", QVariant.Double))
         fields.append(QgsField("meanEbbDir", QVariant.Double))
         fields.append(QgsField("mfcTimeAdjMin", QVariant.Double))
@@ -157,7 +174,11 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
                 stationMap[stationId] = s
 
         if self.context.willLoadLayerOnCompletion(current_dest_id):
-            proc = CurrentStationsStylePostProcessor.create(tr('Current Stations'), CurrentStationsLayerVar, 'current_stations.qml')
+            proc = CurrentStationsStylePostProcessor.create(
+                tr('Current Stations'), CurrentStationsLayerVar, 'current_stations.qml',
+                tr('Current Predictions'), CurrentPredictionsLayerVar, 'current_predictions.qml',
+                self.currentPredictionFields()
+            )
             self.context.layerToLoadOnCompletionDetails(current_dest_id).setPostProcessor(proc)
 
         # Now build the features for all stations in the map.
@@ -190,8 +211,9 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
             f['depth'] = parseFloatNullable(s.find('depth').text)
             f['depthType'] = s.find('depthType').text
 
-            f['refStationId'] = cpo.find('refStationId').text
-            f['refStationBin'] = cpo.find('refStationBin').text
+            refStationId = cpo.find('refStationId').text
+            if refStationId:
+                f['refStation'] = refStationId + '_' + cpo.find('refStationBin').text
 
             (f['timeZoneId'], f['timeZoneUTC']) = tzl.getZoneByCoordinates(lat, lng)
 
@@ -212,31 +234,57 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         return current_dest_id
 
 class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
-    def __init__(self, layerName, varName, styleName):
+    def __init__(self, layerName, varName, styleName,
+                 predictionLayerName, predictionVarName, predictionStyleName,
+                 predictionFields):
         super(StylePostProcessor, self).__init__()
         self.layerName = layerName
         self.varName = varName
         self.styleName = styleName
+        self.predictionLayerName = predictionLayerName
+        self.predictionVarName = predictionVarName
+        self.predictionStyleName = predictionStyleName
+        self.predictionFields = predictionFields
 
     def postProcessLayer(self, layer, context, feedback):
-        if not isinstance(layer, QgsVectorLayer):
-            return
-
         # style the output layer here
         layer.setName(self.layerName)
         layer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles',self.styleName))
         layer.triggerRepaint()
 
+        predictionLayer = QgsVectorLayer("Point?crs={}".format(epsg4326.authid()), self.predictionLayerName, "memory")
+        dp = predictionLayer.dataProvider()
+        dp.addAttributes(self.predictionFields)
+        predictionLayer.updateFields()
+        QgsProject.instance().addMapLayer(predictionLayer)
+        predictionLayer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles',self.predictionStyleName))
+
+        # add a join to the station layer from which  predictions were derived
+        joinInfo = QgsVectorLayerJoinInfo()
+        joinInfo.setTargetFieldName('station')
+        joinInfo.setJoinFieldName('station')
+        joinInfo.setJoinLayer(layer)
+        joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC'])
+        joinInfo.setPrefix('station_')
+        predictionLayer.addJoin(joinInfo)
+
         # set up the project variable pointing to it
         vars = QgsProject.instance().customVariables()
         vars[self.varName] = layer.id()
+        vars[self.predictionVarName] = predictionLayer.id()
         QgsProject.instance().setCustomVariables(vars)
 
 class CurrentStationsStylePostProcessor(StylePostProcessor):
     instance = None
 
     @staticmethod
-    def create(layerName, varName, styleName) -> 'CurrentStationsStylePostProcessor':
-        CurrentStationsStylePostProcessor.instance = CurrentStationsStylePostProcessor(layerName, varName, styleName)
+    def create(layerName, varName, styleName,
+               predictionLayerName, predictionVarName, predictionStyleName,
+               predictionFields) -> 'CurrentStationsStylePostProcessor':
+        CurrentStationsStylePostProcessor.instance = CurrentStationsStylePostProcessor(
+            layerName, varName, styleName,
+            predictionLayerName, predictionVarName, predictionStyleName,
+            predictionFields
+        )
         return CurrentStationsStylePostProcessor.instance
 

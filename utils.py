@@ -7,8 +7,9 @@ epsg4326 = QgsCoordinateReferenceSystem("EPSG:4326")
 
 # project variable names
 CurrentStationsLayerVar = 'noaa_current_stations_layer'
+CurrentPredictionsLayerVar = 'noaa_current_predictions_layer'
 TideStationsLayerVar = 'noaa_tide_stations_layer'
-PredictionsLayerVar = 'noaa_tidal_predictions_layer'
+TidePredictionsLayerVar = 'noaa_tide_predictions_layer'
 
 CoopsApplicationName = 'qgis-noaa-tidal-predictions'
 
