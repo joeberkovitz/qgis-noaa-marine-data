@@ -2,15 +2,18 @@ import xml.etree.ElementTree as ET
 
 from qgis.core import (
     QgsPointXY, QgsPoint, QgsFeature, QgsGeometry, QgsField, QgsFields,
-    QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform
+    QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform,
+    QgsFeatureRequest
 )
 
 from qgis.PyQt.QtCore import pyqtSlot, pyqtSignal
 
 # one of these for currents and one for tides
 class PredictionManager:
-    def __init__(self):
+    def __init__(self, stationsLayer, predictionsLayer):
         self.promiseDict = {}
+        self.stationsLayer = stationsLayer
+        self.predictionsLayer = predictionsLayer
 
     # maintains a map of stashed, unsent PredictionRequests. these are not sent until
     # the manager is told to initiate them, so that multiple requests can be folded.
@@ -21,19 +24,25 @@ class PredictionManager:
         key = self.promiseKey(stationFeature, date)
         promise = self.promiseDict.get(key)
         if promise is None:
+            # we have no cached data promise. make one
             promise = PredictionDataPromise(self, stationFeature, date)
             self.promiseDict[key] = promise
             promise.start()
+
+        else:
+            # we did have a cached one, so return it.
+            print('Returning cached promise for {}'.format(key))
+
         return promise
 
-    def getPredictions(self, feature, datetime):
+    def getPredictions(self, feature, date):
         # return an iterable of prediction layer features for the given
         # station feature on the given local date. If any part of the range
         # is missing, return None
         return None
 
-    def promiseKey(self, stationFeature, datetime):
-        return stationFeature['station'] + '.' + datetime.toString('yyyyMMdd')
+    def promiseKey(self, stationFeature, date):
+        return stationFeature['station'] + '.' + date.toString('yyyyMMdd')
 
 
 class PredictionPromise(QObject):
@@ -75,21 +84,51 @@ class PredictionDataPromise(PredictionPromise):
             self.done()
             return
 
-        req = CurrentPredictionRequest(
-            self.manager,
-            self.stationFeature,
-            self.datetime,
-            self.datetime.addDays(1),
-        )
-        req.resolved(self.processRequest)
-        self.dependencies.append(req)
-        req.start()
+        # first see if we can pull data from the predictions layer
+        startTime = self.datetime
+        endTime = self.datetime.addDays(1)
+
+        featureRequest = QgsFeatureRequest()
+        stationPt = QgsPointXY(self.stationFeature.geometry().vertexAt(0))
+        searchRect = QgsRectangle(stationPt, stationPt)
+        searchRect.grow(0.01/60)   # in the neighborhood of .01 nm as 1/60 = 1 arc minute in this proj.
+        featureRequest.setFilterRect(searchRect)
+        expr = "time >= to_datetime('{}') and time < to_datetime('{}')".format(
+                   startTime.toString('yyyy-MM-dd'),
+                   endTime.toString('yyyy-MM-dd')
+                )
+        featureRequest.setFilterExpression(expr)
+        featureRequest.addOrderBy('time')
+        savedFeatureIterator = self.manager.predictionsLayer.getFeatures(featureRequest)
+        savedFeatures = list(savedFeatureIterator)
+        if len(savedFeatures) > 0:
+            print ('Retrieved {} features from layer'.format(len(savedFeatures)))
+            self.predictions = savedFeatures
+            self.resolve()
+        else:
+            req = CurrentPredictionRequest(
+                self.manager,
+                self.stationFeature,
+                startTime,
+                endTime
+            )
+            print('Fetching features for {} on date {}'.format(self.stationFeature['station'],startTime.toString()))
+            req.resolved(self.processRequest)
+            self.dependencies.append(req)
+            req.start()
 
     def processRequest(self):
+        # TODO: some dependencies contribute data while others don't. Combining all of them is wrong sometimes.
         if self.checkDependencies():
             self.predictions = []
             for req in self.dependencies:
                 self.predictions.extend(req.predictions)
+
+            # TODO: sort the combined predictions here by time
+
+            self.manager.predictionsLayer.startEditing()
+            self.manager.predictionsLayer.addFeatures(self.predictions)
+            self.manager.predictionsLayer.commitChanges()
             self.resolve()
 
 
@@ -154,7 +193,7 @@ class CurrentPredictionRequest(PredictionRequest):
         root = ET.fromstring(content) 
 
         f = None
-        layer = currentPredictionsLayer()
+        layer = self.manager.predictionsLayer
         fields = layer.fields()
         features = []
         floodDir = self.stationFeature['meanFloodDir']
