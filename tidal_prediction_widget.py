@@ -66,8 +66,10 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if self.stationFeature is None:
             return
         self.temporal.setNavigationMode(QgsTemporalNavigationObject.NavigationMode.FixedRange)
-        datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time(), self.stationZone).toUTC()
-        self.temporal.setTemporalExtents(QgsDateTimeRange(datetime, datetime.addSecs(60*30), True, False))
+        displayTime = self.timeEdit.time()
+        displayTime.setHMS(displayTime.hour(), 30 * (displayTime.minute() // 30), 0)
+        datetime = QDateTime(self.dateEdit.date(), displayTime, self.stationZone).toUTC()
+        self.temporal.setTemporalExtents(QgsDateTimeRange(datetime, datetime.addSecs((60 * 30) - 1)))
 
     def updatePredictions(self):
         if self.stationFeature is None:
