@@ -86,7 +86,7 @@ class NoaaTidalPredictions:
         self.actions = []
         self.menu = tr(u'&NOAA Tidal Predictions')
 
-        self.dock = TidalPredictionWidget()
+        self.dock = TidalPredictionWidget(None, self.canvas)
         self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dock)
         self.dock.hide()
 
