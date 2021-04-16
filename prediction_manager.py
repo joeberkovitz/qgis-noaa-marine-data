@@ -5,6 +5,7 @@ from qgis.core import (
     QgsPointXY, QgsPoint, QgsRectangle, QgsFeature, QgsGeometry, QgsField, QgsFields,
     QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform,
     QgsFeatureRequest, QgsNetworkContentFetcher,
+    NULL
 )
 
 from qgis.PyQt.QtCore import (
@@ -16,6 +17,8 @@ from .utils import *
 
 # one of these for currents and one for tides
 class PredictionManager:
+    STEP_MINUTES = 30
+
     def __init__(self, stationsLayer, predictionsLayer):
         self.promiseDict = {}
         self.stationsLayer = stationsLayer
@@ -35,11 +38,10 @@ class PredictionManager:
             self.promiseDict[key] = promise
             promise.start()
 
-        else:
-            # we did have a cached one, so return it.
-            print('Returning cached promise for {}'.format(key))
-
         return promise
+
+    def getExtentStations(self, rect):
+        return list(self.stationsLayer.getFeatures(rect))
 
     def getPredictions(self, feature, date):
         # return an iterable of prediction layer features for the given
@@ -108,7 +110,7 @@ class PredictionDataPromise(PredictionPromise):
         savedFeatureIterator = self.manager.predictionsLayer.getFeatures(featureRequest)
         savedFeatures = list(savedFeatureIterator)
         if len(savedFeatures) > 0:
-            print ('Retrieved {} features from layer'.format(len(savedFeatures)))
+            print ('{}: retrieved {} features from layer'.format(self.stationFeature['station'], len(savedFeatures)))
             self.predictions = savedFeatures
             self.resolve()
         else:
@@ -118,7 +120,7 @@ class PredictionDataPromise(PredictionPromise):
                 startTime,
                 endTime
             )
-            print('Fetching features for {} on date {}'.format(self.stationFeature['station'],startTime.toString()))
+            print('{}: Fetching features for {}'.format(self.stationFeature['station'],startTime.toString()))
             req.resolved(self.processRequest)
             self.dependencies.append(req)
             req.start()
@@ -128,6 +130,7 @@ class PredictionDataPromise(PredictionPromise):
         if self.checkDependencies():
             self.predictions = []
             for req in self.dependencies:
+                print('{}: Fetched {} features'.format(self.stationFeature['station'],len(req.predictions)))
                 self.predictions.extend(req.predictions)
 
             # TODO: sort the combined predictions here by time
@@ -135,14 +138,16 @@ class PredictionDataPromise(PredictionPromise):
             self.manager.predictionsLayer.startEditing()
             self.manager.predictionsLayer.addFeatures(self.predictions)
             self.manager.predictionsLayer.commitChanges()
+            self.manager.predictionsLayer.triggerRepaint()
             self.resolve()
 
 
 # low-level request for data regarding a station feature around a date range
 class PredictionRequest(PredictionPromise):
     INTERVAL_MAX_SLACK = 'MAX_SLACK'
-    INTERVAL_DEFAULT = '30'
+    INTERVAL_DEFAULT = str(PredictionManager.STEP_MINUTES)
     VEL_TYPE_SPEED_DIR = 'speed_dir'
+    VEL_TYPE_DEFAULT = 'default'
 
     # construct the request and save its state, but don't send it
     def __init__(self, manager, stationFeature, startTime, endTime):
@@ -192,8 +197,11 @@ class CurrentPredictionRequest(PredictionRequest):
     def addQueryItems(self, query):
         query.addQueryItem('station', self.stationFeature['id'])
         query.addQueryItem('bin', str(self.stationFeature['bin']))
-        query.addQueryItem('vel_type', PredictionRequest.VEL_TYPE_SPEED_DIR)
         query.addQueryItem('interval', PredictionRequest.INTERVAL_DEFAULT)
+        if self.stationFeature['meanFloodDir'] == NULL or self.stationFeature['meanEbbDir'] == NULL:
+            query.addQueryItem('vel_type', PredictionRequest.VEL_TYPE_DEFAULT)
+        else:
+            query.addQueryItem('vel_type', PredictionRequest.VEL_TYPE_SPEED_DIR)
 
     def parseContent(self, content):
         root = ET.fromstring(content) 
@@ -225,6 +233,7 @@ class CurrentPredictionRequest(PredictionRequest):
             directionElement = prediction.find('Direction')
             if directionElement != None:
                 direction = parseFloatNullable(directionElement.text)
+
                 magnitude = float(prediction.find('Speed').text)
                 valtype = 'current'
 

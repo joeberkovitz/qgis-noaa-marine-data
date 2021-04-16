@@ -17,7 +17,7 @@ def tr(string):
 
 
 def parseFloatNullable(str):
-    return float(str) if str and str != 'null' else None
+    return float(str) if str and str != 'null' and str != 'NULL' else None
 
 def getProjectByLayerVar(varName):
     layerId = QgsProject.instance().customVariables().get(varName)

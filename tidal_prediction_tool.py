@@ -49,8 +49,7 @@ class TidalPredictionTool(QgsMapToolIdentify):
                 break
 
     def activate(self):
-        self.dock.show()
-        self.dock.setupPredictions()
+        self.dock.activate()
 
     def deactivate(self):
-        self.dock.hide()
+        self.dock.deactivate()
