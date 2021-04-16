@@ -168,6 +168,10 @@ class NoaaTidalPredictions:
             pass
 
     def unload(self):
+        self.dock.hide()
+        if self.canvas.mapTool() == self.predictionTool:
+            self.canvas.setMapTool(self.savedMapTool)
+
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
             self.iface.removePluginMenu(
@@ -180,9 +184,6 @@ class NoaaTidalPredictions:
         QgsExpression.unregisterFunction('format_time_zone')
         QgsExpression.unregisterFunction('is_time_visible')
         QgsExpression.unregisterFunction('convert_to_time_zone')
-
-        if self.canvas.mapTool() == self.predictionTool:
-            self.canvas.setMapTool(self.savedMapTool)
 
 
     def addCurrentStationsLayer(self):
@@ -244,7 +245,6 @@ class NoaaTidalPredictions:
                 range = canvas.mapSettings().temporalRange()
                 values[0].setTimeSpec(Qt.TimeSpec.UTC)
                 if (values[0] >= range.begin() and values[0] < range.end()):
-                    print(values,range.begin(),range.end())
                     return True
                 else:
                     return False

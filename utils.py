@@ -1,6 +1,5 @@
-import math
-import re
-from qgis.PyQt.QtCore import QCoreApplication
+import os
+from qgis.PyQt.QtCore import QCoreApplication, Qt, QTimeZone, QByteArray
 from qgis.core import QgsProject, QgsUnitTypes, QgsPointXY, QgsCoordinateReferenceSystem
 
 epsg4326 = QgsCoordinateReferenceSystem("EPSG:4326")
@@ -42,6 +41,9 @@ def tideStationsLayer():
 
 def tidePredictionsLayer():
     return getProjectByLayerVar(TidePredictionsLayerVar)
+
+def layerStoragePath():
+    return os.path.join(QgsProject.instance().homePath(), 'noaa_tidal_predictions')
 
 def stationTimeZone(stationFeature):
     timeZoneId = stationFeature['timeZoneId']

@@ -9,6 +9,7 @@ from qgis.core import (
 
 from qgis.gui import QgsMapToolIdentify, QgsMapCanvasAnnotationItem
 from .utils import *
+from .prediction_manager import *
 
 class TidalPredictionTool(QgsMapToolIdentify):
 
@@ -34,22 +35,22 @@ class TidalPredictionTool(QgsMapToolIdentify):
         self.setCursor(self.cursor)
 
         layers = []
-        currentStationsLayerId = QgsProject.instance().customVariables()[CurrentStationsLayerVar]
-        currentStationsLayer = QgsProject.instance().mapLayer(currentStationsLayerId)
-        if currentStationsLayer is not None:
-            layers.append(currentStationsLayer)
+        currentStations = currentStationsLayer()
+        if currentStations is not None:
+            layers.append(currentStations)
 
         results = self.identify(mouseEvent.x(), mouseEvent.y(), layers)
         for r in results:
             layer = r.mLayer
 
-            if layer == currentStationsLayer:
+            if layer == currentStations:
                 feature = r.mFeature
                 self.dock.setCurrentStation(feature)
                 break
 
     def activate(self):
         self.dock.show()
+        self.dock.setupPredictions()
 
     def deactivate(self):
         self.dock.hide()

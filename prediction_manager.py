@@ -1,12 +1,18 @@
+import math
 import xml.etree.ElementTree as ET
 
 from qgis.core import (
-    QgsPointXY, QgsPoint, QgsFeature, QgsGeometry, QgsField, QgsFields,
+    QgsPointXY, QgsPoint, QgsRectangle, QgsFeature, QgsGeometry, QgsField, QgsFields,
     QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform,
-    QgsFeatureRequest
+    QgsFeatureRequest, QgsNetworkContentFetcher,
 )
 
-from qgis.PyQt.QtCore import pyqtSlot, pyqtSignal
+from qgis.PyQt.QtCore import (
+    pyqtSlot, pyqtSignal,
+    QObject, QDate, QDateTime, QTime, QTimeZone, QUrl, QUrlQuery,
+)
+
+from .utils import *
 
 # one of these for currents and one for tides
 class PredictionManager:
@@ -19,7 +25,7 @@ class PredictionManager:
     # the manager is told to initiate them, so that multiple requests can be folded.
 
 
-    # get a PredictionDataPromise for 24-hour period starting with the given UTC date
+    # get a PredictionDataPromise for 24-hour period starting with the given local-time date
     def getDataPromise(self, stationFeature, date):
         key = self.promiseKey(stationFeature, date)
         promise = self.promiseDict.get(key)
@@ -77,7 +83,7 @@ class PredictionDataPromise(PredictionPromise):
 
         # convert local station datetime to UTC 
         self.localDate = date
-        self.datetime = QDateTime(date, QTime(0,0), stationTimeZone(stationFeature))
+        self.datetime = QDateTime(date, QTime(0,0), stationTimeZone(stationFeature)).toUTC()
 
     def start(self):
         if self.predictions is not None:
@@ -94,8 +100,8 @@ class PredictionDataPromise(PredictionPromise):
         searchRect.grow(0.01/60)   # in the neighborhood of .01 nm as 1/60 = 1 arc minute in this proj.
         featureRequest.setFilterRect(searchRect)
         expr = "time >= to_datetime('{}') and time < to_datetime('{}')".format(
-                   startTime.toString('yyyy-MM-dd'),
-                   endTime.toString('yyyy-MM-dd')
+                   startTime.toString('yyyy-MM-dd hh:mm'),
+                   endTime.toString('yyyy-MM-dd hh:mm')
                 )
         featureRequest.setFilterExpression(expr)
         featureRequest.addOrderBy('time')
@@ -155,7 +161,7 @@ class PredictionRequest(PredictionPromise):
         query = QUrlQuery()
         query.addQueryItem('application', CoopsApplicationName)
         query.addQueryItem('begin_date', self.startTime.toString('yyyyMMdd hh:mm'))
-        query.addQueryItem('end_date', self.endTime.toString('yyyyMMdd hh:mm'))
+        query.addQueryItem('end_date', self.endTime.addSecs(-1).toString('yyyyMMdd hh:mm'))
         query.addQueryItem('units', 'english')
         query.addQueryItem('time_zone', 'gmt')
         query.addQueryItem('product', self.productName)
@@ -252,5 +258,3 @@ class CurrentPredictionRequest(PredictionRequest):
             features.append(f)
 
         return features
-
-

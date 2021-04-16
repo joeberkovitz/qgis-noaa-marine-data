@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from qgis.core import (
     QgsPointXY, QgsPoint, QgsFeature, QgsGeometry, QgsField, QgsFields,
     QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform,
-    QgsLineString, QgsDistanceArea, QgsVectorLayer, QgsVectorLayerJoinInfo)
+    QgsLineString, QgsDistanceArea, QgsVectorLayer, QgsVectorLayerJoinInfo, QgsMemoryProviderUtils)
 
 from qgis.core import (
     QgsProcessing,
@@ -56,7 +56,9 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.PrmCurrentStationsLayer,
-                tr('Current stations output layer'))
+                tr('Current stations output layer'),
+                QgsProcessing.TypeVectorPoint,
+                os.path.join(layerStoragePath(), 'current_stations.gpkg'))
         )
         self.feedback = QgsProcessingFeedback()
 
@@ -64,6 +66,11 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         self.context = context
         self.feedback = feedback
         self.parameters = parameters
+
+        try:
+            os.mkdir(layerStoragePath())
+        except FileExistsError:
+            pass
 
         current_dest_id = self.getCurrentStations()
 
@@ -252,21 +259,22 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
         layer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles',self.styleName))
         layer.triggerRepaint()
 
-        predictionLayer = QgsVectorLayer("Point?crs={}".format(epsg4326.authid()), self.predictionLayerName, "memory")
-        dp = predictionLayer.dataProvider()
-        dp.addAttributes(self.predictionFields)
-        predictionLayer.updateFields()
+        predictionLayer = QgsMemoryProviderUtils.createMemoryLayer(
+            self.predictionLayerName, self.predictionFields, QgsWkbTypes.Point, epsg4326
+        )
         QgsProject.instance().addMapLayer(predictionLayer)
-        predictionLayer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles',self.predictionStyleName))
 
         # add a join to the station layer from which  predictions were derived
+
         joinInfo = QgsVectorLayerJoinInfo()
+        joinInfo.setJoinLayer(layer)
         joinInfo.setTargetFieldName('station')
         joinInfo.setJoinFieldName('station')
-        joinInfo.setJoinLayer(layer)
         joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC'])
         joinInfo.setPrefix('station_')
         predictionLayer.addJoin(joinInfo)
+
+        predictionLayer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles',self.predictionStyleName))
 
         # set up the project variable pointing to it
         vars = QgsProject.instance().customVariables()
