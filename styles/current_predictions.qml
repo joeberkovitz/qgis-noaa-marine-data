@@ -467,7 +467,7 @@ tr.slack td.vel {
 &lt;/style>
 &lt;div class="tip">
 	&lt;div class="name">[% station_name %] ([% format_time_zone(local_time,2) %])&lt;/div>
-	&lt;div class="station">&lt;a href="https://tidesandcurrents.noaa.gov/noaacurrents/Predictions?id=[% station %]&amp;d=[% format_date(minimum(time), 'yyyy-MM-dd') %]">Station [% station %]&lt;/a>&lt;/div>
+	&lt;div class="station">&lt;a href="https://tidesandcurrents.noaa.gov/noaacurrents/Predictions?id=[% station %]&amp;d=[% format_date(time, 'yyyy-MM-dd') %]">Station [% station %]&lt;/a>&lt;/div>
 	&lt;div class="predict">
 		&lt;table>
 		&lt;tbody>
@@ -483,7 +483,7 @@ tr.slack td.vel {
 			   format_date(local_time,'ddd dd'),
 			   format_date(local_time,'hh:mm'),
 			   if(type='current',dir||'º',type),
-			   format_number(if(type='current',magnitude,value),1)
+			   format_number(if(type='current',magnitude,value),2)
 		   )
 		%]
 		&lt;/tbody>
