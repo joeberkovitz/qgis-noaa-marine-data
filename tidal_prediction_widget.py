@@ -83,7 +83,10 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.tableWidget.setRowCount(len(self.stationData.predictions))
         for i, p in enumerate(self.stationData.predictions):
             self.tableWidget.setItem(i, 0, QTableWidgetItem(p['time'].toTimeZone(self.stationZone).toString('hh:mm')))
-            self.tableWidget.setItem(i, 1, QTableWidgetItem(p['type']))
+            if p['type'] == 'current':
+                self.tableWidget.setItem(i, 1, QTableWidgetItem(str(round(p['dir'])) + 'º'))
+            else:
+                self.tableWidget.setItem(i, 1, QTableWidgetItem(p['type']))
             self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['value'])))
 
 
