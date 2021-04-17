@@ -273,6 +273,7 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
         joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC'])
         joinInfo.setPrefix('station_')
         predictionLayer.addJoin(joinInfo)
+        predictionLayer.updateFields()
 
         predictionLayer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles',self.predictionStyleName))
 
