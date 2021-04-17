@@ -20,6 +20,8 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 
 
 class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
+    TEMPORAL_HACK_SECS = 1
+
     def __init__(self, parent, canvas):
         """Constructor."""
         super(TidalPredictionWidget, self).__init__(parent)
@@ -33,7 +35,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.tableWidget.setHorizontalHeaderLabels([tr('Time'), tr('Direction'), tr('Speed (kt)')])
 
         self.dateEdit.dateChanged.connect(self.updateDate)
-        self.dateEdit.dateChanged.connect(self.updatePredictions)
+        self.dateEdit.dateChanged.connect(self.loadStationPredictions)
         self.timeEdit.timeChanged.connect(self.updateTime)
 
         self.nextDay.clicked.connect(lambda: self.adjustDay(1))
@@ -49,21 +51,23 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def activate(self):
         self.active = True
         self.predictionManager = PredictionManager(currentStationsLayer(), currentPredictionsLayer())
-        self.canvas.extentsChanged.connect(self.autoLoadPredictions)
         self.show()
-        self.setupPredictions()
-        self.autoLoadPredictions()
+        self.setTemporalRange()
+        self.loadMapExtentPredictions()
+        self.canvas.extentsChanged.connect(self.loadMapExtentPredictions)
 
     def deactivate(self):
+        self.canvas.extentsChanged.disconnect(self.loadMapExtentPredictions)
         self.hide()
         self.predictionManager = None
         self.active = False
-        self.canvas.extentsChanged.disconnect(self.autoLoadPredictions)
 
     def maxAutoLoadCount(self):
         return 100;   # TODO: have a widget for this
 
-    def autoLoadPredictions(self):
+    def loadMapExtentPredictions(self):
+        """ ensure all stations in visible extent of the map are loaded
+        """
         if self.active and self.predictionManager is not None:
             xform = QgsCoordinateTransform(self.mapSettings.destinationCrs(),
                         epsg4326,
@@ -77,21 +81,39 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             if self.stationZone is None and len(mapFeatures) > 0:
                 self.stationZone = stationTimeZone(mapFeatures[0])
 
+    def loadStationPredictions(self):
+        """ load predictions for the selected station
+        """
+        if self.stationFeature is None:
+            return
 
-    def setupPredictions(self):
+        self.stationData = self.predictionManager.getDataPromise(self.stationFeature, self.dateEdit.date())
+        self.tableWidget.clearContents()
+        self.stationData.resolved(self.predictionsResolved)
+
+    def setTemporalRange(self):
+        """ Set up the temporal range of either based on the current time, or on the temporal
+            extents in the map canvas if those are defined.
+        """
         if self.temporal.navigationMode() == QgsTemporalNavigationObject.NavigationMode.NavigationOff:
-            self.setDateTime(QDateTime.currentDateTime().toUTC())
+            startTime = QDateTime.currentDateTime().toUTC()
         else:
-            self.setDateTime(self.temporal.temporalExtents().begin())
+            startTime = self.temporal.temporalExtents().begin().addSecs(self.TEMPORAL_HACK_SECS)
+
+        self.setDateTime(startTime)
+
 
     def setDateTime(self, datetime):
+        """ Set our date and time choosers appropriately based on the given UTC time
+            as interpreted for the current station if there is one, else base on local time.
+        """
         if self.stationFeature:
             localtime = datetime.toTimeZone(stationTimeZone(self.stationFeature))
         else:
             localtime = datetime.toLocalTime()
         self.dateEdit.setDate(localtime.date())
 
-        # round off to nearest step
+        # round off the time to the nearest step
         displayTime = localtime.time()
         displayTime.setHMS(
             displayTime.hour(), 
@@ -100,15 +122,17 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.timeEdit.setTime(displayTime)
 
         self.updateTime()
-        self.updatePredictions()
+        self.loadStationPredictions()
 
 
     def setCurrentStation(self, feature):
+        """ set the panel's current prediction station to the one described by the given feature
+        """
         self.stationFeature = feature
         self.stationZone = stationTimeZone(feature)
         self.stationLabel.setText(feature['name'])
         self.updateTime()
-        self.updatePredictions()
+        self.loadStationPredictions()
 
     def adjustDay(self, delta):
         self.dateEdit.setDate(self.dateEdit.date().addDays(delta))
@@ -124,29 +148,28 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.adjustDay(1)
 
     def updateDate(self):
-        self.autoLoadPredictions()
+        self.loadMapExtentPredictions()
         self.updateTime()
 
     def updateTime(self):
         self.temporal.setNavigationMode(QgsTemporalNavigationObject.NavigationMode.FixedRange)
-        datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time(), self.stationZone).toUTC()
-        # may need to hack around memory provider bug here by subtracting 1 second from end of range
+        if self.stationZone is not None:
+            datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time(), self.stationZone).toUTC()
+        else:
+            datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time()).toUTC()
+        # Note: we hack around a memory provider range bug here by offsetting the window by 1 minute
         self.temporal.setTemporalExtents(
-            QgsDateTimeRange(datetime,
-                             datetime.addSecs((60 * PredictionManager.STEP_MINUTES)),
+            QgsDateTimeRange(datetime.addSecs(-self.TEMPORAL_HACK_SECS),
+                             datetime.addSecs((60 * PredictionManager.STEP_MINUTES) - self.TEMPORAL_HACK_SECS),
                              True, False
                              )
             )
 
-    def updatePredictions(self):
-        if self.stationFeature is None:
-            return
-
-        self.stationData = self.predictionManager.getDataPromise(self.stationFeature, self.dateEdit.date())
-        self.tableWidget.clearContents()
-        self.stationData.resolved(self.predictionsResolved)
-
     def predictionsResolved(self):
+        """ when we have predictions for the current station, show them in the
+            table widget.
+        """
+
         self.tableWidget.setRowCount(len(self.stationData.predictions))
         for i, p in enumerate(self.stationData.predictions):
             dt = p['time']

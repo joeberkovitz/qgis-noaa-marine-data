@@ -15,45 +15,52 @@ from qgis.PyQt.QtCore import (
 
 from .utils import *
 
-# one of these for currents and one for tides
+
 class PredictionManager:
+    """Manager object overseeing the loading and caching of predictions
+        organized by station-dates.
+    """
+
+    # The time increment used for prediction requests and temporal display control.
     STEP_MINUTES = 30
 
+    # Each manager has a stations and a prediction layer. There's a manager for tides
+    # and one for currents.
     def __init__(self, stationsLayer, predictionsLayer):
+        # Initialize a map of cached PredictionDataPromises
         self.promiseDict = {}
         self.stationsLayer = stationsLayer
         self.predictionsLayer = predictionsLayer
 
-    # maintains a map of stashed, unsent PredictionRequests. these are not sent until
-    # the manager is told to initiate them, so that multiple requests can be folded.
 
-
-    # get a PredictionDataPromise for 24-hour period starting with the given local-time date
+    # Obtain a PredictionDataPromise for 24-hour period starting with the given local-station-time date
     def getDataPromise(self, stationFeature, date):
         key = self.promiseKey(stationFeature, date)
         promise = self.promiseDict.get(key)
         if promise is None:
-            # we have no cached data promise. make one
+            # we have no cached data promise. so make one. This implicitly requests the data
+            # if it is not already in the predictions layer.
             promise = PredictionDataPromise(self, stationFeature, date)
             self.promiseDict[key] = promise
             promise.start()
 
         return promise
 
+    # Return a list of station features included in the give rectangle.
     def getExtentStations(self, rect):
         return list(self.stationsLayer.getFeatures(rect))
 
-    def getPredictions(self, feature, date):
-        # return an iterable of prediction layer features for the given
-        # station feature on the given local date. If any part of the range
-        # is missing, return None
-        return None
-
-    def promiseKey(self, stationFeature, date):
+    # Compute a key
+    @staticmethod
+    def promiseKey(stationFeature, date):
         return stationFeature['station'] + '.' + date.toString('yyyyMMdd')
 
 
 class PredictionPromise(QObject):
+    """ Abstract promise-like object that emits a resolved signal when done with something.
+        A list of PredictionPromise dependencies is maintained.
+
+    """
     _resolved = pyqtSignal()
 
     def __init__(self):
@@ -74,19 +81,23 @@ class PredictionPromise(QObject):
     def checkDependencies(self):
         return next(filter(lambda p: not p.isResolved, self.dependencies), None) is None
 
-# promise-like object for prediction date
 class PredictionDataPromise(PredictionPromise):
-    # initialize this promise and optionally prepopulate with a list of prediction features
-    def __init__(self, manager, stationFeature, date, predictions=None):
+    """ Promise to obtain a full set of predictions (events and timeline) for a given station and local date.
+    """
+
+    # initialize this promise for a given manager, station and date.
+    def __init__(self, manager, stationFeature, date):
         super(PredictionDataPromise, self).__init__()
         self.manager = manager
         self.stationFeature = stationFeature
-        self.predictions = predictions
+        self.predictions = None
 
-        # convert local station datetime to UTC 
+        # convert local station timezone QDate to a full UTC QDateTime.
         self.localDate = date
         self.datetime = QDateTime(date, QTime(0,0), stationTimeZone(stationFeature)).toUTC()
 
+    """ Get all the data needed to resolve this promise
+    """
     def start(self):
         if self.predictions is not None:
             self.done()
@@ -101,6 +112,14 @@ class PredictionDataPromise(PredictionPromise):
         searchRect = QgsRectangle(stationPt, stationPt)
         searchRect.grow(0.01/60)   # in the neighborhood of .01 nm as 1/60 = 1 arc minute in this proj.
         featureRequest.setFilterRect(searchRect)
+        # TODO: append variable def scope to the feature req's expressioncontext
+        # rather than the cheesy quoting business below. In fact, we should be able to
+        # set up this scope in advance and just rebind the variables as needed.
+            # ctx=req.expressionContext()
+            # scope=QgsExpressionContextScope()
+            # scope.setVariable('s','SFB1309_11')
+            # ctx.appendScope(scope)
+
         expr = "time >= to_datetime('{}') and time < to_datetime('{}')".format(
                    startTime.toString('yyyy-MM-dd hh:mm'),
                    endTime.toString('yyyy-MM-dd hh:mm')
@@ -110,10 +129,13 @@ class PredictionDataPromise(PredictionPromise):
         savedFeatureIterator = self.manager.predictionsLayer.getFeatures(featureRequest)
         savedFeatures = list(savedFeatureIterator)
         if len(savedFeatures) > 0:
+            # We have some features, so go ahead and stash them in the layer and resolve this promise
             print ('{}: retrieved {} features from layer'.format(self.stationFeature['station'], len(savedFeatures)))
             self.predictions = savedFeatures
             self.resolve()
         else:
+            # The layer didn't have what we wanted, so create a request as a dependency promise
+            # and kick it off. It will let us know when we are done.
             req = CurrentPredictionRequest(
                 self.manager,
                 self.stationFeature,
@@ -138,8 +160,9 @@ class PredictionDataPromise(PredictionPromise):
             self.manager.predictionsLayer.startEditing()
             self.manager.predictionsLayer.addFeatures(self.predictions)
             self.manager.predictionsLayer.commitChanges()
-            self.manager.predictionsLayer.triggerRepaint()
             self.resolve()
+
+            self.manager.predictionsLayer.triggerRepaint()
 
 
 # low-level request for data regarding a station feature around a date range
