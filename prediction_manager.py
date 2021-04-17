@@ -1,4 +1,6 @@
 import math
+import numpy as np
+from scipy.interpolate import interp1d
 import xml.etree.ElementTree as ET
 
 from qgis.core import (
@@ -50,6 +52,14 @@ class PredictionManager:
     # Return a list of station features included in the give rectangle.
     def getExtentStations(self, rect):
         return list(self.stationsLayer.getFeatures(rect))
+
+    # Return a station feature by its unique identifier
+    def getStation(self, stationId):
+        req = QgsFeatureRequest()
+        req.setFilterExpression("station = '{}'".format(stationId))
+        for f in self.stationsLayer.getFeatures(req):
+            return f
+        return None
 
     # Compute a key
     @staticmethod
@@ -213,7 +223,13 @@ class PredictionDataPromise(PredictionPromise):
                     CurrentPredictionRequest.EventType)
                 self.addDependency(self.eventRequest)
 
-                # TODO: get reference promise
+                # get reference station promise
+                refStation = self.manager.getStation(self.stationFeature['refStation'])
+                if refStation is None:
+                    print("Could not find ref station {}".format(refStation))
+                else:
+                    self.refStationData = self.manager.getDataPromise(refStation, self.localDate)
+                    self.addDependency(self.refStationData)
 
             self.startDependencies()
 
@@ -235,7 +251,9 @@ class PredictionDataPromise(PredictionPromise):
         else:
             # subordinate-station case
             self.predictions = self.eventRequest.predictions
-            # TODO: use interpolated reference station data to fill this out
+
+            # use interpolated reference station data to fill this out
+            refInterpolation = self.refStationData.valueInterpolation()
 
         # add everything into the predictions layer
         self.manager.predictionsLayer.startEditing()
@@ -244,6 +262,16 @@ class PredictionDataPromise(PredictionPromise):
         self.resolve()
 
         self.manager.predictionsLayer.triggerRepaint()
+
+    def valueInterpolation(self):
+        """ return a function that takes an array of QDateTimes and returns an
+            array of interpolated velocities from this object's predictions.
+        """
+        currentPredictions = list(filter(lambda p: p['type'] == 'current', self.predictions))
+        times = np.array([p['time'].msecsTo(self.datetime) for p in currentPredictions])
+        values = np.array([p['value'] for p in currentPredictions])
+        f = interp1d(times, values, 'cubic')
+        return (lambda arr: f(np.array([dt.msecsTo(self.datetime) for dt in arr])))
 
 
 # low-level request for data regarding a station feature around a date range
