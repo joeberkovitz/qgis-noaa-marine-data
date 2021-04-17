@@ -5,7 +5,7 @@ from qgis.core import (
     QgsPointXY, QgsPoint, QgsRectangle, QgsFeature, QgsGeometry, QgsField, QgsFields,
     QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform,
     QgsFeatureRequest, QgsNetworkContentFetcher,
-    QgsExpressionContextScope, QgsExpressionContext,
+    QgsExpressionContextScope, QgsExpressionContext, QgsFeatureSink,
     NULL
 )
 
@@ -67,6 +67,7 @@ class PredictionPromise(QObject):
     def __init__(self):
         super(PredictionPromise,self).__init__()
         self.isResolved = False
+        self.isStarted = False
         self.dependencies = []
 
     def resolved(self, slot):
@@ -79,8 +80,31 @@ class PredictionPromise(QObject):
         self.isResolved = True
         self._resolved.emit()
 
+    def start(self):
+        if self.isStarted:
+            return
+        self.isStarted = True
+        self.doStart()
+
+    def doStart(self):
+        # subclasses should override this
+        return
+
+    def addDependency(self, p):
+        self.dependencies.append(p)
+        p.resolved(self.checkDependencies)
+
+    def startDependencies(self):
+        for p in self.dependencies:
+            p.start()
+
     def checkDependencies(self):
-        return next(filter(lambda p: not p.isResolved, self.dependencies), None) is None
+        if next(filter(lambda p: not p.isResolved, self.dependencies), None) is None:
+            self.processDependencies()
+
+    def processDependencies(self):
+        # subclasses should override this
+        self.resolve()
 
 class PredictionDataPromise(PredictionPromise):
     """ Promise to obtain a full set of predictions (events and timeline) for a given station and local date.
@@ -99,7 +123,7 @@ class PredictionDataPromise(PredictionPromise):
 
     """ Get all the data needed to resolve this promise
     """
-    def start(self):
+    def doStart(self):
         if self.predictions is not None:
             self.done()
             return
@@ -131,36 +155,95 @@ class PredictionDataPromise(PredictionPromise):
             self.predictions = savedFeatures
             self.resolve()
         else:
-            # The layer didn't have what we wanted, so create a request as a dependency promise
-            # and kick it off. It will let us know when we are done.
-            req = CurrentPredictionRequest(
-                self.manager,
-                self.stationFeature,
-                startTime,
-                endTime,
-                CurrentPredictionRequest.SpeedDirectionType
-            )
-            print('{}: Fetching features for {}'.format(self.stationFeature['station'],startTime.toString()))
-            req.resolved(self.processRequest)
-            self.dependencies.append(req)
-            req.start()
+            # The layer didn't have what we wanted, so we must request the data we need.
+            # At this point, the situation falls into several possible cases.
 
-    def processRequest(self):
-        # TODO: some dependencies contribute data while others don't. Combining all of them is wrong sometimes.
-        if self.checkDependencies():
-            self.predictions = []
-            for req in self.dependencies:
-                print('{}: Fetched {} features'.format(self.stationFeature['station'],len(req.predictions)))
-                self.predictions.extend(req.predictions)
+            # Case 1: A Harmonic station with known flood/ebb directions. Here
+            # we need two requests which can simply be combined and sorted:
+            #   1a: EventType, i.e. slack, flood and ebb
+            #   1b: SpeedDirType, as velocity can be calculated by projecting along flood/ebb
+            #
+            # Case 2: A Harmonic station with unknown flood and/or ebb.
+            # We actually need to combine 3 requests:
+            #   2a: EventType
+            #   2b: SpeedDirType, which only provides vector magnitude/angle
+            #   2c: VelocityMajorType, which only provides current velocity (but for same times as 2b)
 
-            # TODO: sort the combined predictions here by time
+            # Here we set up requests for cases 1 and 2
+            if self.stationFeature['type'] == 'H':
+                self.speedDirRequest = CurrentPredictionRequest(
+                    self.manager,
+                    self.stationFeature,
+                    startTime,
+                    endTime,
+                    CurrentPredictionRequest.SpeedDirectionType)
+                self.addDependency(self.speedDirRequest)
 
-            self.manager.predictionsLayer.startEditing()
-            self.manager.predictionsLayer.addFeatures(self.predictions)
-            self.manager.predictionsLayer.commitChanges()
-            self.resolve()
+                self.eventRequest = CurrentPredictionRequest(
+                    self.manager,
+                    self.stationFeature,
+                    startTime,
+                    endTime,
+                    CurrentPredictionRequest.EventType)
+                self.addDependency(self.eventRequest)
 
-            self.manager.predictionsLayer.triggerRepaint()
+                floodDir = self.stationFeature['meanFloodDir']
+                ebbDir = self.stationFeature['meanEbbDir']
+                if floodDir == NULL or ebbDir == NULL:
+                    self.velocityRequest = CurrentPredictionRequest(
+                        self.manager,
+                        self.stationFeature,
+                        startTime,
+                        endTime,
+                        CurrentPredictionRequest.VelocityMajorType)
+                    self.addDependency(self.velocityRequest)
+                else:
+                    self.velocityRequest = None
+
+            # Case 3: A Subordinate station which only knows its events. Here we need the following:
+            #   3a: EventType (for this station)
+            #   3b: A resolved data promise for the reference station (which may itself be Cases 1 or 2, but
+            #       we don't care as long as its data is present.)
+            else:
+                self.eventRequest = CurrentPredictionRequest(
+                    self.manager,
+                    self.stationFeature,
+                    startTime,
+                    endTime,
+                    CurrentPredictionRequest.EventType)
+                self.addDependency(self.eventRequest)
+
+                # TODO: get reference promise
+
+            self.startDependencies()
+
+    def processDependencies(self):
+        if self.stationFeature['type'] == 'H':
+            # We will always have a speed/direction request
+            self.predictions = self.speedDirRequest.predictions
+
+            # If we also had a velocity request with the same number of results
+            # try to combine it with this one.
+            if (self.velocityRequest is not None
+                    and (len(self.velocityRequest.predictions) == len(self.predictions))):
+                for i, p in enumerate(self.predictions):
+                    p['value'] = self.velocityRequest.predictions[i]['value']
+
+            # Now fold in the events and sort everything by time
+            self.predictions.extend(self.eventRequest.predictions)
+            self.predictions.sort(key=(lambda p: p['time']))
+        else:
+            # subordinate-station case
+            self.predictions = self.eventRequest.predictions
+            # TODO: use interpolated reference station data to fill this out
+
+        # add everything into the predictions layer
+        self.manager.predictionsLayer.startEditing()
+        self.manager.predictionsLayer.addFeatures(self.predictions, QgsFeatureSink.FastInsert)
+        self.manager.predictionsLayer.commitChanges()
+        self.resolve()
+
+        self.manager.predictionsLayer.triggerRepaint()
 
 
 # low-level request for data regarding a station feature around a date range
@@ -176,7 +259,7 @@ class PredictionRequest(PredictionPromise):
         self.fetcher = QgsNetworkContentFetcher()
         self.fetcher.finished.connect(self.processReply)
 
-    def start(self):
+    def doStart(self):
         self.fetcher.fetchContent(QUrl(self.url()))
 
     def url(self):
@@ -219,6 +302,7 @@ class CurrentPredictionRequest(PredictionRequest):
         self.productName = 'currents_predictions'
         self.baseUrl = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
         self.requestType = requestType
+        print('{}: Requesting type {} for {}'.format(self.stationFeature['station'],self.requestType,start.toString()))
 
     def addQueryItems(self, query):
         query.addQueryItem('station', self.stationFeature['id'])
@@ -226,7 +310,7 @@ class CurrentPredictionRequest(PredictionRequest):
         if self.requestType == self.SpeedDirectionType:
             query.addQueryItem('vel_type', self.VEL_TYPE_SPEED_DIR)
             query.addQueryItem('interval', self.INTERVAL_DEFAULT)
-        elif self.requestType == self.Velocity_Major:
+        elif self.requestType == self.VelocityMajorType:
             query.addQueryItem('vel_type', self.VEL_TYPE_DEFAULT)
             query.addQueryItem('interval', self.INTERVAL_DEFAULT)
         else:
