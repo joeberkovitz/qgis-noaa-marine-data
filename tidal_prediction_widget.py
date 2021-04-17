@@ -177,7 +177,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
             if p['type'] == 'current' and p['dir'] != NULL:
                 self.tableWidget.setItem(i, 1, QTableWidgetItem(str(round(p['dir'])) + 'º'))
+                self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['magnitude'])))
             else:
                 self.tableWidget.setItem(i, 1, QTableWidgetItem(p['type']))
-            self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['value'])))
+                self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['value'])))
 
