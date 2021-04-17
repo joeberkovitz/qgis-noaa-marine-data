@@ -153,8 +153,9 @@ class PredictionDataPromise(PredictionPromise):
         scope = QgsExpressionContextScope()
         scope.setVariable('startTime', startTime)
         scope.setVariable('endTime', endTime)
+        scope.setVariable('station', self.stationFeature['station'])
         ctx.appendScope(scope)
-        featureRequest.setFilterExpression("time >= @startTime and time < @endTime")
+        featureRequest.setFilterExpression("station = @station and time >= @startTime and time < @endTime")
         featureRequest.addOrderBy('time')
 
         savedFeatureIterator = self.manager.predictionsLayer.getFeatures(featureRequest)
@@ -226,7 +227,8 @@ class PredictionDataPromise(PredictionPromise):
                 # get reference station promise
                 refStation = self.manager.getStation(self.stationFeature['refStation'])
                 if refStation is None:
-                    print("Could not find ref station {}".format(refStation))
+                    print("Could not find ref station {} for {}".format(self.stationFeature['refStation'], self.stationFeature['station']))
+                    self.refStationData = None
                 else:
                     self.refStationData = self.manager.getDataPromise(refStation, self.localDate)
                     self.addDependency(self.refStationData)
@@ -252,8 +254,51 @@ class PredictionDataPromise(PredictionPromise):
             # subordinate-station case
             self.predictions = self.eventRequest.predictions
 
-            # use interpolated reference station data to fill this out
-            refInterpolation = self.refStationData.valueInterpolation()
+            if self.refStationData is not None:
+                print('Interpolating ref station {} for {}'.format(self.refStationData.stationFeature['station'],self.stationFeature['station']))
+                # use interpolated reference station data to fill this out
+                valueInterpolation = self.refStationData.valueInterpolation()
+
+                # create a time interpolation function that maps events in the subordinate station
+                # to adjusted and filtered times in the reference station
+                timeInterpolation = self.timeInterpolation()
+
+                firstEventTime = self.datetime.secsTo(self.predictions[0]['time'])
+                lastEventTime = self.datetime.secsTo(self.predictions[-1]['time'])
+                subTimes = list(range(firstEventTime, lastEventTime, PredictionManager.STEP_MINUTES * 60))
+                refTimes = timeInterpolation(np.array(subTimes))
+
+                i = 0
+                while refTimes[i] < 0:
+                    i += 1
+                maxSecs = ((24 * 60) - PredictionManager.STEP_MINUTES) * 60
+                j = len(refTimes)
+                while refTimes[j-1] > maxSecs:
+                    j -= 1
+                subTimes = subTimes[i:j]
+                refTimes = refTimes[i:j]
+
+                refValues = valueInterpolation(refTimes)
+                ebbDir = self.stationFeature['meanEbbDir'] 
+                ebbFactor = self.stationFeature['mecAmpAdj']
+                floodDir = self.stationFeature['meanFloodDir'] 
+                floodFactor = self.stationFeature['mfcAmpAdj']
+                refValues = [v * (ebbFactor if v < 0 else floodFactor) for v in refValues]
+
+                fields = self.manager.predictionsLayer.fields()
+                for i in range(0, len(subTimes)):
+                    f = QgsFeature(fields)
+                    f.setGeometry(QgsGeometry(self.stationFeature.geometry()))
+                    f['station'] = self.stationFeature['station']
+                    f['depth'] = self.stationFeature['depth']
+                    f['time'] = self.datetime.addSecs(int(subTimes[i]))
+                    f['value'] = float(refValues[i])
+                    f['dir'] = ebbDir if refValues[i] < 0 else floodDir
+                    f['magnitude'] = abs(f['value'])
+                    f['type'] = 'current'
+                    self.predictions.append(f)
+
+                self.predictions.sort(key=(lambda p: p['time']))
 
         # add everything into the predictions layer
         self.manager.predictionsLayer.startEditing()
@@ -263,15 +308,62 @@ class PredictionDataPromise(PredictionPromise):
 
         self.manager.predictionsLayer.triggerRepaint()
 
+    def timeInterpolation(self):
+        """ return a function that takes an array of time offsets in seconds on this (subordinate) station
+            and returns an array of time offsets in seconds on the reference station, relative
+            to the start date of this prediction set.
+        """
+
+        # search for events, ignoring any initial slack event
+        phase = 0    # unknown whether we are in ebb or flood initially
+        initialSlack = False
+        subTimes = []
+        refTimes = []
+        phases = []
+        for p in self.predictions:
+            ptype = p['type']
+            time = self.datetime.secsTo(p['time'])
+            subTimes.append(time)
+
+            if ptype == 'slack':
+                if phase > 0:
+                    # slack before ebb (after flood)
+                    refTimes.append(time - 60*self.stationFeature['sbeTimeAdjMin'])
+                elif phase < 0:
+                    # slack before flood (after ebb)
+                    refTimes.append(time - 60*self.stationFeature['sbfTimeAdjMin'])
+                else:
+                    initialSlack = True
+                    refTimes.append(time) # we'll correct this after we know what the first phase is
+            elif ptype == 'flood':
+                phase = 1
+                refTimes.append(time - 60*self.stationFeature['mfcTimeAdjMin'])
+            elif ptype == 'ebb':
+                phase = -1
+                refTimes.append(time - 60*self.stationFeature['mecTimeAdjMin'])
+            else:
+                raise Exception('Unexpected event type ' + ptype)
+
+            phases.append(phase)
+
+        # now fix up any initial slack event we found
+        if initialSlack:
+            initialPhase = phases[0]
+            if initialPhase < 0:
+                refTimes[0] = (subTimes[0] - 60*self.stationFeature['sbeTimeAdjMin'])
+            else:
+                refTimes[0] = (subTimes[0] - 60*self.stationFeature['sbfTimeAdjMin'])
+
+        return interp1d(subTimes, refTimes, 'linear')
+
     def valueInterpolation(self):
-        """ return a function that takes an array of QDateTimes and returns an
+        """ return a function that takes an array of offsets from the start time in seconds, and returns an
             array of interpolated velocities from this object's predictions.
         """
         currentPredictions = list(filter(lambda p: p['type'] == 'current', self.predictions))
-        times = np.array([p['time'].msecsTo(self.datetime) for p in currentPredictions])
+        times = np.array([self.datetime.secsTo(p['time']) for p in currentPredictions])
         values = np.array([p['value'] for p in currentPredictions])
-        f = interp1d(times, values, 'cubic')
-        return (lambda arr: f(np.array([dt.msecsTo(self.datetime) for dt in arr])))
+        return interp1d(times, values, 'cubic')
 
 
 # low-level request for data regarding a station feature around a date range

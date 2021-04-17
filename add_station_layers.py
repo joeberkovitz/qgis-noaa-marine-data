@@ -236,7 +236,7 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
             currentSink.addFeature(f)
 
             progress_count += 1
-            self.feedback.setProgress(100*progress_count/len(stationMap))
+            self.feedback.setProgress(100*progress_count/len(iterMap))
  
         return current_dest_id
 

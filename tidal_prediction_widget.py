@@ -51,6 +51,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def activate(self):
         self.active = True
         self.predictionManager = PredictionManager(currentStationsLayer(), currentPredictionsLayer())
+        QgsProject.instance()._pm = self.predictionManager ## HACK FOR TESTING
         self.show()
         self.setTemporalRange()
         self.loadMapExtentPredictions()
