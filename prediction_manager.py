@@ -5,6 +5,7 @@ from qgis.core import (
     QgsPointXY, QgsPoint, QgsRectangle, QgsFeature, QgsGeometry, QgsField, QgsFields,
     QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform,
     QgsFeatureRequest, QgsNetworkContentFetcher,
+    QgsExpressionContextScope, QgsExpressionContext,
     NULL
 )
 
@@ -112,20 +113,16 @@ class PredictionDataPromise(PredictionPromise):
         searchRect = QgsRectangle(stationPt, stationPt)
         searchRect.grow(0.01/60)   # in the neighborhood of .01 nm as 1/60 = 1 arc minute in this proj.
         featureRequest.setFilterRect(searchRect)
-        # TODO: append variable def scope to the feature req's expressioncontext
-        # rather than the cheesy quoting business below. In fact, we should be able to
-        # set up this scope in advance and just rebind the variables as needed.
-            # ctx=req.expressionContext()
-            # scope=QgsExpressionContextScope()
-            # scope.setVariable('s','SFB1309_11')
-            # ctx.appendScope(scope)
 
-        expr = "time >= to_datetime('{}') and time < to_datetime('{}')".format(
-                   startTime.toString('yyyy-MM-dd hh:mm'),
-                   endTime.toString('yyyy-MM-dd hh:mm')
-                )
-        featureRequest.setFilterExpression(expr)
+        # Create a time based query
+        ctx = featureRequest.expressionContext()
+        scope = QgsExpressionContextScope()
+        scope.setVariable('startTime', startTime)
+        scope.setVariable('endTime', endTime)
+        ctx.appendScope(scope)
+        featureRequest.setFilterExpression("time >= @startTime and time < @endTime")
         featureRequest.addOrderBy('time')
+
         savedFeatureIterator = self.manager.predictionsLayer.getFeatures(featureRequest)
         savedFeatures = list(savedFeatureIterator)
         if len(savedFeatures) > 0:
@@ -140,7 +137,8 @@ class PredictionDataPromise(PredictionPromise):
                 self.manager,
                 self.stationFeature,
                 startTime,
-                endTime
+                endTime,
+                CurrentPredictionRequest.SpeedDirectionType
             )
             print('{}: Fetching features for {}'.format(self.stationFeature['station'],startTime.toString()))
             req.resolved(self.processRequest)
@@ -167,10 +165,6 @@ class PredictionDataPromise(PredictionPromise):
 
 # low-level request for data regarding a station feature around a date range
 class PredictionRequest(PredictionPromise):
-    INTERVAL_MAX_SLACK = 'MAX_SLACK'
-    INTERVAL_DEFAULT = str(PredictionManager.STEP_MINUTES)
-    VEL_TYPE_SPEED_DIR = 'speed_dir'
-    VEL_TYPE_DEFAULT = 'default'
 
     # construct the request and save its state, but don't send it
     def __init__(self, manager, stationFeature, startTime, endTime):
@@ -211,20 +205,32 @@ class PredictionRequest(PredictionPromise):
 
 
 class CurrentPredictionRequest(PredictionRequest):
+    SpeedDirectionType = 0
+    VelocityMajorType = 1
+    EventType = 2
 
-    def __init__(self, manager, stationFeature, start, end):
+    INTERVAL_MAX_SLACK = 'MAX_SLACK'
+    INTERVAL_DEFAULT = str(PredictionManager.STEP_MINUTES)
+    VEL_TYPE_SPEED_DIR = 'speed_dir'
+    VEL_TYPE_DEFAULT = 'default'
+
+    def __init__(self, manager, stationFeature, start, end, requestType):
         super(CurrentPredictionRequest, self).__init__(manager, stationFeature, start, end)
         self.productName = 'currents_predictions'
         self.baseUrl = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
+        self.requestType = requestType
 
     def addQueryItems(self, query):
         query.addQueryItem('station', self.stationFeature['id'])
         query.addQueryItem('bin', str(self.stationFeature['bin']))
-        query.addQueryItem('interval', PredictionRequest.INTERVAL_DEFAULT)
-        if self.stationFeature['meanFloodDir'] == NULL or self.stationFeature['meanEbbDir'] == NULL:
-            query.addQueryItem('vel_type', PredictionRequest.VEL_TYPE_DEFAULT)
+        if self.requestType == self.SpeedDirectionType:
+            query.addQueryItem('vel_type', self.VEL_TYPE_SPEED_DIR)
+            query.addQueryItem('interval', self.INTERVAL_DEFAULT)
+        elif self.requestType == self.Velocity_Major:
+            query.addQueryItem('vel_type', self.VEL_TYPE_DEFAULT)
+            query.addQueryItem('interval', self.INTERVAL_DEFAULT)
         else:
-            query.addQueryItem('vel_type', PredictionRequest.VEL_TYPE_SPEED_DIR)
+            query.addQueryItem('interval', self.INTERVAL_MAX_SLACK)
 
     def parseContent(self, content):
         root = ET.fromstring(content) 
@@ -260,13 +266,16 @@ class CurrentPredictionRequest(PredictionRequest):
                 magnitude = float(prediction.find('Speed').text)
                 valtype = 'current'
 
-                # synthesize the value along flood/ebb dimension
-                floodFactor = math.cos(math.radians(floodDir - direction))
-                ebbFactor = math.cos(math.radians(ebbDir - direction))
-                if floodFactor > ebbFactor:
-                    value = magnitude * floodFactor
+                # synthesize the value along flood/ebb dimension if possible
+                if floodDir != NULL and ebbDir != NULL:
+                    floodFactor = math.cos(math.radians(floodDir - direction))
+                    ebbFactor = math.cos(math.radians(ebbDir - direction))
+                    if floodFactor > ebbFactor:
+                        value = magnitude * floodFactor
+                    else:
+                        value = -magnitude * ebbFactor
                 else:
-                    value = -magnitude * ebbFactor
+                    value = NULL  # we wil have to get this by asking for it explicily
 
             else:
                 vel = float(prediction.find('Velocity_Major').text)
