@@ -5,6 +5,7 @@ from qgis.PyQt.QtCore import QDate, QDateTime, QTime, QTimeZone, QTimer
 from qgis.PyQt.QtWidgets import QTableWidget, QTableWidgetItem
 
 from qgis.core import (
+    QgsProject,
     QgsTemporalNavigationObject,
     QgsDateTimeRange,
     NULL
@@ -20,7 +21,6 @@ else:
     from matplotlib.backends.backend_qt4agg import (
         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
-import numpy as np
 
 from .utils import *
 from .prediction_manager import *
@@ -196,6 +196,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                              True, False
                              )
             )
+        self.updatePlotXLine()
 
     def updateStationLink(self):
         if self.stationFeature is not None:
@@ -205,17 +206,28 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         else:
             self.linkLabel.setText('')
 
+    def handlePlotClick(self, event):
+        minutes = PredictionManager.STEP_MINUTES * (event.xdata * 60 // PredictionManager.STEP_MINUTES)
+        self.timeEdit.setTime(QTime(minutes // 60, minutes % 60))
+
+    def updatePlotXLine(self):
+        if self.predictionCanvas is not None:
+            x = QTime(0,0).secsTo(self.timeEdit.time()) / 3600.0
+            self.plotXLine.set_xdata([x, x])
+            self.plotAxes.figure.canvas.draw()
+
     def predictionsResolved(self):
         """ when we have predictions for the current station, show them in the
             plot and table widget.
         """
         if self.predictionCanvas is not None:
+            self.predictionCanvas.mpl_disconnect(self.plotCallbackId)
             self.plotLayout.removeWidget(self.predictionCanvas)
 
-        self.predictionCanvas = FigureCanvas(Figure())
+        self.predictionCanvas = FigureCanvas(Figure(figsize=(5,3)))
         self.plotLayout.addWidget(self.predictionCanvas)
 
-        figure = self.predictionCanvas.figure.subplots()
+        self.plotAxes = self.predictionCanvas.figure.subplots()
         t0 = QDateTime(self.datetime.date())
         t0.setTimeZone(self.stationZone)
         t0 = t0.toUTC()
@@ -227,7 +239,25 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 utcTime.setTimeSpec(Qt.TimeSpec.UTC)
                 t.append(t0.secsTo(utcTime)/3600)
                 val.append(f['value'])
-        figure.plot(t, val)
+
+        self.plotAxes.set_xlim(left=0, right=24)
+        self.plotAxes.set_xticks([0, 3, 6, 9, 12, 15, 18, 21, 24])
+        self.plotAxes.grid(linewidth=0.5)
+
+        y0line = self.plotAxes.axhline(y=0)
+        y0line.set_linestyle(':')
+        y0line.set_linewidth(1)
+
+        self.plotXLine = self.plotAxes.axvline(x=0)
+        self.plotXLine.set_linestyle(':')
+        self.plotXLine.set_linewidth(1)
+        self.updatePlotXLine()
+
+        self.plotAxes.plot(t, val)
+
+        self.plotCallbackId = self.predictionCanvas.mpl_connect('button_release_event', self.handlePlotClick)
+
+        QgsProject.instance()._ax = self.plotAxes
 
         self.tableWidget.setRowCount(len(self.stationData.predictions))
         i = 0
@@ -243,6 +273,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
                 self.tableWidget.setItem(i, 1, QTableWidgetItem(p['type']))
                 self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['value'])))
+                self.tableWidget.setRowHeight(i, 20)
                 i += 1
         self.tableWidget.setRowCount(i)
 
