@@ -354,7 +354,7 @@ class PredictionDataPromise(PredictionPromise):
             else:
                 refTimes[0] = (subTimes[0] - 60*self.stationFeature['sbfTimeAdjMin'])
 
-        return interp1d(subTimes, refTimes, 'linear')
+        return interp1d(subTimes, refTimes, 'quadratic')
 
     def valueInterpolation(self):
         """ return a function that takes an array of offsets from the start time in seconds, and returns an

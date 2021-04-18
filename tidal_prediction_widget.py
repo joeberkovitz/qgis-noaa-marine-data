@@ -12,6 +12,16 @@ from qgis.core import (
 
 from qgis.utils import iface
 
+from matplotlib.backends.qt_compat import QtCore, QtWidgets
+if QtCore.qVersion() >= "5.":
+    from matplotlib.backends.backend_qt5agg import (
+        FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
+else:
+    from matplotlib.backends.backend_qt4agg import (
+        FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
+from matplotlib.figure import Figure
+import numpy as np
+
 from .utils import *
 from .prediction_manager import *
 
@@ -48,6 +58,10 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.stationFeature = None
         self.stationZone = None
         self.active = False
+
+        self.predictionCanvas = None
+
+        self.includeCurrentsInTable = False
 
         self.autoLoadTimer = QTimer()
         self.autoLoadTimer.setSingleShot(True)
@@ -172,13 +186,13 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.temporal.setNavigationMode(QgsTemporalNavigationObject.NavigationMode.FixedRange)
 
         if self.stationZone is not None:
-            datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time(), self.stationZone).toUTC()
+            self.datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time(), self.stationZone).toUTC()
         else:
-            datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time()).toUTC()
+            self.datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time()).toUTC()
         # Note: we hack around a memory provider range bug here by offsetting the window by 1 minute
         self.temporal.setTemporalExtents(
-            QgsDateTimeRange(datetime.addSecs(-self.TEMPORAL_HACK_SECS),
-                             datetime.addSecs((60 * PredictionManager.STEP_MINUTES) - self.TEMPORAL_HACK_SECS),
+            QgsDateTimeRange(self.datetime.addSecs(-self.TEMPORAL_HACK_SECS),
+                             self.datetime.addSecs((60 * PredictionManager.STEP_MINUTES) - self.TEMPORAL_HACK_SECS),
                              True, False
                              )
             )
@@ -193,18 +207,42 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def predictionsResolved(self):
         """ when we have predictions for the current station, show them in the
-            table widget.
+            plot and table widget.
         """
+        if self.predictionCanvas is not None:
+            self.plotLayout.removeWidget(self.predictionCanvas)
+
+        self.predictionCanvas = FigureCanvas(Figure())
+        self.plotLayout.addWidget(self.predictionCanvas)
+
+        figure = self.predictionCanvas.figure.subplots()
+        t0 = QDateTime(self.datetime.date())
+        t0.setTimeZone(self.stationZone)
+        t0 = t0.toUTC()
+        t = []
+        val = []
+        for f in self.stationData.predictions:
+            if f['type'] == 'current':
+                utcTime = f['time']
+                utcTime.setTimeSpec(Qt.TimeSpec.UTC)
+                t.append(t0.secsTo(utcTime)/3600)
+                val.append(f['value'])
+        figure.plot(t, val)
 
         self.tableWidget.setRowCount(len(self.stationData.predictions))
-        for i, p in enumerate(self.stationData.predictions):
+        i = 0
+        for p in self.stationData.predictions:
             dt = p['time']
             dt.setTimeSpec(Qt.TimeSpec.UTC)
-            self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
-            if p['type'] == 'current' and p['dir'] != NULL:
+            if self.includeCurrentsInTable and p['type'] == 'current' and p['dir'] != NULL:
+                self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
                 self.tableWidget.setItem(i, 1, QTableWidgetItem(str(round(p['dir'])) + 'º'))
                 self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['magnitude'])))
-            else:
+                i += 1
+            elif p['type'] != 'current':
+                self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
                 self.tableWidget.setItem(i, 1, QTableWidgetItem(p['type']))
                 self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['value'])))
+                i += 1
+        self.tableWidget.setRowCount(i)
 
