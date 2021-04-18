@@ -145,7 +145,9 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.stationFeature = feature
         self.stationZone = stationTimeZone(feature)
         self.stationLabel.setText(feature['name'])
+
         self.updateTime()
+        self.updateStationLink()
         self.loadStationPredictions()
 
     def adjustDay(self, delta):
@@ -163,10 +165,12 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def updateDate(self):
         self.loadMapExtentPredictions()
+        self.updateStationLink()
         self.updateTime()
 
     def updateTime(self):
         self.temporal.setNavigationMode(QgsTemporalNavigationObject.NavigationMode.FixedRange)
+
         if self.stationZone is not None:
             datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time(), self.stationZone).toUTC()
         else:
@@ -178,6 +182,14 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                              True, False
                              )
             )
+
+    def updateStationLink(self):
+        if self.stationFeature is not None:
+            linkUrl = 'https://tidesandcurrents.noaa.gov/noaacurrents/Predictions?id={}&d={}&r=1&tz=LST%2FLDT'
+            linkUrl = linkUrl.format(self.stationFeature['station'], self.dateEdit.date().toString('yyyy-MM-dd'))
+            self.linkLabel.setText('<a href="{}">{} Station Page</a>'.format(linkUrl, self.stationFeature['id']))
+        else:
+            self.linkLabel.setText('')
 
     def predictionsResolved(self):
         """ when we have predictions for the current station, show them in the
