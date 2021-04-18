@@ -30,7 +30,6 @@ from .utils import *
 from .time_zone_lookup import TimeZoneLookup
 
 class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
-    PrmOnlyShallowestStations = 'OnlyShallowestStations'
     PrmCurrentStationsLayer = 'CurrentStationsLayer'
 # boilerplate methods
     def name(self):
@@ -47,12 +46,6 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
     # Set up this algorithm
     def initAlgorithm(self, config):
-        self.addParameter(
-            QgsProcessingParameterBoolean(
-                self.PrmOnlyShallowestStations,
-                tr('Use only current stations nearest the surface'),
-                True)
-        )
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.PrmCurrentStationsLayer,
@@ -112,8 +105,6 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
             self.reportError('Failed with status {}'.format(r.status_code), True)
             return
 
-        self.onlyShallowest = self.parameterAsBool(self.parameters, self.PrmOnlyShallowestStations, self.context)
-
         content = r.text
         if len(content) == 0:
             return
@@ -125,6 +116,7 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         fields.append(QgsField("bin", QVariant.String,'', 4))
         fields.append(QgsField("depth",  QVariant.Double))
         fields.append(QgsField("depthType",  QVariant.String, '', 1))
+        fields.append(QgsField("surface", QVariant.Int))
         fields.append(QgsField("meanFloodDir", QVariant.Double))
         fields.append(QgsField("meanEbbDir", QVariant.Double))
         fields.append(QgsField("mfcTimeAdjMin", QVariant.Double))
@@ -153,11 +145,11 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
         # Get a map that will track the metadata for the least-depth bin for each station.
         # Also maintain a map by station key.
+        surfaceMap = {}
         stationMap = {}
-        stationsByIdBin = {}
 
         # Loop over all stations and index them. If filtering for shallowest at each location,
-        # maintain the minimum depth station for each id in stationMap.
+        # maintain the minimum depth station for each id in surfaceMap.
         for s in stations: 
             stationId = s.find('id').text
             stationBin = s.find('currbin').text
@@ -166,19 +158,18 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
             if s.find('type').text == 'W':
                 continue
 
-            stationsByIdBin[stationId + '_' + stationBin] = s
+            stationMap[stationId + '_' + stationBin] = s
 
-            if self.onlyShallowest:
-                # If we find that we already saw this station, check its depth and only update the station map
-                # if the newly found bin is shallower
-                lastStation = stationMap.get(stationId)
-                if lastStation and lastStation.find('depth').text and s.find('depth').text:
-                    lastDepth = float(lastStation.find('depth').text)
-                    newDepth = float(s.find('depth').text)
-                    if newDepth >= lastDepth:
-                        continue
+            # If we find that we already saw this station, check its depth and only update the station map
+            # if the newly found bin is shallower
+            lastStation = surfaceMap.get(stationId)
+            if lastStation and lastStation.find('depth').text and s.find('depth').text:
+                lastDepth = float(lastStation.find('depth').text)
+                newDepth = float(s.find('depth').text)
+                if newDepth >= lastDepth:
+                    continue
 
-                stationMap[stationId] = s
+            surfaceMap[stationId] = s
 
         if self.context.willLoadLayerOnCompletion(current_dest_id):
             proc = CurrentStationsStylePostProcessor.create(
@@ -194,13 +185,7 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
         tzl = TimeZoneLookup()
 
-        if self.onlyShallowest:
-            iterMap = stationMap
-        else:
-            iterMap = stationsByIdBin
-
-        for key in iterMap:
-            s = iterMap[key]
+        for key, s in stationMap.items():
             cpo = s.find('currentpredictionoffsets')
 
             f = QgsFeature(fields)
@@ -210,13 +195,15 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
             geom = QgsGeometry(QgsPoint(lng, lat))
             f.setGeometry(geom)
 
+            f['station'] = key
             f['id'] = s.find('id').text
             f['bin'] = s.find('currbin').text
-            f['station'] = f['id'] + '_' + f['bin']
             f['name'] = s.find('name').text
             f['type'] = s.find('type').text
             f['depth'] = parseFloatNullable(s.find('depth').text)
             f['depthType'] = s.find('depthType').text
+
+            f['surface'] = 1 if surfaceMap.get(f['id']) == s else 0
 
             refStationId = cpo.find('refStationId').text
             if refStationId:
@@ -236,7 +223,7 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
             currentSink.addFeature(f)
 
             progress_count += 1
-            self.feedback.setProgress(100*progress_count/len(iterMap))
+            self.feedback.setProgress(100*progress_count/len(stationMap))
  
         return current_dest_id
 
