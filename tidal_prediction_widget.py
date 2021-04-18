@@ -1,7 +1,7 @@
 import os
 
 from qgis.PyQt import QtWidgets, uic
-from qgis.PyQt.QtCore import QDate, QDateTime, QTime, QTimeZone
+from qgis.PyQt.QtCore import QDate, QDateTime, QTime, QTimeZone, QTimer
 from qgis.PyQt.QtWidgets import QTableWidget, QTableWidgetItem
 
 from qgis.core import (
@@ -21,6 +21,7 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 
 class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
     TEMPORAL_HACK_SECS = 1
+    AUTOLOAD_TIMER_MSECS = 300
 
     def __init__(self, parent, canvas):
         """Constructor."""
@@ -48,6 +49,9 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.stationZone = None
         self.active = False
 
+        self.autoLoadTimer = QTimer()
+        self.autoLoadTimer.setSingleShot(True)
+
     def activate(self):
         self.active = True
         self.predictionManager = PredictionManager(currentStationsLayer(), currentPredictionsLayer())
@@ -55,10 +59,15 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.show()
         self.setTemporalRange()
         self.loadMapExtentPredictions()
-        self.canvas.extentsChanged.connect(self.loadMapExtentPredictions)
+
+        self.autoLoadTimer.timeout.connect(self.loadMapExtentPredictions)
+        self.canvas.extentsChanged.connect(self.triggerAutoLoad)
 
     def deactivate(self):
-        self.canvas.extentsChanged.disconnect(self.loadMapExtentPredictions)
+        self.canvas.extentsChanged.disconnect(self.triggerAutoLoad)
+        self.autoLoadTimer.timeout.disconnect(self.loadMapExtentPredictions)
+        self.autoLoadTimer.stop()
+
         self.hide()
         self.predictionManager = None
         self.active = False
@@ -66,7 +75,11 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def maxAutoLoadCount(self):
         return 100;   # TODO: have a widget for this
 
+    def triggerAutoLoad(self):
+        self.autoLoadTimer.start(self.AUTOLOAD_TIMER_MSECS)
+
     def loadMapExtentPredictions(self):
+        self.autoLoadTimer.stop()
         """ ensure all stations in visible extent of the map are loaded
         """
         if self.active and self.predictionManager is not None:
