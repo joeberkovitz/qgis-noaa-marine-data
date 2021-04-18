@@ -45,8 +45,9 @@ class TidalPredictionTool(QgsMapToolIdentify):
 
             if layer == currentStations:
                 feature = r.mFeature
-                self.dock.setCurrentStation(feature)
-                break
+                if feature['surface'] > 0:
+                    self.dock.setCurrentStation(feature)
+                    break
 
     def activate(self):
         self.dock.activate()

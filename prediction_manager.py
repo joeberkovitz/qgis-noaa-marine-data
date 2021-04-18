@@ -49,9 +49,9 @@ class PredictionManager:
 
         return promise
 
-    # Return a list of station features included in the give rectangle.
+    # Return a list of surface station features included in the given rectangle.
     def getExtentStations(self, rect):
-        return list(self.stationsLayer.getFeatures(rect))
+        return list(filter(lambda f: f['surface'] > 0, self.stationsLayer.getFeatures(rect)))
 
     # Return a station feature by its unique identifier
     def getStation(self, stationId):
