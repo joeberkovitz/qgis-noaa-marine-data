@@ -1,13 +1,14 @@
 import os
 
 from qgis.PyQt import QtWidgets, uic
-from qgis.PyQt.QtCore import QDate, QDateTime, QTime, QTimeZone, QTimer
+from qgis.PyQt.QtCore import QDate, QDateTime, QTime, QTimeZone, QTimer, QSizeF, QPointF
 from qgis.PyQt.QtWidgets import QTableWidget, QTableWidgetItem
 
 from qgis.core import (
     QgsProject,
     QgsTemporalNavigationObject,
     QgsDateTimeRange,
+    QgsTextAnnotation,
     NULL
 )
 
@@ -43,7 +44,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.tableWidget.setColumnCount(3)
         self.tableWidget.setSortingEnabled(False)
-        self.tableWidget.setHorizontalHeaderLabels([tr('Time'), tr('Direction'), tr('Speed (kt)')])
+        self.tableWidget.setHorizontalHeaderLabels([tr('Time'), tr('Direction'), tr('Speed')])
 
         self.dateEdit.dateChanged.connect(self.updateDate)
         self.dateEdit.dateChanged.connect(self.loadStationPredictions)
@@ -53,6 +54,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.prevDay.clicked.connect(lambda: self.adjustDay(-1))
         self.nextStep.clicked.connect(lambda: self.adjustStep(1))
         self.prevStep.clicked.connect(lambda: self.adjustStep(-1))
+
+        self.annotationButton.clicked.connect(self.annotatePredictions)
 
         self.predictionManager = None
         self.stationFeature = None
@@ -276,4 +279,51 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 self.tableWidget.setRowHeight(i, 20)
                 i += 1
         self.tableWidget.setRowCount(i)
+
+    def annotatePredictions(self):
+        if self.stationFeature is None:
+            return
+
+        a = QgsTextAnnotation()
+        a.setMapLayer(self.predictionManager.stationsLayer)
+
+        document = a.document()
+
+        columnWidth = [80,100,60]
+        columnAlign = ['left','left','right']
+
+        html = '<font size="+2"><b>'
+        html += self.stationFeature['name'] + '<br>' + self.dateEdit.date().toString() + '<br>'
+        html += '</b></font>'
+        html += '<font size="+1"><table cellpadding="0" cellspacing="0">'
+        html += '<tr>'
+        for j in range(0, self.tableWidget.columnCount()):
+            html += '<td width="{}"><b>{}</b></td>'.format(
+                columnWidth[j],
+                self.tableWidget.horizontalHeaderItem(j).text())
+        html += '</tr>'
+
+        for i in range(0, self.tableWidget.rowCount()):
+            html += '<tr bgcolor="{}">'.format('#FFFFFF' if i % 2 else '#EEEEEE')
+            for j in range(0, self.tableWidget.columnCount()):
+                html += '<td align="{}" width="{}">{}</td>'.format(
+                    columnAlign[j],
+                    columnWidth[j],
+                    self.tableWidget.item(i, j).text())
+            html += '</tr>'
+
+        html += '</table></font>'
+        document.setHtml(html)
+
+        # TODO: this size and offset are wack. Can we dynamically calculate from the content somehow?
+        a.setFrameSize(QSizeF(270, 300))
+        a.setFrameOffsetFromReferencePoint(QPointF(-300,-200))
+        a.setMapPosition(self.stationFeature.geometry().asPoint())
+        a.setMapPositionCrs(QgsCoordinateReferenceSystem(self.predictionManager.stationsLayer.crs()))
+
+        # disable its symbol
+        for symbol in a.markerSymbol().symbolLayers():
+            symbol.setEnabled(False)
+
+        QgsProject.instance().annotationManager().addAnnotation(a)
 
