@@ -2,7 +2,7 @@
 export QGIS_BUNDLE=/Applications/QGIS-LTR.app/Contents
 export QGIS_PREFIX_PATH=${QGIS_BUNDLE}/MacOS
 export PATH=${QGIS_PREFIX_PATH}/bin:$PATH
-export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:./lib
+export DYLD_LIBRARY_PATH=`dirname $0`/lib
 export GDAL_DRIVER_PATH=${QGIS_PREFIX_PATH}/lib/gdalplugins
 export GDAL_DATA=${QGIS_BUNDLE}/Resources/gdal
 export PROJ_LIB=${QGIS_BUNDLE}/Resources/proj
