@@ -24,13 +24,17 @@ __copyright__ = (
 )
 
 import logging
-from qgis.PyQt.QtCore import QObject, pyqtSlot, pyqtSignal
-from qgis.core import QgsMapLayerStore
-from qgis.core import QgsMapLayer
+from typing import List
+from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QSize
+from qgis.PyQt.QtWidgets import QDockWidget
+from qgis.core import QgsProject, QgsMapLayer
+from qgis.gui import (QgsMapCanvas,
+                      QgsMessageBar)
+
 LOGGER = logging.getLogger('QGIS')
 
 
-#noinspection PyMethodMayBeStatic,PyPep8Naming
+# noinspection PyMethodMayBeStatic,PyPep8Naming
 class QgisInterface(QObject):
     """Class to expose QGIS objects and functions to plugins.
 
@@ -39,40 +43,90 @@ class QgisInterface(QObject):
     """
     currentLayerChanged = pyqtSignal(QgsMapLayer)
 
-    def __init__(self, canvas):
+    def __init__(self, canvas: QgsMapCanvas):
         """Constructor
         :param canvas:
         """
         QObject.__init__(self)
         self.canvas = canvas
+        # Set up slots so we can mimic the behaviour of QGIS when layers
+        # are added.
+        LOGGER.debug('Initialising canvas...')
+        # noinspection PyArgumentList
+        QgsProject.instance().layersAdded.connect(self.addLayers)
+        # noinspection PyArgumentList
+        QgsProject.instance().layerWasAdded.connect(self.addLayer)
+        # noinspection PyArgumentList
+        QgsProject.instance().removeAll.connect(self.removeAllLayers)
 
         # For processing module
         self.destCrs = None
 
-    def newProject(self):
+        self.message_bar = QgsMessageBar()
+
+    def addLayers(self, layers: List[QgsMapLayer]):
+        """Handle layers being added to the registry so they show up in canvas.
+
+        :param layers: list<QgsMapLayer> list of map layers that were added
+
+        .. note:: The QgsInterface api does not include this method,
+            it is added here as a helper to facilitate testing.
+        """
+        # LOGGER.debug('addLayers called on qgis_interface')
+        # LOGGER.debug('Number of layers being added: %s' % len(layers))
+        # LOGGER.debug('Layer Count Before: %s' % len(self.canvas.layers()))
+        current_layers = self.canvas.layers()
+        final_layers = []
+        for layer in current_layers:
+            final_layers.append(layer)
+        for layer in layers:
+            final_layers.append(layer)
+
+        self.canvas.setLayers(final_layers)
+        # LOGGER.debug('Layer Count After: %s' % len(self.canvas.layers()))
+
+    def addLayer(self, layer: QgsMapLayer):
+        """Handle a layer being added to the registry so it shows up in canvas.
+
+        :param layer: list<QgsMapLayer> list of map layers that were added
+
+        .. note: The QgsInterface api does not include this method, it is added
+                 here as a helper to facilitate testing.
+
+        .. note: The addLayer method was deprecated in QGIS 1.8 so you should
+                 not need this method much.
+        """
+        pass  # pylint: disable=unnecessary-pass
+
+    @pyqtSlot()
+    def removeAllLayers(self):  # pylint: disable=no-self-use
+        """Remove layers from the canvas before they get deleted."""
+        self.canvas.setLayers([])
+
+    def newProject(self):  # pylint: disable=no-self-use
         """Create new project."""
         # noinspection PyArgumentList
-        QgsMapLayerStore.instance().removeAllMapLayers()
+        QgsProject.instance().clear()
 
     # ---------------- API Mock for QgsInterface follows -------------------
 
     def zoomFull(self):
         """Zoom to the map full extent."""
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
     def zoomToPrevious(self):
         """Zoom to previous view extent."""
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
     def zoomToNext(self):
         """Zoom to next view extent."""
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
     def zoomToActiveLayer(self):
         """Zoom to extent of active layer."""
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
-    def addVectorLayer(self, path, base_name, provider_key):
+    def addVectorLayer(self, path: str, base_name: str, provider_key: str):
         """Add a vector layer.
 
         :param path: Path to layer.
@@ -84,9 +138,9 @@ class QgisInterface(QObject):
         :param provider_key: Provider key e.g. 'ogr'
         :type provider_key: str
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
-    def addRasterLayer(self, path, base_name):
+    def addRasterLayer(self, path: str, base_name: str):
         """Add a raster layer given a raster layer file name
 
         :param path: Path to layer.
@@ -95,12 +149,12 @@ class QgisInterface(QObject):
         :param base_name: Base name for layer.
         :type base_name: str
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
-    def activeLayer(self):
+    def activeLayer(self) -> QgsMapLayer:  # pylint: disable=no-self-use
         """Get pointer to the active layer (layer selected in the legend)."""
         # noinspection PyArgumentList
-        layers = QgsMapLayerStore.instance().mapLayers()
+        layers = QgsProject.instance().mapLayers()
         for item in layers:
             return layers[item]
 
@@ -110,7 +164,7 @@ class QgisInterface(QObject):
         :param action: Action to add to the toolbar.
         :type action: QAction
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
     def removeToolBarIcon(self, action):
         """Remove an action (icon) from the plugin toolbar.
@@ -118,7 +172,7 @@ class QgisInterface(QObject):
         :param action: Action to add to the toolbar.
         :type action: QAction
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
     def addToolBar(self, name):
         """Add toolbar with specified name.
@@ -126,9 +180,9 @@ class QgisInterface(QObject):
         :param name: Name for the toolbar.
         :type name: str
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
-    def mapCanvas(self):
+    def mapCanvas(self) -> QgsMapCanvas:
         """Return a pointer to the map canvas."""
         return self.canvas
 
@@ -137,9 +191,9 @@ class QgisInterface(QObject):
 
         In case of QGIS it returns an instance of QgisApp.
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
-    def addDockWidget(self, area, dock_widget):
+    def addDockWidget(self, area, dock_widget: QDockWidget):
         """Add a dock widget to the main window.
 
         :param area: Where in the ui the dock should be placed.
@@ -148,8 +202,25 @@ class QgisInterface(QObject):
         :param dock_widget: A dock widget to add to the UI.
         :type dock_widget: QDockWidget
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
     def legendInterface(self):
         """Get the legend."""
         return self.canvas
+
+    def iconSize(self, dockedToolbar) -> int:
+        """
+        Returns the toolbar icon size.
+        :param dockedToolbar: If True, the icon size
+        for toolbars contained within docks is returned.
+        """
+        if dockedToolbar:
+            return QSize(16, 16)
+
+        return QSize(24, 24)
+
+    def messageBar(self) -> QgsMessageBar:
+        """
+        Return the message bar of the main app
+        """
+        return self.message_bar

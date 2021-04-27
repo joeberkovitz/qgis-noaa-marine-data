@@ -8,3 +8,5 @@ zip_build
 pb_tool.cfg
 plugin_upload.py
 vendor
+test/lib
+__pycache__
