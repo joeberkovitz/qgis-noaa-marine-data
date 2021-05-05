@@ -42,6 +42,10 @@ class CurrentStationsFixtures:
         layer = self.getFixtureLayer(filename)
         return list(layer.getFeatures(QgsFeatureRequest().setFilterExpression(expression)))
 
+    def generateAssertions(self, feature):
+        for name in feature.fields().names():
+            print("self.assertEqual(feature['{}'], {})".format(name, repr(feature[name])))
+       
 class CurrentStationsTest(unittest.TestCase):
     def setUp(self):
         self.fixtures = CurrentStationsFixtures()
@@ -50,10 +54,6 @@ class CurrentStationsTest(unittest.TestCase):
     def tearDown(self):
         return
 
-    def generateAssertions(self, feature):
-        for name in feature.fields().names():
-            print("self.assertEqual(feature['{}'], {})".format(name, repr(feature[name])))
-       
     @patch('requests.get')
     def test_request_url(self, mockGet):
         mockGet.return_value = self.fixtures.getMockRequest('currentSubordinate.xml')

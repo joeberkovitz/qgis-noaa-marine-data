@@ -1,0 +1,60 @@
+<Stations>
+  <count>2</count>
+  <units>feet</units>
+  <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="currPredStation" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/BOS1111.xml">
+    <id>BOS1111</id>
+    <name>Boston Harbor (Deer Island Light)</name>
+    <lat>42.33778</lat>
+    <lng>-70.95578</lng>
+    <affiliations/>
+    <portscode/>
+    <expand>currentpredictionoffsets,harcon</expand>
+    <tideType/>
+    <currentpredictionoffsets xsi:type="currentPredictionOffsets" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/BOS1111_14/currentpredictionoffsets.xml">
+      <refStationId/>
+      <refStationBin xsi:nil="true"/>
+      <meanFloodDir>264.0</meanFloodDir>
+      <meanEbbDir>112.0</meanEbbDir>
+      <mfcTimeAdjMin xsi:nil="true"/>
+      <sbeTimeAdjMin xsi:nil="true"/>
+      <mecTimeAdjMin xsi:nil="true"/>
+      <sbfTimeAdjMin xsi:nil="true"/>
+      <mfcAmpAdj xsi:nil="true"/>
+      <mecAmpAdj xsi:nil="true"/>
+    </currentpredictionoffsets>
+    <currbin>14</currbin>
+    <type>H</type>
+    <depth>8.0</depth>
+    <depthType>B</depthType>
+    <timezone_offset>-5</timezone_offset>
+    <harmonicConstituents self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/BOS1111/harcon.xml"/>
+  </Station>
+  <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="currPredStation" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT0926.xml">
+    <id>ACT0926</id>
+    <name>Bass Point, 1.2 n.mi. southeast of</name>
+    <lat>42.402</lat>
+    <lng>-70.91783</lng>
+    <affiliations/>
+    <portscode/>
+    <expand>currentpredictionoffsets,harcon</expand>
+    <tideType/>
+    <currentpredictionoffsets xsi:type="currentPredictionOffsets" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT0926_1/currentpredictionoffsets.xml">
+      <refStationId>BOS1111</refStationId>
+      <refStationBin>14</refStationBin>
+      <meanFloodDir>259.0</meanFloodDir>
+      <meanEbbDir>66.0</meanEbbDir>
+      <mfcTimeAdjMin>85</mfcTimeAdjMin>
+      <sbeTimeAdjMin>53</sbeTimeAdjMin>
+      <mecTimeAdjMin>-26</mecTimeAdjMin>
+      <sbfTimeAdjMin>-31</sbfTimeAdjMin>
+      <mfcAmpAdj>0.6</mfcAmpAdj>
+      <mecAmpAdj>0.6</mecAmpAdj>
+    </currentpredictionoffsets>
+    <currbin>1</currbin>
+    <type>S</type>
+    <depth>10.0</depth>
+    <depthType>S</depthType>
+    <timezone_offset/>
+    <harmonicConstituents self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT0926/harcon.xml"/>
+  </Station>
+</Stations>
