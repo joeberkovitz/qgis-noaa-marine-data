@@ -1,2 +1,4 @@
 test/lib
+*.gpkg-shm
+*.gpkg-wal
 __pycache__
