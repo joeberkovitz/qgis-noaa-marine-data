@@ -9,5 +9,5 @@ export PROJ_LIB=${QGIS_BUNDLE}/Resources/proj
 export PYQGIS_STARTUP=pyqgis-startup.py
 export PYTHONHOME=/Applications/QGIS-LTR.app/Contents/MacOS
 export QT_AUTO_SCREEN_SCALE_FACTOR=1
-# Note: this relies on nose having been installed by the python3 bundled into QGIS in its own bin/ directory.
-nosetests
+# Note: this relies on nose having been installed in ${QGIS_PREFIX_PATH}/bin by the pip binary bundled with QGIS.
+nosetests $*
