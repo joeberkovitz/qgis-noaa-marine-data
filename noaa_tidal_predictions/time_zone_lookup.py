@@ -21,8 +21,8 @@ class TimeZoneLookup:
             if engine.contains(point):
                 return (zid, zutc)
 
-        return None
-
+        raise Exception("No time zone found at {},{}".format(lat,lng))
+    
     def getZones(self):
         self.ensureZonesLoaded()
         return self.zones
