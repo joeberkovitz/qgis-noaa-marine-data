@@ -9,6 +9,7 @@ from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProject,
     QgsProcessingContext,
+    QgsProcessingFeedback,
     QgsProcessingUtils,
     QgsFeatureRequest,
     NULL
@@ -39,6 +40,19 @@ class CurrentStationsTest(unittest.TestCase):
         with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
             mockRequest.text = dataFile.read()
         return mockRequest
+
+    @patch('requests.get')
+    def test_request_url(self, mockGet):
+        mockGet.return_value = self.getMockRequest('currentSubordinate.xml')
+        dest_id = self.alg.getCurrentStations()
+        mockGet.assert_called_once_with('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets', timeout=30)
+
+    @patch('requests.get')
+    def test_bad_request(self, mockGet):
+        mockGet.return_value = self.getMockRequest('currentSubordinate.xml', 400)
+        self.alg.feedback = Mock(spec=QgsProcessingFeedback)
+        dest_id = self.alg.getCurrentStations()
+        self.alg.feedback.reportError.assert_called()
 
     @patch('requests.get')
     def test_add_subordinate(self, mockGet):

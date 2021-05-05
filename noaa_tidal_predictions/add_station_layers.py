@@ -102,7 +102,7 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         url = 'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets'
         r = requests.get(url, timeout=30)
         if r.status_code != 200:
-            self.reportError('Failed with status {}'.format(r.status_code), True)
+            self.feedback.reportError('Failed with status {}'.format(r.status_code), True)
             return
 
         content = r.text
