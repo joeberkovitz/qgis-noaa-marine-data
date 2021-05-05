@@ -18,13 +18,33 @@ from noaa_tidal_predictions.add_station_layers import AddCurrentStationsLayerAlg
 
 QGIS_APP = get_qgis_app()
 
-
-class CurrentStationsTest(unittest.TestCase):
-    def setUp(self):
+class CurrentStationsFixtures:
+    def __init__(self):
         self.alg = AddCurrentStationsLayerAlgorithm()
         self.alg.initAlgorithm({})
         self.alg.context = QgsProcessingContext()
         self.alg.parameters = {'CurrentStationsLayer': QgsProcessingUtils.generateTempFilename('temp.gpkg')}
+
+    def getMockRequest(self, filename, status_code=200):
+        mockRequest = Mock()
+        mockRequest.status_code = status_code
+        with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
+            mockRequest.text = dataFile.read()
+        return mockRequest
+
+    def getFixtureLayer(self, filename):
+        with patch('requests.get') as mockGet:
+            mockGet.return_value = self.getMockRequest(filename)
+            dest_id = self.alg.getCurrentStations()
+            return QgsProcessingUtils.mapLayerFromString(dest_id, self.alg.context)
+
+    def getFeatures(self, filename, expression):
+        layer = self.getFixtureLayer(filename)
+        return list(layer.getFeatures(QgsFeatureRequest().setFilterExpression(expression)))
+
+class CurrentStationsTest(unittest.TestCase):
+    def setUp(self):
+        self.fixtures = CurrentStationsFixtures()
         return
 
     def tearDown(self):
@@ -34,33 +54,21 @@ class CurrentStationsTest(unittest.TestCase):
         for name in feature.fields().names():
             print("self.assertEqual(feature['{}'], {})".format(name, repr(feature[name])))
        
-    def getMockRequest(self, filename, status_code=200):
-        mockRequest = Mock()
-        mockRequest.status_code = status_code
-        with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
-            mockRequest.text = dataFile.read()
-        return mockRequest
-
     @patch('requests.get')
     def test_request_url(self, mockGet):
-        mockGet.return_value = self.getMockRequest('currentSubordinate.xml')
-        dest_id = self.alg.getCurrentStations()
+        mockGet.return_value = self.fixtures.getMockRequest('currentSubordinate.xml')
+        dest_id = self.fixtures.alg.getCurrentStations()
         mockGet.assert_called_once_with('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets', timeout=30)
 
     @patch('requests.get')
     def test_bad_request(self, mockGet):
-        mockGet.return_value = self.getMockRequest('currentSubordinate.xml', 400)
-        self.alg.feedback = Mock(spec=QgsProcessingFeedback)
-        dest_id = self.alg.getCurrentStations()
-        self.alg.feedback.reportError.assert_called()
+        mockGet.return_value = self.fixtures.getMockRequest('currentSubordinate.xml', 400)
+        self.fixtures.alg.feedback = Mock(spec=QgsProcessingFeedback)
+        dest_id = self.fixtures.alg.getCurrentStations()
+        self.fixtures.alg.feedback.reportError.assert_called()
 
-    @patch('requests.get')
-    def test_add_subordinate(self, mockGet):
-        mockGet.return_value = self.getMockRequest('currentSubordinate.xml')
-
-        dest_id = self.alg.getCurrentStations()
-        dest = QgsProcessingUtils.mapLayerFromString(dest_id, self.alg.context)
-        features = list(dest.getFeatures(QgsFeatureRequest().setFilterExpression("station = 'ACT0926_1'")))
+    def test_add_subordinate(self):
+        features = self.fixtures.getFeatures('currentSubordinate.xml', "station = 'ACT0926_1'")
         self.assertEqual(len(features), 1)
         feature = features[0]
         self.assertEqual(feature['station'], 'ACT0926_1')
@@ -83,13 +91,8 @@ class CurrentStationsTest(unittest.TestCase):
         self.assertEqual(feature['mfcAmpAdj'], 0.6)
         self.assertEqual(feature['mecAmpAdj'], 0.6) 
  
-    @patch('requests.get')
-    def test_add_harmonic(self, mockGet):
-        mockGet.return_value = self.getMockRequest('currentHarmonic.xml')
-
-        dest_id = self.alg.getCurrentStations()
-        dest = QgsProcessingUtils.mapLayerFromString(dest_id, self.alg.context)
-        features = list(dest.getFeatures(QgsFeatureRequest().setFilterExpression("station = 'BOS1111_14'")))
+    def test_add_harmonic(self):
+        features = self.fixtures.getFeatures('currentHarmonic.xml', "station = 'BOS1111_14'")
         self.assertEqual(len(features), 1)
         feature = features[0]
         self.assertEqual(feature['station'], 'BOS1111_14')
@@ -112,12 +115,9 @@ class CurrentStationsTest(unittest.TestCase):
         self.assertEqual(feature['mfcAmpAdj'], NULL)
         self.assertEqual(feature['mecAmpAdj'], NULL)
 
-    @patch('requests.get')
-    def test_detect_surface(self, mockGet):
-        mockGet.return_value = self.getMockRequest('currentMultiDepth.xml')
+    def test_detect_surface(self):
+        dest = self.fixtures.getFixtureLayer('currentMultiDepth.xml')
 
-        dest_id = self.alg.getCurrentStations()
-        dest = QgsProcessingUtils.mapLayerFromString(dest_id, self.alg.context)
         features = list(dest.getFeatures(QgsFeatureRequest().setFilterExpression("id = 'ACT0926'")))
         self.assertEqual(len(features), 3)
 
