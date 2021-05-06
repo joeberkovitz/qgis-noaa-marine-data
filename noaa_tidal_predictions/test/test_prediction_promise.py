@@ -53,6 +53,16 @@ class PredictionPromiseTest(unittest.TestCase):
         self.assertTrue(self.promise.isStarted)
         self.assertTrue(self.promise.isResolved)
 
+    def test_already_resolved(self):
+        self.promise.start()
+        self.promise.resolve()
+        self.resolved.assert_called_once()
+
+        # further resolved() calls should now result in an immediate callback
+        resolved2 = Mock('resolved2')
+        self.promise.resolved(resolved2)
+        resolved2.assert_called_once()
+
     def test_dependencies(self):
         self.promise.doProcessing = Mock('doProcessing')
 
