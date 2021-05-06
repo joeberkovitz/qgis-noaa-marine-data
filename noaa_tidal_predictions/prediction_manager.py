@@ -15,6 +15,9 @@ from qgis.PyQt.QtCore import (
     pyqtSlot, pyqtSignal,
     QObject, QDate, QDateTime, QTime, QTimeZone, QUrl, QUrlQuery,
 )
+from qgis.PyQt.QtNetwork import (
+    QNetworkReply
+)
 
 from .utils import *
 
@@ -428,8 +431,11 @@ class PredictionRequest(PredictionPromise):
 
     # process the reply from our content-fetching task
     def processReply(self):
-        self.predictions = self.parseContent(self.fetcher.contentAsString())
-        self.resolve()
+        if self.fetcher.reply.error() == QNetworkReply.NoError:
+            self.predictions = self.parseContent(self.fetcher.contentAsString())
+            self.resolve()
+        else:
+            self.reject()
 
 
 class CurrentPredictionRequest(PredictionRequest):

@@ -5,6 +5,8 @@ from unittest.mock import *
 import os
 
 from qgis.PyQt.QtCore import QCoreApplication, QDateTime, QUrl
+from qgis.PyQt.QtNetwork import QNetworkReply
+
 from qgis.core import (
     QgsFeature,
     QgsFields,
@@ -40,13 +42,20 @@ class PredictionManagerTest(unittest.TestCase):
     def tearDown(self):
         return
 
-    def getPredictions(self, filename, station, datetime, type, url=None):
+    def getPredictions(self, filename, station, datetime, type, url=None, error=QNetworkReply.NoError):
         cpr = CurrentPredictionRequest(
             self.pm,
             station,
             datetime, datetime.addDays(1),
             type)
-        cpr.fetcher.fetchContent = Mock()
+        resolved = Mock()
+        cpr.resolved(resolved)
+        rejected = Mock()
+        cpr.rejected(rejected)
+
+        cpr.fetcher.fetchContent = Mock(name='fetchContent')
+        cpr.fetcher.reply = Mock(name='reply')
+        cpr.fetcher.reply.error.return_value = error
         cpr.start()
 
         if url:
@@ -55,7 +64,25 @@ class PredictionManagerTest(unittest.TestCase):
         with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
             cpr.fetcher.contentAsString = Mock(return_value=dataFile.read())
         cpr.processReply()
-        return cpr.predictions
+
+        if error == QNetworkReply.NoError:
+            resolved.assert_called_once()
+            return cpr.predictions
+        else:
+            rejected.assert_called_once()
+            return None
+
+
+    def test_current_request_error(self):
+        features = self.getPredictions(
+            'ACT0926_1-20200101-max_slack.xml',
+            self.subStation,
+            QDateTime(2020,1,1,5,0),
+            CurrentPredictionRequest.EventType,
+            None,
+            QNetworkReply.ContentNotFoundError)
+
+        self.assertEqual(features, None)
 
     def test_current_event_requests(self):
         url = QUrl('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'

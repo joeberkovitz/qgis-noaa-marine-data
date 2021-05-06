@@ -14,10 +14,10 @@ class PredictionPromiseTest(unittest.TestCase):
     """Test translations work."""
 
     def setUp(self):
-        self.resolved = Mock('resolved')
-        self.rejected = Mock('rejected')
+        self.resolved = Mock(name='resolved')
+        self.rejected = Mock(name='rejected')
         self.promise = PredictionPromise()
-        self.promise.doStart = Mock('doStart')
+        self.promise.doStart = Mock(name='doStart')
         self.promise.resolved(self.resolved)
         self.promise.rejected(self.rejected)
 
@@ -58,7 +58,7 @@ class PredictionPromiseTest(unittest.TestCase):
         self.resolved.assert_called_once()
 
         # further resolved() calls should now result in an immediate callback
-        resolved2 = Mock('resolved2')
+        resolved2 = Mock(name='resolved2')
         self.promise.resolved(resolved2)
         resolved2.assert_called_once()
 
@@ -75,12 +75,12 @@ class PredictionPromiseTest(unittest.TestCase):
         self.rejected.assert_called_once()
 
         # further resolved() calls should now result in an immediate callback
-        rejected2 = Mock('rejected2')
+        rejected2 = Mock(name='rejected2')
         self.promise.rejected(rejected2)
         rejected2.assert_called_once()
 
     def test_resolve_dependencies(self):
-        self.promise.doProcessing = Mock('doProcessing')
+        self.promise.doProcessing = Mock(name='doProcessing')
 
         dep1 = PredictionPromise()
         self.promise.addDependency(dep1)
@@ -103,7 +103,7 @@ class PredictionPromiseTest(unittest.TestCase):
         self.rejected.assert_not_called()
 
     def test_reject_dependencies1(self):
-        self.promise.doProcessing = Mock('doProcessing')
+        self.promise.doProcessing = Mock(name='doProcessing')
 
         dep1 = PredictionPromise()
         self.promise.addDependency(dep1)
