@@ -95,26 +95,26 @@ class PredictionPromise(QObject):
             return
         self.isStarted = True
         self.doStart()
+        for p in self.dependencies:
+            p.start()
 
     def doStart(self):
         # subclasses should override this
         return
 
+    # add a promise on which we are dependent. when all dependents are resolved, this one will too.
     def addDependency(self, p):
         self.dependencies.append(p)
         p.resolved(self.checkDependencies)
 
-    def startDependencies(self):
-        for p in self.dependencies:
-            p.start()
-
     def checkDependencies(self):
         if next(filter(lambda p: not p.isResolved, self.dependencies), None) is None:
-            self.processDependencies()
+            self.doProcessing()
+            self.resolve()
 
-    def processDependencies(self):
-        # subclasses should override this
-        self.resolve()
+    def doProcessing(self):
+        # subclasses should override this to process dependencies or other intermediate results
+        return
 
 class PredictionDataPromise(PredictionPromise):
     """ Promise to obtain a full set of predictions (events and timeline) for a given station and local date.
@@ -233,9 +233,7 @@ class PredictionDataPromise(PredictionPromise):
                     self.refStationData = self.manager.getDataPromise(refStation, self.localDate)
                     self.addDependency(self.refStationData)
 
-            self.startDependencies()
-
-    def processDependencies(self):
+    def doProcessing(self):
         if self.stationFeature['type'] == 'H':
             # We will always have a speed/direction request
             self.predictions = self.speedDirRequest.predictions
@@ -304,8 +302,6 @@ class PredictionDataPromise(PredictionPromise):
         self.manager.predictionsLayer.startEditing()
         self.manager.predictionsLayer.addFeatures(self.predictions, QgsFeatureSink.FastInsert)
         self.manager.predictionsLayer.commitChanges()
-        self.resolve()
-
         self.manager.predictionsLayer.triggerRepaint()
 
     def timeInterpolation(self):
