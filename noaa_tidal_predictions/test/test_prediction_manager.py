@@ -42,7 +42,7 @@ class PredictionManagerTest(unittest.TestCase):
     def tearDown(self):
         return
 
-    def getPredictions(self, filename, station, datetime, type, url=None, error=QNetworkReply.NoError):
+    def getPredictions(self, filename, station, datetime, type, url=None, parseError=False):
         cpr = CurrentPredictionRequest(
             self.pm,
             station,
@@ -52,10 +52,8 @@ class PredictionManagerTest(unittest.TestCase):
         cpr.resolved(resolved)
         rejected = Mock()
         cpr.rejected(rejected)
-
         cpr.fetcher.fetchContent = Mock(name='fetchContent')
-        cpr.fetcher.reply = Mock(name='reply')
-        cpr.fetcher.reply.error.return_value = error
+
         cpr.start()
 
         if url:
@@ -65,17 +63,17 @@ class PredictionManagerTest(unittest.TestCase):
             cpr.fetcher.contentAsString = Mock(return_value=dataFile.read())
         cpr.processReply()
 
-        if error == QNetworkReply.NoError:
-            resolved.assert_called_once()
-            return cpr.predictions
-        else:
+        if parseError:
             rejected.assert_called_once()
             return None
+        else:
+            resolved.assert_called_once()
+            return cpr.predictions
 
 
     def test_current_request_error(self):
         features = self.getPredictions(
-            'ACT0926_1-20200101-max_slack.xml',
+            'error.xml',
             self.subStation,
             QDateTime(2020,1,1,5,0),
             CurrentPredictionRequest.EventType,

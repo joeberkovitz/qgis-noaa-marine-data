@@ -431,10 +431,10 @@ class PredictionRequest(PredictionPromise):
 
     # process the reply from our content-fetching task
     def processReply(self):
-        if self.fetcher.reply.error() == QNetworkReply.NoError:
+        try:
             self.predictions = self.parseContent(self.fetcher.contentAsString())
             self.resolve()
-        else:
+        except Exception:
             self.reject()
 
 
