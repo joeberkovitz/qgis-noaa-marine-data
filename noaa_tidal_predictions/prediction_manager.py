@@ -73,27 +73,22 @@ class PredictionPromise(QObject):
 
     """
     _resolved = pyqtSignal()
+    _rejected = pyqtSignal()
+
+    InitialState = 0
+    StartedState = 1
+    ResolvedState = 2
+    RejectedState = 3
 
     def __init__(self):
         super(PredictionPromise,self).__init__()
-        self.isResolved = False
-        self.isStarted = False
+        self.state = PredictionPromise.InitialState
         self.dependencies = []
 
-    def resolved(self, slot):
-        if self.isResolved:
-            slot()
-        else:
-            self._resolved.connect(slot)
-
-    def resolve(self):
-        self.isResolved = True
-        self._resolved.emit()
-
     def start(self):
-        if self.isStarted:
+        if self.state >= PredictionPromise.StartedState:
             return
-        self.isStarted = True
+        self.state = PredictionPromise.StartedState
         self.doStart()
         for p in self.dependencies:
             p.start()
@@ -102,13 +97,47 @@ class PredictionPromise(QObject):
         # subclasses should override this
         return
 
+    def resolve(self):
+        if self.state >= PredictionPromise.ResolvedState:
+            return
+        self.state = PredictionPromise.ResolvedState
+        self._resolved.emit()
+
+    def reject(self):
+        if self.state >= PredictionPromise.ResolvedState:
+            return
+        self.state = PredictionPromise.RejectedState
+        self._rejected.emit()
+
+    def resolved(self, slot):
+        if self.state == PredictionPromise.ResolvedState:
+            slot()
+        else:
+            self._resolved.connect(slot)
+
+    def rejected(self, slot):
+        if self.state == PredictionPromise.RejectedState:
+            slot()
+        else:
+            self._rejected.connect(slot)
+
     # add a promise on which we are dependent. when all dependents are resolved, this one will too.
     def addDependency(self, p):
         self.dependencies.append(p)
         p.resolved(self.checkDependencies)
+        p.rejected(self.checkDependencies)
 
     def checkDependencies(self):
-        if next(filter(lambda p: not p.isResolved, self.dependencies), None) is None:
+        allResolved = True
+
+        for p in self.dependencies:
+            if p.state == PredictionPromise.RejectedState:
+                self.reject()
+                return
+            elif p.state != PredictionPromise.ResolvedState:
+                allResolved = False
+
+        if allResolved:
             self.doProcessing()
             self.resolve()
 
