@@ -42,6 +42,10 @@ class PredictionManagerTest(unittest.TestCase):
     def tearDown(self):
         return
 
+    def print_predictions(self, predictions):
+        for feature in predictions:
+            print('{} {} {} {} {}'.format(feature['station'],feature['time'].toString('yyyyMMdd hh:mm'),feature['type'],feature['dir'],feature['value']))
+
     def getPredictions(self, filename, station, datetime, type, url=None, parseError=False):
         cpr = CurrentPredictionRequest(
             self.pm,
@@ -119,6 +123,8 @@ class PredictionManagerTest(unittest.TestCase):
         features = pdp.predictions
         self.assertEqual(len(features), 56)  # 48 time intervals plus 8 events
 
+        # verify that the data is present and sorted in the way we would expect
+
         feature = features[0]
         self.assertEqual(feature['station'], 'BOS1111_14')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 0, 0, 0, Qt.TimeSpec.UTC))
@@ -158,10 +164,12 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['dir'], 185.0)
         self.assertEqual(feature['magnitude'], 0.365)
 
-        
-        # for feature in pdp.predictions:
-        #     print('{} {} {} {} {}'.format(feature['station'],feature['time'].toString('yyyyMMdd hh:mm'),feature['type'],feature['dir'],feature['value']))
-
+        # verify that value interpolation is working
+        interp = pdp.valueInterpolation()([0, 3*3600, 3.5*3600, 3.499*3600])
+        self.assertAlmostEqual(interp[0], 1.06135306)
+        self.assertAlmostEqual(interp[1], 0.0774541)
+        self.assertAlmostEqual(interp[2], -0.1067157)
+        self.assertAlmostEqual(interp[3], -0.10613375)
 
     def test_current_request_error(self):
         features = self.getPredictions(
