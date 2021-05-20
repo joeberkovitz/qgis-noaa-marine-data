@@ -293,6 +293,8 @@ class PredictionDataPromise(PredictionPromise):
                 # to adjusted and filtered times in the reference station
                 timeInterpolation = self.timeInterpolation()
 
+                # TODO: these times should just be regular 30-minute intervals starting at 00:00. We need the
+                # adjacent time windows to do this because we need to know where we are in the subordinate tide cycle.
                 firstEventTime = self.datetime.secsTo(self.predictions[0]['time'])
                 lastEventTime = self.datetime.secsTo(self.predictions[-1]['time'])
                 subTimes = list(range(firstEventTime, lastEventTime, PredictionManager.STEP_MINUTES * 60))
