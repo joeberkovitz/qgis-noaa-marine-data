@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import *
 import os
 
-from qgis.PyQt.QtCore import QCoreApplication, QDateTime, QUrl
+from qgis.PyQt.QtCore import pyqtSlot, pyqtSignal, QCoreApplication, QDateTime, QUrl, QUrlQuery
 from qgis.PyQt.QtNetwork import QNetworkReply
 
 from qgis.core import (
@@ -12,6 +12,7 @@ from qgis.core import (
     QgsFields,
     QgsWkbTypes,
     QgsMemoryProviderUtils,
+    QgsNetworkContentFetcher,
     NULL
     )
 
@@ -20,7 +21,6 @@ from noaa_tidal_predictions.utils import epsg4326
 from .test_add_current_stations import CurrentStationsFixtures
 
 QGIS_APP = get_qgis_app()
-
 
 class PredictionManagerTest(unittest.TestCase):
     """Test translations work."""
@@ -71,6 +71,98 @@ class PredictionManagerTest(unittest.TestCase):
             return cpr.predictions
 
 
+    """ This patch to the doStart() method of PredictionRequest causes files to be loaded
+        from a fixture rather than from the network.
+    """
+    def mock_doStart(self):
+        query = QUrlQuery(QUrl(self.url()))
+        query_date = query.queryItemValue('begin_date').replace(' ','T')
+        query_vel_type = query.queryItemValue('vel_type')
+        query_interval = query.queryItemValue('interval')
+        query_station = query.queryItemValue('station')
+        query_bin = query.queryItemValue('bin')
+        filename = '{}_{}-{}-{}-{}.xml'.format(query_station,query_bin,query_date,query_vel_type,query_interval)
+        self.fetcher = Mock(QgsNetworkContentFetcher)
+        with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
+            self.fetcher.contentAsString = Mock(return_value=dataFile.read())
+        self.processReply()
+
+
+    """ Test the ability to mock out PredictionRequests by loading files based on query parameters
+        without touching any other classes.
+    """
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_mocked_request(self):
+        resolver = Mock()
+        datetime = QDateTime(2020,1,1,5,0)
+        cpr = CurrentPredictionRequest(
+            self.pm,
+            self.subStation,
+            datetime, datetime.addDays(1),
+            CurrentPredictionRequest.EventType)
+        cpr.resolved(resolver)
+        resolver.assert_not_called()
+        cpr.start()
+        resolver.assert_called_once()
+        self.assertEqual(len(cpr.predictions), 8)
+
+    """ Test a PredictionDataPromise for a harmonic station with known flood/ebb directions
+    """
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_harmonic_prediction_data_promise(self):
+        datetime = QDate(2020,1,1)
+        pdp = PredictionDataPromise(
+            self.pm,
+            self.refStation,
+            datetime)
+        pdp.start()
+        features = pdp.predictions
+        self.assertEqual(len(features), 56)  # 48 time intervals plus 8 events
+
+        feature = features[0]
+        self.assertEqual(feature['station'], 'BOS1111_14')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 0, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 1.0613530582942798)
+        self.assertEqual(feature['type'], 'current')
+        self.assertEqual(feature['dir'], 262.0)
+
+        feature = features[1]
+        # BOS1111_14 20200101 05:24 flood 264.0 1.04
+        self.assertEqual(feature['station'], 'BOS1111_14')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 24, 0, 0, Qt.TimeSpec.UTC))
+        self.assertEqual(feature['value'], 1.04)
+        self.assertEqual(feature['type'], 'flood')
+        self.assertEqual(feature['dir'], 264.0)
+
+        # just on the flood side of the transition
+        feature = features[7]
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 0.0774541)   # cosine-rule projection
+        self.assertEqual(feature['type'], 'current')
+        self.assertEqual(feature['dir'], 190.0)
+        self.assertEqual(feature['magnitude'], 0.281)
+
+        feature = features[8]
+        # BOS1111_14 20200101 08:06 slack 264.0 0.02
+        self.assertEqual(feature['station'], 'BOS1111_14')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 6, 0, 0, Qt.TimeSpec.UTC))
+        self.assertEqual(feature['value'], 0.02)
+        self.assertEqual(feature['type'], 'slack')
+        self.assertEqual(feature['dir'], 264.0)
+
+        # just on the ebb side of the transition
+        feature = features[9]
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 30, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], -0.1067157)   # cosine-rule projection
+        self.assertEqual(feature['type'], 'current')
+        self.assertEqual(feature['dir'], 185.0)
+        self.assertEqual(feature['magnitude'], 0.365)
+
+        
+        # for feature in pdp.predictions:
+        #     print('{} {} {} {} {}'.format(feature['station'],feature['time'].toString('yyyyMMdd hh:mm'),feature['type'],feature['dir'],feature['value']))
+
+
     def test_current_request_error(self):
         features = self.getPredictions(
             'error.xml',
@@ -88,7 +180,7 @@ class PredictionManagerTest(unittest.TestCase):
              '&units=english&time_zone=gmt&product=currents_predictions&format=xml'
              '&station=ACT0926&bin=1&interval=MAX_SLACK')
         features = self.getPredictions(
-            'ACT0926_1-20200101-max_slack.xml',
+            'ACT0926_1-20200101T05:00--MAX_SLACK.xml',
             self.subStation,
             QDateTime(2020,1,1,5,0),
             CurrentPredictionRequest.EventType,
@@ -120,7 +212,7 @@ class PredictionManagerTest(unittest.TestCase):
             '&units=english&time_zone=gmt&product=currents_predictions&format=xml'
             '&station=BOS1111&bin=14&vel_type=speed_dir&interval=30')
         features = self.getPredictions(
-            'BOS1111_14-20200101-speed_dir.xml',
+            'BOS1111_14-20200101T05:00-speed_dir-30.xml',
             self.refStation,
             QDateTime(2020,1,1,5,0),
             CurrentPredictionRequest.SpeedDirectionType,
@@ -156,7 +248,7 @@ class PredictionManagerTest(unittest.TestCase):
             '&units=english&time_zone=gmt&product=currents_predictions&format=xml'
             '&station=BOS1111&bin=14&vel_type=default&interval=30')
         features = self.getPredictions(
-            'BOS1111_14-20200101-vel_major.xml',
+            'BOS1111_14-20200101T05:00-default-30.xml',
             self.refStation,
             QDateTime(2020,1,1,5,0),
             CurrentPredictionRequest.VelocityMajorType,
