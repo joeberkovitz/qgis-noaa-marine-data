@@ -17,7 +17,7 @@ from qgis.core import (
     )
 
 from noaa_tidal_predictions.prediction_manager import *
-from noaa_tidal_predictions.utils import epsg4326
+from noaa_tidal_predictions.utils import *
 from .test_add_current_stations import CurrentStationsFixtures
 
 QGIS_APP = get_qgis_app()
@@ -27,16 +27,14 @@ class PredictionManagerTest(unittest.TestCase):
 
     def setUp(self):
         self.currentFixtures = CurrentStationsFixtures()
-        self.currentStationLayer = self.currentFixtures.getFixtureLayer('currentRefSub.xml')
-        self.subStation = next(self.currentStationLayer.getFeatures(
+        self.currentStationsLayer = self.currentFixtures.getFixtureLayer('currentRefSub.xml')
+        self.subStation = next(self.currentStationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = 'ACT0926_1'")))
-        self.refStation = next(self.currentStationLayer.getFeatures(
+        self.refStation = next(self.currentStationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = 'BOS1111_14'")))
 
-        self.currentPredictionLayer = QgsMemoryProviderUtils.createMemoryLayer(
-            'predictions', self.currentFixtures.alg.currentPredictionFields(), QgsWkbTypes.Point, epsg4326
-        )
-        self.pm = PredictionManager(self.currentStationLayer, self.currentPredictionLayer)
+        self.currentPredictionsLayer = currentPredictionsLayer()
+        self.pm = PredictionManager(self.currentStationsLayer, self.currentPredictionsLayer)
         return
 
     def tearDown(self):
@@ -170,6 +168,41 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertAlmostEqual(interp[1], 0.0774541)
         self.assertAlmostEqual(interp[2], -0.1067157)
         self.assertAlmostEqual(interp[3], -0.10613375)
+
+    """ Test a PredictionDataPromise for a harmonic station with known flood/ebb directions
+    """
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_subordinate_prediction_data_promise(self):
+        datetime = QDate(2020,1,1)
+        pdp = PredictionDataPromise(
+            self.pm,
+            self.subStation,
+            datetime)
+        pdp.start()
+        features = pdp.predictions
+        self.assertEqual(len(features), 48)  # 40 time intervals plus 8 events
+
+        currents = list(filter(lambda p: p['type'] == 'current', features))
+        self.assertEqual(len(currents), 40)
+        events = list(filter(lambda p: p['type'] != 'current', features))
+        self.assertEqual(len(events), 8)
+
+        feature = events[0]
+        self.assertEqual(feature['station'], 'ACT0926_1')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 6, 49, 0, 0, Qt.TimeSpec.UTC))
+        self.assertEqual(feature['value'], 0.62)
+        self.assertEqual(feature['type'], 'flood')
+        self.assertEqual(feature['dir'], 259.0)
+        self.assertEqual(feature['magnitude'], 0.62)
+
+        feature = currents[4]
+        self.assertEqual(feature['station'], 'ACT0926_1')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 49, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 0.08397517)
+        self.assertEqual(feature['type'], 'current')
+        self.assertEqual(feature['dir'], 259.0)
+        self.assertAlmostEqual(feature['magnitude'], 0.08397517)
+
 
     def test_current_request_error(self):
         features = self.getPredictions(
