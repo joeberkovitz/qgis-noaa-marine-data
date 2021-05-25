@@ -381,8 +381,28 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['dir'], 112.0)
         self.assertEqual(feature['magnitude'], 0.21)
 
-    def test_prediction_manager(self):
-        return
+    def test_extent_stations(self):
+        # BOS1111
+        lat = 42.33778
+        lng = -70.95578
+        d = 0.0001
+        rect = QgsRectangle(lng-d, lat-d, lng+d, lat+d)
+        stations = self.pm.getExtentStations(rect)
+        self.assertEqual(len(stations), 1)
+        self.assertEqual(stations[0]['station'], 'BOS1111_14')
+
+        lat += 0.1
+        rect = QgsRectangle(lng-d, lat-d, lng+d, lat+d)
+        stations = self.pm.getExtentStations(rect)
+        self.assertEqual(len(stations), 0)
+
+    def test_get_station(self):
+        station = self.pm.getStation('BOS1111_14')
+        self.assertEqual(station['station'], 'BOS1111_14')
+
+        station = self.pm.getStation('BOS1111_15')
+        self.assertIsNone(station)
+
 
 if __name__ == "__main__":
     suite = unittest.makeSuite(PredictionManagerTest)
