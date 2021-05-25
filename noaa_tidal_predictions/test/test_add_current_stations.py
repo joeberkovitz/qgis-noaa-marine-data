@@ -11,10 +11,13 @@ from qgis.core import (
     QgsProcessingContext,
     QgsProcessingFeedback,
     QgsProcessingUtils,
+    QgsVectorLayer,
     QgsFeatureRequest,
+    QgsFeature,
     NULL
     )
 from noaa_tidal_predictions.add_station_layers import AddCurrentStationsLayerAlgorithm
+from noaa_tidal_predictions.utils import *
 
 QGIS_APP = get_qgis_app()
 
@@ -23,7 +26,8 @@ class CurrentStationsFixtures:
         self.alg = AddCurrentStationsLayerAlgorithm()
         self.alg.initAlgorithm({})
         self.alg.context = QgsProcessingContext()
-        self.alg.parameters = {'CurrentStationsLayer': QgsProcessingUtils.generateTempFilename('temp.gpkg')}
+        self.alg.feedback = Mock(spec=QgsProcessingFeedback)
+        self.alg.parameters = {'CurrentStationsLayer': QgsProcessingUtils.generateTempFilename('stations.gpkg')}
 
     def getMockRequest(self, filename, status_code=200):
         mockRequest = Mock()
@@ -32,11 +36,21 @@ class CurrentStationsFixtures:
             mockRequest.text = dataFile.read()
         return mockRequest
 
+    def loadOnCompletion(self):
+        details = QgsProcessingContext.LayerDetails('stations', QgsProject.instance())
+        self.alg.context.addLayerToLoadOnCompletion(self.alg.parameters['CurrentStationsLayer'], details)
+
     def getFixtureLayer(self, filename):
+        self.loadOnCompletion()
         with patch('requests.get') as mockGet:
             mockGet.return_value = self.getMockRequest(filename)
             dest_id = self.alg.getCurrentStations()
-            return QgsProcessingUtils.mapLayerFromString(dest_id, self.alg.context)
+            layer = QgsProcessingUtils.mapLayerFromString(dest_id, self.alg.context)
+            if self.alg.context.willLoadLayerOnCompletion(dest_id):
+                QgsProject.instance().addMapLayer(layer)
+                postProcessor = self.alg.context.layersToLoadOnCompletion().get(dest_id).postProcessor()
+                postProcessor.postProcessLayer(layer, self.alg.context, self.alg.feedback)
+            return layer
 
     def getFeatures(self, filename, expression):
         layer = self.getFixtureLayer(filename)
@@ -63,7 +77,6 @@ class CurrentStationsTest(unittest.TestCase):
     @patch('requests.get')
     def test_bad_request(self, mockGet):
         mockGet.return_value = self.fixtures.getMockRequest('currentSubordinate.xml', 400)
-        self.fixtures.alg.feedback = Mock(spec=QgsProcessingFeedback)
         dest_id = self.fixtures.alg.getCurrentStations()
         self.fixtures.alg.feedback.reportError.assert_called()
 
@@ -138,6 +151,40 @@ class CurrentStationsTest(unittest.TestCase):
         feature = features[0]
         self.assertEqual(feature['depth'], 60.0)
         self.assertEqual(feature['surface'], 0)
+
+    def test_layer_utilities(self):
+        dest = self.fixtures.getFixtureLayer('currentRefSub.xml')
+
+        stationsLayer = currentStationsLayer()
+        self.assertIsInstance(stationsLayer,QgsVectorLayer)
+        self.assertEqual(stationsLayer.storageType(),'GPKG')
+
+        features = list(dest.getFeatures(QgsFeatureRequest().setFilterExpression("station = 'BOS1111_14'")))
+        self.assertEqual(len(features), 1)
+        feature = features[0]
+        self.assertEqual(feature['station'], 'BOS1111_14')
+        self.assertEqual(stationTimeZone(feature).id(), 'America/New_York')
+
+        predictionsLayer = currentPredictionsLayer()
+        self.assertIsInstance(predictionsLayer,QgsVectorLayer)
+        self.assertEqual(predictionsLayer.storageType(),'Memory storage')
+
+    def test_prediction_station_join(self):
+        dest = self.fixtures.getFixtureLayer('currentRefSub.xml')
+
+        predictionsLayer = currentPredictionsLayer()
+        feature = QgsFeature(predictionsLayer.fields())
+        feature['station'] = 'BOS1111_14'
+        predictionsLayer.startEditing()
+        predictionsLayer.addFeature(feature)
+        predictionsLayer.commitChanges()
+        features = list(predictionsLayer.getFeatures(QgsFeatureRequest().setFilterExpression("station = 'BOS1111_14'")))
+        self.assertEqual(len(features), 1)
+        feature = features[0]
+        self.assertEqual(feature['station_name'],'Boston Harbor (Deer Island Light)')
+
+
+
 
 if __name__ == "__main__":
     suite = unittest.makeSuite(CurrentStationsTest)
