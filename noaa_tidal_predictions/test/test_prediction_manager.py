@@ -23,6 +23,8 @@ from .test_add_current_stations import CurrentStationsFixtures
 QGIS_APP = get_qgis_app()
 
 class PredictionManagerTest(unittest.TestCase):
+    request_urls = None
+
     """Test translations work."""
 
     def setUp(self):
@@ -35,6 +37,9 @@ class PredictionManagerTest(unittest.TestCase):
 
         self.currentPredictionsLayer = currentPredictionsLayer()
         self.pm = PredictionManager(self.currentStationsLayer, self.currentPredictionsLayer)
+
+        PredictionManagerTest.request_urls = []
+
         return
 
     def tearDown(self):
@@ -77,6 +82,8 @@ class PredictionManagerTest(unittest.TestCase):
         from a fixture rather than from the network.
     """
     def mock_doStart(self):
+        PredictionManagerTest.request_urls.append(self.url())
+
         query = QUrlQuery(QUrl(self.url()))
         query_date = query.queryItemValue('begin_date').replace(' ','T')
         query_vel_type = query.queryItemValue('vel_type')
@@ -95,6 +102,7 @@ class PredictionManagerTest(unittest.TestCase):
     """
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
     def test_mocked_request(self):
+        self.assertEqual(len(PredictionManagerTest.request_urls), 0)
         resolver = Mock()
         datetime = QDateTime(2020,1,1,5,0)
         cpr = CurrentPredictionRequest(
@@ -107,6 +115,8 @@ class PredictionManagerTest(unittest.TestCase):
         cpr.start()
         resolver.assert_called_once()
         self.assertEqual(len(cpr.predictions), 8)
+        self.assertEqual(len(PredictionManagerTest.request_urls), 1)
+        self.assertEqual(PredictionManagerTest.request_urls[0], 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?application=qgis-noaa-tidal-predictions&begin_date=20200101 05:00&end_date=20200102 04:59&units=english&time_zone=gmt&product=currents_predictions&format=xml&station=ACT0926&bin=1&interval=MAX_SLACK')
 
     """ Test a PredictionDataPromise for a harmonic station with known flood/ebb directions
     """
@@ -203,6 +213,58 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['dir'], 259.0)
         self.assertAlmostEqual(feature['magnitude'], 0.08397517)
 
+
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_prediction_data_promise_layer_cache(self):
+        datetime = QDate(2020,1,1)
+        pdp1 = PredictionDataPromise(
+            self.pm,
+            self.refStation,
+            datetime)
+        pdp1.start()
+        self.assertEqual(len(pdp1.predictions), 56)  # 48 time intervals plus 8 events
+        self.assertEqual(len(PredictionManagerTest.request_urls), 2) # events and currents
+
+        # the second call should pull the data from the predictions layer with no new requests
+        pdp2 = PredictionDataPromise(
+            self.pm,
+            self.refStation,
+            datetime)
+        pdp2.start()
+        self.assertEqual(len(pdp2.predictions), 56)  # 48 time intervals plus 8 events
+        self.assertEqual(len(PredictionManagerTest.request_urls), 2)
+
+        # Verify that this is not just the same object being coughed up
+        self.assertIsNot(pdp2, pdp1)
+
+        # This is for a different date, so new requests again
+        datetime = QDate(2020,1,2)
+        pdp3 = PredictionDataPromise(
+            self.pm,
+            self.refStation,
+            datetime)
+        pdp3.start()
+        self.assertEqual(len(pdp3.predictions), 56)  # 48 time intervals plus 8 events
+        self.assertEqual(len(PredictionManagerTest.request_urls), 4)
+
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_prediction_data_promise_object_cache(self):
+        datetime = QDate(2020,1,1)
+        pdp1 = self.pm.getDataPromise(
+            self.refStation,
+            datetime)
+        self.assertEqual(len(pdp1.predictions), 56)  # 48 time intervals plus 8 events
+        self.assertEqual(len(PredictionManagerTest.request_urls), 2) # events and currents
+
+        # the second call should return exactly the same promise object
+        pdp2 = self.pm.getDataPromise(
+            self.refStation,
+            datetime)
+        self.assertEqual(len(pdp2.predictions), 56)  # 48 time intervals plus 8 events
+        self.assertEqual(len(PredictionManagerTest.request_urls), 2)
+
+        # Verify that this IS just the same object being coughed up
+        self.assertIs(pdp2, pdp1)
 
     def test_current_request_error(self):
         features = self.getPredictions(
