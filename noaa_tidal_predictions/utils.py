@@ -5,10 +5,10 @@ from qgis.core import QgsProject, QgsUnitTypes, QgsPointXY, QgsCoordinateReferen
 epsg4326 = QgsCoordinateReferenceSystem("EPSG:4326")
 
 # project variable names
-CurrentStationsLayerVar = 'noaa_current_stations_layer'
-CurrentPredictionsLayerVar = 'noaa_current_predictions_layer'
-TideStationsLayerVar = 'noaa_tide_stations_layer'
-TidePredictionsLayerVar = 'noaa_tide_predictions_layer'
+NOAA_LAYER_TYPE = 'noaa_tidal_predictions/layer_type'
+
+CurrentStationsLayerType = 'current_stations'
+CurrentPredictionsLayerType = 'current_predictions'
 
 CoopsApplicationName = 'qgis-noaa-tidal-predictions'
 
@@ -19,28 +19,17 @@ def tr(string):
 def parseFloatNullable(str):
     return float(str) if str and str != 'null' and str != 'NULL' else None
 
-def getProjectByLayerVar(varName):
-    layerId = QgsProject.instance().customVariables().get(varName)
-    if layerId:
-        layer = QgsProject.instance().mapLayer(layerId)
-        if layer:
+def getNoaaLayerByType(layerType):
+    for layer in QgsProject.instance().mapLayers().values():
+        if layer.customProperty(NOAA_LAYER_TYPE) == layerType:
             return layer
-        else:
-            raise Exception('Could not find layer with id {}'.format(layerId))
-    else:
-        raise Exception('Could not find project variable {}'.format(varName))
+    return None
 
 def currentStationsLayer():
-    return getProjectByLayerVar(CurrentStationsLayerVar)
+    return getNoaaLayerByType(CurrentStationsLayerType)
 
 def currentPredictionsLayer():
-    return getProjectByLayerVar(CurrentPredictionsLayerVar)
-
-def tideStationsLayer():
-    return getProjectByLayerVar(TideStationsLayerVar)
-
-def tidePredictionsLayer():
-    return getProjectByLayerVar(TidePredictionsLayerVar)
+    return getNoaaLayerByType(CurrentPredictionsLayerType)
 
 def layerStoragePath():
     return os.path.join(QgsProject.instance().homePath(), 'noaa_tidal_predictions')

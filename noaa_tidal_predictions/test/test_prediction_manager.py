@@ -43,6 +43,7 @@ class PredictionManagerTest(unittest.TestCase):
         return
 
     def tearDown(self):
+        self.currentFixtures.cleanUp()
         return
 
     def print_predictions(self, predictions):

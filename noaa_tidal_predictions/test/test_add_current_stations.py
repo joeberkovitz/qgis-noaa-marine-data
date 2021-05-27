@@ -59,6 +59,10 @@ class CurrentStationsFixtures:
     def generateAssertions(self, feature):
         for name in feature.fields().names():
             print("self.assertEqual(feature['{}'], {})".format(name, repr(feature[name])))
+
+    def cleanUp(self):
+        for layer in QgsProject.instance().mapLayers():
+            QgsProject.instance().removeMapLayer(layer)
        
 class CurrentStationsTest(unittest.TestCase):
     def setUp(self):
@@ -66,6 +70,7 @@ class CurrentStationsTest(unittest.TestCase):
         return
 
     def tearDown(self):
+        self.fixtures.cleanUp()
         return
 
     @patch('requests.get')
@@ -153,6 +158,11 @@ class CurrentStationsTest(unittest.TestCase):
         self.assertEqual(feature['surface'], 0)
 
     def test_layer_utilities(self):
+        stationsLayer = currentStationsLayer()
+        predictionsLayer = currentPredictionsLayer()
+        self.assertIsNone(stationsLayer)        
+        self.assertIsNone(predictionsLayer)
+        
         dest = self.fixtures.getFixtureLayer('currentRefSub.xml')
 
         stationsLayer = currentStationsLayer()

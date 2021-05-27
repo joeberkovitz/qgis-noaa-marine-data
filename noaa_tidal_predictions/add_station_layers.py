@@ -173,8 +173,8 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
         if self.context.willLoadLayerOnCompletion(current_dest_id):
             proc = CurrentStationsStylePostProcessor.create(
-                tr('Current Stations'), CurrentStationsLayerVar, 'current_stations.qml',
-                tr('Current Predictions'), CurrentPredictionsLayerVar, 'current_predictions.qml',
+                tr('Current Stations'), 'current_stations.qml',
+                tr('Current Predictions'), 'current_predictions.qml',
                 self.currentPredictionFields()
             )
             self.context.layerToLoadOnCompletionDetails(current_dest_id).setPostProcessor(proc)
@@ -228,15 +228,13 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         return current_dest_id
 
 class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
-    def __init__(self, layerName, varName, styleName,
-                 predictionLayerName, predictionVarName, predictionStyleName,
+    def __init__(self, layerName, styleName,
+                 predictionLayerName, predictionStyleName,
                  predictionFields):
         super(StylePostProcessor, self).__init__()
         self.layerName = layerName
-        self.varName = varName
         self.styleName = styleName
         self.predictionLayerName = predictionLayerName
-        self.predictionVarName = predictionVarName
         self.predictionStyleName = predictionStyleName
         self.predictionFields = predictionFields
 
@@ -264,22 +262,20 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
 
         predictionLayer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles',self.predictionStyleName))
 
-        # set up the project variable pointing to it
-        vars = QgsProject.instance().customVariables()
-        vars[self.varName] = layer.id()
-        vars[self.predictionVarName] = predictionLayer.id()
-        QgsProject.instance().setCustomVariables(vars)
+        # set up custom variables identifying the added layers
+        layer.setCustomProperty(NOAA_LAYER_TYPE, CurrentStationsLayerType)
+        predictionLayer.setCustomProperty(NOAA_LAYER_TYPE, CurrentPredictionsLayerType)
 
 class CurrentStationsStylePostProcessor(StylePostProcessor):
     instance = None
 
     @staticmethod
-    def create(layerName, varName, styleName,
-               predictionLayerName, predictionVarName, predictionStyleName,
+    def create(layerName, styleName,
+               predictionLayerName, predictionStyleName,
                predictionFields) -> 'CurrentStationsStylePostProcessor':
         CurrentStationsStylePostProcessor.instance = CurrentStationsStylePostProcessor(
-            layerName, varName, styleName,
-            predictionLayerName, predictionVarName, predictionStyleName,
+            layerName, styleName,
+            predictionLayerName, predictionStyleName,
             predictionFields
         )
         return CurrentStationsStylePostProcessor.instance
