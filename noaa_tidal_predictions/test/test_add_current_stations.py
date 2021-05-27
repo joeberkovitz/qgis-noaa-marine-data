@@ -9,6 +9,7 @@ from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProject,
     QgsProcessingContext,
+    QgsProcessingException,
     QgsProcessingFeedback,
     QgsProcessingUtils,
     QgsVectorLayer,
@@ -82,8 +83,13 @@ class CurrentStationsTest(unittest.TestCase):
     @patch('requests.get')
     def test_bad_request(self, mockGet):
         mockGet.return_value = self.fixtures.getMockRequest('currentSubordinate.xml', 400)
-        dest_id = self.fixtures.alg.getCurrentStations()
-        self.fixtures.alg.feedback.reportError.assert_called()
+        with self.assertRaises(QgsProcessingException):
+            dest_id = self.fixtures.alg.getCurrentStations()
+
+    def test_layers_already_exist(self):
+        dest = self.fixtures.getFixtureLayer('currentRefSub.xml')
+        with self.assertRaises(QgsProcessingException):
+            dest = self.fixtures.getFixtureLayer('currentRefSub.xml')
 
     def test_add_subordinate(self):
         features = self.fixtures.getFeatures('currentSubordinate.xml', "station = 'ACT0926_1'")

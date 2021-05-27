@@ -13,6 +13,7 @@ from qgis.core import (
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingLayerPostProcessorInterface,
+    QgsProcessingException,
     QgsProcessingFeedback,
     QgsProcessingParameterBoolean,
     QgsProcessingParameterDateTime,
@@ -98,12 +99,14 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         return fields
 
     def getCurrentStations(self):
+        if currentStationsLayer() != None or currentPredictionsLayer() != None:
+            raise QgsProcessingException(tr('Existing current layers must be removed before creating new ones.'))
+
         self.feedback.pushInfo("Requesting metadata for NOAA current stations...")
         url = 'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets'
         r = requests.get(url, timeout=30)
         if r.status_code != 200:
-            self.feedback.reportError('Failed with status {}'.format(r.status_code), True)
-            return
+            raise QgsProcessingException(tr('Request failed with status {}').format(r.status_code))
 
         content = r.text
         if len(content) == 0:
