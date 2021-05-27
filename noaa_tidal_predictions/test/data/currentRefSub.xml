@@ -1,5 +1,5 @@
 <Stations>
-  <count>2</count>
+  <count>3</count>
   <units>feet</units>
   <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="currPredStation" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/BOS1111.xml">
     <id>BOS1111</id>
@@ -56,5 +56,33 @@
     <depthType>S</depthType>
     <timezone_offset/>
     <harmonicConstituents self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT0926/harcon.xml"/>
+  </Station>
+  <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="currPredStation" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/SFB1212.xml">
+    <id>SFB1212</id>
+    <name>Raccoon Strait</name>
+    <lat>37.87192</lat>
+    <lng>-122.44197</lng>
+    <affiliations/>
+    <portscode/>
+    <expand>currentpredictionoffsets,harcon</expand>
+    <tideType/>
+    <currentpredictionoffsets xsi:type="currentPredictionOffsets" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/SFB1212_9/currentpredictionoffsets.xml">
+      <refStationId/>
+      <refStationBin xsi:nil="true"/>
+      <meanFloodDir xsi:nil="true"/>
+      <meanEbbDir xsi:nil="true"/>
+      <mfcTimeAdjMin xsi:nil="true"/>
+      <sbeTimeAdjMin xsi:nil="true"/>
+      <mecTimeAdjMin xsi:nil="true"/>
+      <sbfTimeAdjMin xsi:nil="true"/>
+      <mfcAmpAdj xsi:nil="true"/>
+      <mecAmpAdj xsi:nil="true"/>
+    </currentpredictionoffsets>
+    <currbin>9</currbin>
+    <type>H</type>
+    <depth>19.0</depth>
+    <depthType>B</depthType>
+    <timezone_offset>-8</timezone_offset>
+    <harmonicConstituents self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/SFB1212/harcon.xml"/>
   </Station>
 </Stations>

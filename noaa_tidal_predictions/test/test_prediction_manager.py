@@ -139,6 +139,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertAlmostEqual(feature['value'], 1.0613530582942798)
         self.assertEqual(feature['type'], 'current')
         self.assertEqual(feature['dir'], 262.0)
+        self.assertEqual(feature['magnitude'], 1.062)
 
         feature = features[1]
         # BOS1111_14 20200101 05:24 flood 264.0 1.04
@@ -178,6 +179,40 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertAlmostEqual(interp[1], 0.0774541)
         self.assertAlmostEqual(interp[2], -0.1067157)
         self.assertAlmostEqual(interp[3], -0.10613375)
+
+    """ Test a PredictionDataPromise for a harmonic station with Unknown flood/ebb directions
+    """
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_no_flood_ebb_prediction_data_promise(self):
+        self.refStation = next(self.currentStationsLayer.getFeatures(
+            QgsFeatureRequest().setFilterExpression("station = 'SFB1212_9'")))
+        datetime = QDate(2020,1,1)
+        pdp = PredictionDataPromise(
+            self.pm,
+            self.refStation,
+            datetime)
+        pdp.start()
+        features = pdp.predictions
+        self.assertEqual(len(features), 56)  # 48 time intervals plus 8 events
+
+        # verify that the data is present and sorted in the way we would expect
+
+        feature = features[0]
+        self.assertEqual(feature['station'], 'SFB1212_9')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 0.62)
+        self.assertAlmostEqual(feature['magnitude'], 0.672)
+        self.assertEqual(feature['type'], 'current')
+        self.assertEqual(feature['dir'], 35.0)
+
+        feature = features[4]
+        self.assertEqual(feature['station'], 'SFB1212_9')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 9, 36, 0, 0, Qt.TimeSpec.UTC))
+        self.assertEqual(feature['value'], 1.22)
+        self.assertAlmostEqual(feature['magnitude'], 1.22)
+        self.assertEqual(feature['type'], 'flood')
+        self.assertEqual(feature['dir'], NULL)
+
 
     """ Test a PredictionDataPromise for a harmonic station with known flood/ebb directions
     """

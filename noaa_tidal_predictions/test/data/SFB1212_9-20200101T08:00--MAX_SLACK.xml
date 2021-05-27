@@ -1,0 +1,76 @@
+<!-- https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?application=qgis-noaa-tidal-predictions&begin_date=20200101%2008:00&end_date=20200102%2007:59&units=english&time_zone=gmt&product=currents_predictions&format=xml&station=SFB1212&bin=9&interval=MAX_SLACK -->
+<current_predictions>
+<units>feet, knots</units>
+<cp>
+<Type>flood</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-01 09:36</Time>
+<Depth>19</Depth>
+<Velocity_Major>1.22</Velocity_Major>
+</cp>
+<cp>
+<Type>slack</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-01 13:54</Time>
+<Depth>19</Depth>
+<Velocity_Major>0.03</Velocity_Major>
+</cp>
+<cp>
+<Type>ebb</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-01 16:48</Time>
+<Depth>19</Depth>
+<Velocity_Major>-1.2</Velocity_Major>
+</cp>
+<cp>
+<Type>slack</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-01 20:00</Time>
+<Depth>19</Depth>
+<Velocity_Major>0.0</Velocity_Major>
+</cp>
+<cp>
+<Type>flood</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-01 21:36</Time>
+<Depth>19</Depth>
+<Velocity_Major>0.79</Velocity_Major>
+</cp>
+<cp>
+<Type>slack</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-02 00:42</Time>
+<Depth>19</Depth>
+<Velocity_Major>-0.01</Velocity_Major>
+</cp>
+<cp>
+<Type>ebb</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-02 04:00</Time>
+<Depth>19</Depth>
+<Velocity_Major>-1.11</Velocity_Major>
+</cp>
+<cp>
+<Type>slack</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-02 07:48</Time>
+<Depth>19</Depth>
+<Velocity_Major>-0.01</Velocity_Major>
+</cp>
+</current_predictions>

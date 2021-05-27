@@ -1,0 +1,340 @@
+<!-- https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?application=qgis-noaa-tidal-predictions&begin_date=20200101%2008:00&end_date=20200102%2007:59&units=english&time_zone=gmt&product=currents_predictions&format=xml&station=SFB1212&bin=9&vel_type=speed_dir&interval=30 -->
+<current_predictions>
+<units>feet, knots</units>
+<cp>
+<Speed>0.672</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 08:00</Time>
+<Direction>35</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.971</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 08:30</Time>
+<Direction>42</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.169</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 09:00</Time>
+<Direction>44</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.238</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 09:30</Time>
+<Direction>45</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.219</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 10:00</Time>
+<Direction>48</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.183</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 10:30</Time>
+<Direction>50</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.167</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 11:00</Time>
+<Direction>52</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.154</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 11:30</Time>
+<Direction>51</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.093</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 12:00</Time>
+<Direction>48</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.933</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 12:30</Time>
+<Direction>44</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.666</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 13:00</Time>
+<Direction>41</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.325</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 13:30</Time>
+<Direction>38</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.047</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 14:00</Time>
+<Direction>264</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.373</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 14:30</Time>
+<Direction>232</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.668</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 15:00</Time>
+<Direction>234</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.911</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 15:30</Time>
+<Direction>235</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.09</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 16:00</Time>
+<Direction>236</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.186</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 16:30</Time>
+<Direction>237</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.199</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 17:00</Time>
+<Direction>238</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.145</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 17:30</Time>
+<Direction>241</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.049</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 18:00</Time>
+<Direction>245</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.915</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 18:30</Time>
+<Direction>251</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.719</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 19:00</Time>
+<Direction>258</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.45</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 19:30</Time>
+<Direction>272</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.249</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 20:00</Time>
+<Direction>327</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.457</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 20:30</Time>
+<Direction>21</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.723</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 21:00</Time>
+<Direction>31</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.856</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 21:30</Time>
+<Direction>33</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.828</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 22:00</Time>
+<Direction>33</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.687</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 22:30</Time>
+<Direction>34</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.513</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 23:00</Time>
+<Direction>36</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.365</Speed>
+<Bin>9</Bin>
+<Time>2020-01-01 23:30</Time>
+<Direction>38</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.244</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 00:00</Time>
+<Direction>29</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.145</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 00:30</Time>
+<Direction>352</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.199</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 01:00</Time>
+<Direction>280</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.402</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 01:30</Time>
+<Direction>252</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.637</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 02:00</Time>
+<Direction>241</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.843</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 02:30</Time>
+<Direction>238</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.993</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 03:00</Time>
+<Direction>239</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.084</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 03:30</Time>
+<Direction>243</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.123</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 04:00</Time>
+<Direction>247</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.103</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 04:30</Time>
+<Direction>250</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.019</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 05:00</Time>
+<Direction>253</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.895</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 05:30</Time>
+<Direction>257</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.767</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 06:00</Time>
+<Direction>265</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.66</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 06:30</Time>
+<Direction>275</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.557</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 07:00</Time>
+<Direction>287</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.426</Speed>
+<Bin>9</Bin>
+<Time>2020-01-02 07:30</Time>
+<Direction>305</Direction>
+<Depth>19</Depth>
+</cp>
+</current_predictions>
