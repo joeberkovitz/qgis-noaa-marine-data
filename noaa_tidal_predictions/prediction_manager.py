@@ -451,6 +451,13 @@ class CurrentPredictionRequest(PredictionRequest):
     VEL_TYPE_DEFAULT = 'default'
 
     def __init__(self, manager, stationFeature, start, end, requestType):
+        # This horrible hack works around a caching bug in CO-OPS where requests with parameters
+        # that differ only in the value for `vel_type` are confused with each other. We artificially
+        # tweak the end time by -1 minute to defeat this bug, which doesn't change the actual number
+        # of delivered predictions.
+        if requestType == CurrentPredictionRequest.VelocityMajorType:
+            end = end.addSecs(-60)
+
         super(CurrentPredictionRequest, self).__init__(manager, stationFeature, start, end)
         self.productName = 'currents_predictions'
         self.baseUrl = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'

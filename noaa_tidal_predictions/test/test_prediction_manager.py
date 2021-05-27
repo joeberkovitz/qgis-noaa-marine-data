@@ -346,8 +346,9 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['magnitude'], 0.365)
 
     def test_current_vel_major_requests(self):
+        # note that end time is 04:58, to work around a CO-OPS server side caching bug (see CurrentPredictionManager source)
         url = QUrl('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?'
-            'application=qgis-noaa-tidal-predictions&begin_date=20200101 05:00&end_date=20200102 04:59'
+            'application=qgis-noaa-tidal-predictions&begin_date=20200101 05:00&end_date=20200102 04:58'
             '&units=english&time_zone=gmt&product=currents_predictions&format=xml'
             '&station=BOS1111&bin=14&vel_type=default&interval=30')
         features = self.getPredictions(
