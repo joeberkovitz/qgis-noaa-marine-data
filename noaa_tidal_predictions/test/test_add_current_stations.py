@@ -5,7 +5,7 @@ from unittest.mock import *
 
 import os
 
-from qgis.PyQt.QtCore import QCoreApplication
+from qgis.PyQt.QtCore import QCoreApplication, QDateTime
 from qgis.core import (
     QgsProject,
     QgsProcessingContext,
@@ -18,6 +18,7 @@ from qgis.core import (
     NULL
     )
 from noaa_tidal_predictions.add_station_layers import AddCurrentStationsLayerAlgorithm
+from noaa_tidal_predictions.prediction_expressions import PredictionExpressions
 from noaa_tidal_predictions.utils import *
 
 QGIS_APP = get_qgis_app()
@@ -28,7 +29,11 @@ class CurrentStationsFixtures:
         self.alg.initAlgorithm({})
         self.alg.context = QgsProcessingContext()
         self.alg.feedback = Mock(spec=QgsProcessingFeedback)
-        self.alg.parameters = {'CurrentStationsLayer': QgsProcessingUtils.generateTempFilename('stations.gpkg')}
+        self.alg.parameters = {
+            'CurrentStationsLayer': QgsProcessingUtils.generateTempFilename('stations.gpkg'),
+            'CurrentPredictionsLayer': QgsProcessingUtils.generateTempFilename('predictions.gpkg'),
+        }
+        PredictionExpressions.registerFunctions()
 
     def getMockRequest(self, filename, status_code=200):
         mockRequest = Mock()
@@ -40,18 +45,20 @@ class CurrentStationsFixtures:
     def loadOnCompletion(self):
         details = QgsProcessingContext.LayerDetails('stations', QgsProject.instance())
         self.alg.context.addLayerToLoadOnCompletion(self.alg.parameters['CurrentStationsLayer'], details)
+        self.alg.context.addLayerToLoadOnCompletion(self.alg.parameters['CurrentPredictionsLayer'], details)
 
     def getFixtureLayer(self, filename):
         self.loadOnCompletion()
         with patch('requests.get') as mockGet:
             mockGet.return_value = self.getMockRequest(filename)
             dest_id = self.alg.getCurrentStations()
-            layer = QgsProcessingUtils.mapLayerFromString(dest_id, self.alg.context)
-            if self.alg.context.willLoadLayerOnCompletion(dest_id):
+            predictions_dest_id = self.alg.getCurrentPredictions()
+            for layer_id in [dest_id, predictions_dest_id]:
+                layer = QgsProcessingUtils.mapLayerFromString(layer_id, self.alg.context)
                 QgsProject.instance().addMapLayer(layer)
-                postProcessor = self.alg.context.layersToLoadOnCompletion().get(dest_id).postProcessor()
+                postProcessor = self.alg.context.layersToLoadOnCompletion().get(layer_id).postProcessor()
                 postProcessor.postProcessLayer(layer, self.alg.context, self.alg.feedback)
-            return layer
+            return QgsProcessingUtils.mapLayerFromString(dest_id, self.alg.context)
 
     def getFeatures(self, filename, expression):
         layer = self.getFixtureLayer(filename)
@@ -64,6 +71,7 @@ class CurrentStationsFixtures:
     def cleanUp(self):
         for layer in QgsProject.instance().mapLayers():
             QgsProject.instance().removeMapLayer(layer)
+        PredictionExpressions.unregisterFunctions()
        
 class CurrentStationsTest(unittest.TestCase):
     def setUp(self):
@@ -183,7 +191,7 @@ class CurrentStationsTest(unittest.TestCase):
 
         predictionsLayer = currentPredictionsLayer()
         self.assertIsInstance(predictionsLayer,QgsVectorLayer)
-        self.assertEqual(predictionsLayer.storageType(),'Memory storage')
+        self.assertEqual(predictionsLayer.storageType(),'GPKG')
 
     def test_prediction_station_join(self):
         dest = self.fixtures.getFixtureLayer('currentRefSub.xml')
@@ -191,15 +199,29 @@ class CurrentStationsTest(unittest.TestCase):
         predictionsLayer = currentPredictionsLayer()
         feature = QgsFeature(predictionsLayer.fields())
         feature['station'] = 'BOS1111_14'
+        feature['time'] = QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC)
         predictionsLayer.startEditing()
         predictionsLayer.addFeature(feature)
         predictionsLayer.commitChanges()
         features = list(predictionsLayer.getFeatures(QgsFeatureRequest().setFilterExpression("station = 'BOS1111_14'")))
         self.assertEqual(len(features), 1)
         feature = features[0]
+
         self.assertEqual(feature['station_name'],'Boston Harbor (Deer Island Light)')
+        self.assertEqual(feature['station_timeZoneUTC'],'UTC-05:00')
+        self.assertEqual(feature['station_timeZoneId'],'America/New_York')
+        self.assertEqual(feature['station_surface'], 1)
 
+        time = feature['time']
+        time.setTimeSpec(Qt.TimeSpec.UTC)
+        self.assertEqual(time, QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC))
 
+        localTime = QDateTime(time)
+        localTime.setTimeZone(QTimeZone(b'America/New_York'))
+        self.assertEqual(feature['local_time'],localTime)
+
+        self.assertEqual(feature['display_date'],'01/01')
+        self.assertEqual(feature['display_time'],'08:00 am')
 
 
 if __name__ == "__main__":

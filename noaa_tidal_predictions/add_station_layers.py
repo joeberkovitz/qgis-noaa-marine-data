@@ -32,6 +32,8 @@ from .time_zone_lookup import TimeZoneLookup
 
 class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
     PrmCurrentStationsLayer = 'CurrentStationsLayer'
+    PrmCurrentPredictionsLayer = 'CurrentPredictionsLayer'
+
 # boilerplate methods
     def name(self):
         return 'addcurrentstationslayer'
@@ -50,9 +52,16 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.PrmCurrentStationsLayer,
-                tr('Current stations output layer'),
+                tr('Current stations layer'),
                 QgsProcessing.TypeVectorPoint,
                 os.path.join(layerStoragePath(), 'current_stations.gpkg'))
+        )
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                self.PrmCurrentPredictionsLayer,
+                tr('Current predictions layer'),
+                QgsProcessing.TypeVectorPoint,
+                os.path.join(layerStoragePath(), 'current_predictions.gpkg'))
         )
         self.feedback = QgsProcessingFeedback()
 
@@ -67,9 +76,11 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
             pass
 
         current_dest_id = self.getCurrentStations()
+        predictions_dest_id = self.getCurrentPredictions()
 
         return {
-            self.PrmCurrentStationsLayer: current_dest_id
+            self.PrmCurrentStationsLayer: current_dest_id,
+            self.PrmCurrentPredictionsLayer: predictions_dest_id
         }
 
     def baseStationFields(self):
@@ -98,8 +109,25 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         fields.append(QgsField("magnitude", QVariant.Double))  # value along direction if known
         return fields
 
+    def getCurrentPredictions(self):
+        if currentPredictionsLayer() != None:
+            raise QgsProcessingException(tr('Existing current layers must be removed before creating new ones.'))
+
+        (predictionsSink, predictions_dest_id) = self.parameterAsSink(
+            self.parameters, self.PrmCurrentPredictionsLayer, self.context,
+            self.currentPredictionFields(),
+            QgsWkbTypes.Point, epsg4326)
+
+        if self.context.willLoadLayerOnCompletion(predictions_dest_id):
+            proc = CurrentPredictionsStylePostProcessor.create(
+                tr('Current Predictions'), 'current_predictions.qml', CurrentPredictionsLayerType
+            )
+            self.context.layerToLoadOnCompletionDetails(predictions_dest_id).setPostProcessor(proc)
+
+        return predictions_dest_id
+
     def getCurrentStations(self):
-        if currentStationsLayer() != None or currentPredictionsLayer() != None:
+        if currentStationsLayer() != None:
             raise QgsProcessingException(tr('Existing current layers must be removed before creating new ones.'))
 
         self.feedback.pushInfo("Requesting metadata for NOAA current stations...")
@@ -176,9 +204,7 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
         if self.context.willLoadLayerOnCompletion(current_dest_id):
             proc = CurrentStationsStylePostProcessor.create(
-                tr('Current Stations'), 'current_stations.qml',
-                tr('Current Predictions'), 'current_predictions.qml',
-                self.currentPredictionFields()
+                tr('Current Stations'), 'current_stations.qml', CurrentStationsLayerType
             )
             self.context.layerToLoadOnCompletionDetails(current_dest_id).setPostProcessor(proc)
 
@@ -231,55 +257,77 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         return current_dest_id
 
 class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
-    def __init__(self, layerName, styleName,
-                 predictionLayerName, predictionStyleName,
-                 predictionFields):
+    def __init__(self, layerName, styleName, layerType):
         super(StylePostProcessor, self).__init__()
         self.layerName = layerName
         self.styleName = styleName
-        self.predictionLayerName = predictionLayerName
-        self.predictionStyleName = predictionStyleName
-        self.predictionFields = predictionFields
+        self.layerType = layerType
 
-    def postProcessLayer(self, layer, context, feedback):
-        # style the output layer here
+    def configureLayer(self, layer, context, feedback):
+        # rename and style the output layer here
         layer.setName(self.layerName)
         layer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles',self.styleName))
         layer.triggerRepaint()
 
-        predictionLayer = QgsMemoryProviderUtils.createMemoryLayer(
-            self.predictionLayerName, self.predictionFields, QgsWkbTypes.Point, epsg4326
-        )
-        QgsProject.instance().addMapLayer(predictionLayer)
+        # set up custom variable identifying the added layers
+        layer.setCustomProperty(NOAA_LAYER_TYPE, self.layerType)
 
-        # add a join to the station layer from which  predictions were derived
+        # if both layers are available (meaning both post processors have run) then configure joins
+        stationsLayer = currentStationsLayer()
+        predictionsLayer = currentPredictionsLayer()
+        if stationsLayer is not None and predictionsLayer is not None:
+            joinInfo = QgsVectorLayerJoinInfo()
+            joinInfo.setJoinLayer(stationsLayer)
+            joinInfo.setTargetFieldName('station')
+            joinInfo.setJoinFieldName('station')
+            joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC', 'surface'])
+            joinInfo.setPrefix('station_')
+            predictionsLayer.addJoin(joinInfo)
 
-        joinInfo = QgsVectorLayerJoinInfo()
-        joinInfo.setJoinLayer(layer)
-        joinInfo.setTargetFieldName('station')
-        joinInfo.setJoinFieldName('station')
-        joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC'])
-        joinInfo.setPrefix('station_')
-        predictionLayer.addJoin(joinInfo)
-        predictionLayer.updateFields()
+            localTimeField = QgsField('local_time', QVariant.DateTime)
+            predictionsLayer.addExpressionField(
+                'convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId)',
+                localTimeField
+            )
 
-        predictionLayer.loadNamedStyle(os.path.join(os.path.dirname(__file__),'styles',self.predictionStyleName))
+            displayDateField = QgsField('display_date', QVariant.String)
+            predictionsLayer.addExpressionField(
+                "format_date(convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId), 'MM/dd')",
+                displayDateField
+            )
 
-        # set up custom variables identifying the added layers
-        layer.setCustomProperty(NOAA_LAYER_TYPE, CurrentStationsLayerType)
-        predictionLayer.setCustomProperty(NOAA_LAYER_TYPE, CurrentPredictionsLayerType)
+            displayTimeField = QgsField('display_time', QVariant.String)
+            predictionsLayer.addExpressionField(
+                "format_date(convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId), 'hh:mm a')",
+                displayTimeField
+            )
+
+            predictionsLayer.updateFields()
+
 
 class CurrentStationsStylePostProcessor(StylePostProcessor):
     instance = None
 
+    def postProcessLayer(self, layer, context, feedback):
+        self.configureLayer(layer, context, feedback)
+
     @staticmethod
-    def create(layerName, styleName,
-               predictionLayerName, predictionStyleName,
-               predictionFields) -> 'CurrentStationsStylePostProcessor':
+    def create(layerName, styleName, layerType) -> 'CurrentStationsStylePostProcessor':
         CurrentStationsStylePostProcessor.instance = CurrentStationsStylePostProcessor(
-            layerName, styleName,
-            predictionLayerName, predictionStyleName,
-            predictionFields
+            layerName, styleName, layerType
         )
         return CurrentStationsStylePostProcessor.instance
+
+class CurrentPredictionsStylePostProcessor(StylePostProcessor):
+    instance = None
+
+    def postProcessLayer(self, layer, context, feedback):
+        self.configureLayer(layer, context, feedback)
+
+    @staticmethod
+    def create(layerName, styleName, layerType) -> 'CurrentStationsStylePostProcessor':
+        CurrentPredictionsStylePostProcessor.instance = CurrentPredictionsStylePostProcessor(
+            layerName, styleName, layerType
+        )
+        return CurrentPredictionsStylePostProcessor.instance
 
