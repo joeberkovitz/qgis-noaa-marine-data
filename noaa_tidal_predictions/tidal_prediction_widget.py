@@ -200,8 +200,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.stationHighlight.hide()
 
         self.stationHighlight = QgsHighlight(self.canvas, self.stationFeature, self.currentStationsLayer)
-        self.stationHighlight.setColor(QColor(Qt.yellow))
-        self.stationHighlight.setFillColor(QColor(Qt.yellow))
+        self.stationHighlight.setColor(QColor(Qt.red))
+        self.stationHighlight.setFillColor(QColor(Qt.red))
         self.stationHighlight.show()
 
     def adjustDay(self, delta):
