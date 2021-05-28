@@ -220,6 +220,10 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.plotAxes.figure.canvas.draw()
 
     def predictionsResolved(self):
+        # Check to see if the resolved predictions are for the data we care about
+        if self.stationData is None or self.stationData.state != PredictionPromise.ResolvedState:
+            return
+            
         """ when we have predictions for the current station, show them in the
             plot and table widget.
         """
