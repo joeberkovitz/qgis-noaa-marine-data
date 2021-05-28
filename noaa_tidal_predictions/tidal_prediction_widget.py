@@ -239,6 +239,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if self.predictionCanvas is not None:
             self.predictionCanvas.mpl_disconnect(self.plotCallbackId)
             self.plotLayout.removeWidget(self.predictionCanvas)
+            self.predictionCanvas.hide()
 
         self.predictionCanvas = FigureCanvas(Figure(figsize=(5,3)))
         self.plotLayout.addWidget(self.predictionCanvas)
