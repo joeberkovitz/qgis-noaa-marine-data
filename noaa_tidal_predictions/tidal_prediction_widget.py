@@ -2,7 +2,7 @@ import os
 
 from qgis.PyQt import QtWidgets, uic
 from qgis.PyQt.QtCore import QDate, QDateTime, QTime, QTimeZone, QTimer, QSizeF, QPointF
-from qgis.PyQt.QtWidgets import QTableWidget, QTableWidgetItem
+from qgis.PyQt.QtWidgets import QTableWidget, QTableWidgetItem, QMessageBox
 
 from qgis.core import (
     QgsProject,
@@ -70,24 +70,32 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.autoLoadTimer.setSingleShot(True)
 
     def activate(self):
-        self.active = True
-        self.predictionManager = PredictionManager(currentStationsLayer(), currentPredictionsLayer())
-        QgsProject.instance()._pm = self.predictionManager ## HACK FOR TESTING
-        self.show()
-        self.setTemporalRange()
-        self.loadMapExtentPredictions()
+        if currentStationsLayer() is None or currentPredictionsLayer() is None:
+            QMessageBox.critical(None, None, tr('You must add current station layers before this tool can be used.'))
+            return
 
-        self.autoLoadTimer.timeout.connect(self.loadMapExtentPredictions)
-        self.canvas.extentsChanged.connect(self.triggerAutoLoad)
+        self.show()
+
+        if not self.active:
+            self.predictionManager = PredictionManager(currentStationsLayer(), currentPredictionsLayer())
+            self.setTemporalRange()
+            self.loadMapExtentPredictions()
+
+            self.autoLoadTimer.timeout.connect(self.loadMapExtentPredictions)
+            self.canvas.extentsChanged.connect(self.triggerAutoLoad)
+
+            self.active = True
 
     def deactivate(self):
-        self.canvas.extentsChanged.disconnect(self.triggerAutoLoad)
-        self.autoLoadTimer.timeout.disconnect(self.loadMapExtentPredictions)
-        self.autoLoadTimer.stop()
-
         self.hide()
-        self.predictionManager = None
-        self.active = False
+        
+        if self.active:
+            self.canvas.extentsChanged.disconnect(self.triggerAutoLoad)
+            self.autoLoadTimer.timeout.disconnect(self.loadMapExtentPredictions)
+            self.autoLoadTimer.stop()
+
+            self.predictionManager = None
+            self.active = False
 
     def maxAutoLoadCount(self):
         return 100;   # TODO: have a widget for this
@@ -220,10 +228,11 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.plotAxes.figure.canvas.draw()
 
     def predictionsResolved(self):
-        # Check to see if the resolved predictions are for the data we care about
+        # Check to see if the resolved signal is for data we currently care about.
+        # if not, then just bail
         if self.stationData is None or self.stationData.state != PredictionPromise.ResolvedState:
             return
-            
+
         """ when we have predictions for the current station, show them in the
             plot and table widget.
         """
