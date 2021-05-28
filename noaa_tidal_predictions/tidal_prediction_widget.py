@@ -77,12 +77,15 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.show()
 
         if not self.active:
-            self.predictionManager = PredictionManager(currentStationsLayer(), currentPredictionsLayer())
+            self.currentStationsLayer = currentStationsLayer()
+            self.currentPredictionsLayer = currentPredictionsLayer()
+            self.predictionManager = PredictionManager(self.currentStationsLayer, self.currentPredictionsLayer)
             self.setTemporalRange()
             self.loadMapExtentPredictions()
 
             self.autoLoadTimer.timeout.connect(self.loadMapExtentPredictions)
             self.canvas.extentsChanged.connect(self.triggerAutoLoad)
+            QgsProject.instance().layerWillBeRemoved.connect(self.removalCheck)
 
             self.active = True
 
@@ -93,12 +96,17 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.canvas.extentsChanged.disconnect(self.triggerAutoLoad)
             self.autoLoadTimer.timeout.disconnect(self.loadMapExtentPredictions)
             self.autoLoadTimer.stop()
+            QgsProject.instance().layerWillBeRemoved.disconnect(self.removalCheck)
 
             self.predictionManager = None
             self.active = False
 
     def maxAutoLoadCount(self):
         return 100;   # TODO: have a widget for this
+
+    def removalCheck(self, layerId):
+        if layerId == self.currentStationsLayer.id() or layerId == self.currentPredictionsLayer.id():
+            self.deactivate()
 
     def triggerAutoLoad(self):
         self.autoLoadTimer.start(self.AUTOLOAD_TIMER_MSECS)
