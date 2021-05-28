@@ -1,6 +1,7 @@
 import os
 
 from qgis.PyQt import QtWidgets, uic
+from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtCore import QDate, QDateTime, QTime, QTimeZone, QTimer, QSizeF, QPointF
 from qgis.PyQt.QtWidgets import QTableWidget, QTableWidgetItem, QMessageBox
 
@@ -10,6 +11,10 @@ from qgis.core import (
     QgsDateTimeRange,
     QgsTextAnnotation,
     NULL
+)
+
+from qgis.gui import (
+    QgsHighlight
 )
 
 from qgis.utils import iface
@@ -60,6 +65,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.predictionManager = None
         self.stationFeature = None
         self.stationZone = None
+        self.stationHighlight = None
+
         self.active = False
 
         self.predictionCanvas = None
@@ -98,7 +105,13 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.autoLoadTimer.stop()
             QgsProject.instance().layerWillBeRemoved.disconnect(self.removalCheck)
 
+            self.tableWidget.clearContents()
+            self.predictionCanvas.hide()
+            if self.stationHighlight is not None:
+                self.stationHighlight.hide()
+
             self.predictionManager = None
+            self.stationFeature = None
             self.active = False
 
     def maxAutoLoadCount(self):
@@ -182,6 +195,14 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.updateTime()
         self.updateStationLink()
         self.loadStationPredictions()
+
+        if self.stationHighlight is not None:
+            self.stationHighlight.hide()
+
+        self.stationHighlight = QgsHighlight(self.canvas, self.stationFeature, self.currentStationsLayer)
+        self.stationHighlight.setColor(QColor(Qt.yellow))
+        self.stationHighlight.setFillColor(QColor(Qt.yellow))
+        self.stationHighlight.show()
 
     def adjustDay(self, delta):
         self.dateEdit.setDate(self.dateEdit.date().addDays(delta))
