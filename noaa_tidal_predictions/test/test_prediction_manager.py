@@ -22,10 +22,11 @@ from .test_add_current_stations import CurrentStationsFixtures
 
 QGIS_APP = get_qgis_app()
 
+
 class PredictionManagerTest(unittest.TestCase):
     request_urls = None
 
-    """Test translations work."""
+    """Test suite for many aspects of PredictionManager and its associated classes"""
 
     def setUp(self):
         self.currentFixtures = CurrentStationsFixtures()
