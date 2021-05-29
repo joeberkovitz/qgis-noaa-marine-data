@@ -73,10 +73,10 @@ class PredictionManager(QObject):
             self.activeHighWater = 0
         self.progressChanged.emit(self.progressValue())
 
-    # determine the progress value. -1 means no activity in progress
+    # determine the progress value. 100 can mean there is no activity in progress.
     def progressValue(self):
         if self.activeCount == 0:
-            return -1
+            return 100
         else:
             return int(100 * (self.activeHighWater - self.activeCount) / self.activeHighWater)
 

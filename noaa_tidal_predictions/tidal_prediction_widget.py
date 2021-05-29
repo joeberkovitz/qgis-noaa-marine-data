@@ -120,7 +120,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.active = False
 
     def predictionProgress(self, progress):
-        if progress < 0:
+        if progress == 100:
             self.progressBar.hide()
         else:
             self.progressBar.show()

@@ -307,7 +307,7 @@ class PredictionManagerTest(unittest.TestCase):
 
     @patch.object(PredictionRequest, 'doStart', mock_doStartPrepare)
     def test_prediction_progress(self):
-        self.assertEqual(self.pm.progressValue(), -1)
+        self.assertEqual(self.pm.progressValue(), 100)
 
         progressList = []
         def appendProgress(p):
@@ -336,7 +336,7 @@ class PredictionManagerTest(unittest.TestCase):
         for dep in pdp2.dependencies:
             dep.processFinish()
 
-        self.assertEqual(progressList,[0, 0, 50, -1])
+        self.assertEqual(progressList,[0, 0, 50, 100])
 
     def test_current_request_error(self):
         features = self.getPredictions(
