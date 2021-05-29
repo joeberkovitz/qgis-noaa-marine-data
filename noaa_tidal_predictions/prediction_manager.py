@@ -4,9 +4,9 @@ from scipy.interpolate import interp1d
 import xml.etree.ElementTree as ET
 
 from qgis.core import (
-    QgsPointXY, QgsPoint, QgsRectangle, QgsFeature, QgsGeometry, QgsField, QgsFields,
+    QgsApplication, QgsPointXY, QgsPoint, QgsRectangle, QgsFeature, QgsGeometry, QgsField, QgsFields,
     QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform,
-    QgsFeatureRequest, QgsNetworkContentFetcher,
+    QgsFeatureRequest, QgsNetworkContentFetcherTask,
     QgsExpressionContextScope, QgsExpressionContext, QgsFeatureSink,
     NULL
 )
@@ -82,7 +82,8 @@ class PredictionManager(QObject):
 
     # Return a list of surface station features included in the given rectangle.
     def getExtentStations(self, rect):
-        return list(filter(lambda f: f['surface'] > 0, self.stationsLayer.getFeatures(rect)))
+        features = self.stationsLayer.getFeatures(rect)
+        return list(filter(lambda f: f['surface'] > 0, features))
 
     # Return a station feature by its unique identifier
     def getStation(self, stationId):
@@ -434,11 +435,14 @@ class PredictionRequest(PredictionPromise):
         self.stationFeature = stationFeature
         self.startTime = startTime
         self.endTime = endTime
-        self.fetcher = QgsNetworkContentFetcher()
-        self.fetcher.finished.connect(self.processReply)
 
     def doStart(self):
-        self.fetcher.fetchContent(QUrl(self.url()))
+        self.fetcher = QgsNetworkContentFetcherTask(QUrl(self.url()))
+        self.fetcher.fetched.connect(self.processFetch)
+        self.fetcher.taskCompleted.connect(self.processFinish)
+        self.fetcher.taskTerminated.connect(self.processFinish)
+        self.content = None
+        QgsApplication.taskManager().addTask(self.fetcher)
 
     def url(self):
         query = QUrlQuery()
@@ -459,14 +463,19 @@ class PredictionRequest(PredictionPromise):
     def parseContent(self, content):
         raise Exception('Override required')
 
-    # process the reply from our content-fetching task
-    def processReply(self):
+    def processFetch(self):
+        self.content = self.fetcher.contentAsString()
+
+    def processFinish(self):
+        if self.content is None:
+            self.reject()
+            return
+
         try:
-            self.predictions = self.parseContent(self.fetcher.contentAsString())
+            self.predictions = self.parseContent(self.content)
             self.resolve()
         except Exception:
-            self.reject()
-
+            self.reject()    
 
 class CurrentPredictionRequest(PredictionRequest):
     SpeedDirectionType = 0

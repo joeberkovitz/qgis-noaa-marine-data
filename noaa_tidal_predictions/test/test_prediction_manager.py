@@ -12,7 +12,7 @@ from qgis.core import (
     QgsFields,
     QgsWkbTypes,
     QgsMemoryProviderUtils,
-    QgsNetworkContentFetcher,
+    QgsNetworkContentFetcherTask,
     NULL
     )
 
@@ -60,16 +60,16 @@ class PredictionManagerTest(unittest.TestCase):
         cpr.resolved(resolved)
         rejected = Mock()
         cpr.rejected(rejected)
-        cpr.fetcher.fetchContent = Mock(name='fetchContent')
 
         cpr.start()
 
         if url:
-            cpr.fetcher.fetchContent.assert_called_once_with(url)
+            self.assertIsNotNone(cpr.fetcher)
                 
+        cpr.fetcher = Mock(QgsNetworkContentFetcherTask)
         with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
-            cpr.fetcher.contentAsString = Mock(return_value=dataFile.read())
-        cpr.processReply()
+            cpr.content = dataFile.read()
+        cpr.processFinish()
 
         if parseError:
             rejected.assert_called_once()
@@ -89,16 +89,16 @@ class PredictionManagerTest(unittest.TestCase):
         query_station = query.queryItemValue('station')
         query_bin = query.queryItemValue('bin')
         filename = '{}_{}-{}-{}-{}.xml'.format(query_station,query_bin,query_date,query_vel_type,query_interval)
-        self.fetcher = Mock(QgsNetworkContentFetcher)
+        self.fetcher = Mock(QgsNetworkContentFetcherTask)
         with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
-            self.fetcher.contentAsString = Mock(return_value=dataFile.read())
+            self.content = dataFile.read()
 
     """ This patch to the doStart() method of PredictionRequest causes files to be loaded
         from a fixture rather than from the network.
     """
     def mock_doStart(self):
         PredictionManagerTest.mock_doStartPrepare(self)
-        self.processReply()
+        self.processFinish()
 
 
     """ Test the ability to mock out PredictionRequests by loading files based on query parameters
@@ -329,12 +329,12 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(progressList,[0, 0])
 
         for dep in pdp1.dependencies:
-            dep.processReply()
+            dep.processFinish()
 
         self.assertEqual(progressList,[0, 0, 50])
 
         for dep in pdp2.dependencies:
-            dep.processReply()
+            dep.processFinish()
 
         self.assertEqual(progressList,[0, 0, 50, -1])
 
