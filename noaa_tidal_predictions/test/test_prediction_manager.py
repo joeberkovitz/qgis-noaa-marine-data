@@ -26,7 +26,7 @@ QGIS_APP = get_qgis_app()
 class PredictionManagerTest(unittest.TestCase):
     request_urls = None
 
-    """Test suite for many aspects of PredictionManager and its associated classes"""
+    """ Test suite for many aspects of PredictionManager and its associated classes. """
 
     def setUp(self):
         self.currentFixtures = CurrentStationsFixtures()
