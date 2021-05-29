@@ -311,6 +311,9 @@ class CurrentStationsStylePostProcessor(StylePostProcessor):
     def postProcessLayer(self, layer, context, feedback):
         self.configureLayer(layer, context, feedback)
 
+        stationIndex = layer.dataProvider().fields().indexOf('station')
+        layer.dataProvider().createAttributeIndex(stationIndex)
+
     @staticmethod
     def create(layerName, styleName, layerType) -> 'CurrentStationsStylePostProcessor':
         CurrentStationsStylePostProcessor.instance = CurrentStationsStylePostProcessor(
@@ -323,6 +326,9 @@ class CurrentPredictionsStylePostProcessor(StylePostProcessor):
 
     def postProcessLayer(self, layer, context, feedback):
         self.configureLayer(layer, context, feedback)
+
+        stationIndex = layer.dataProvider().fields().indexOf('station')
+        layer.dataProvider().createAttributeIndex(stationIndex)
 
     @staticmethod
     def create(layerName, styleName, layerType) -> 'CurrentStationsStylePostProcessor':
