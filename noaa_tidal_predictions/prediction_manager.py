@@ -198,8 +198,13 @@ class PredictionDataPromise(PredictionPromise):
         startTime = self.datetime
         endTime = self.datetime.addDays(1)
 
-        # Create a time based query
         featureRequest = QgsFeatureRequest()
+        stationPt = QgsPointXY(self.stationFeature.geometry().vertexAt(0))
+        searchRect = QgsRectangle(stationPt, stationPt)
+        searchRect.grow(0.01/60)   # in the neighborhood of .01 nm as 1/60 = 1 arc minute in this proj.
+        featureRequest.setFilterRect(searchRect)
+
+        # Create a time based query
         ctx = featureRequest.expressionContext()
         scope = QgsExpressionContextScope()
         scope.setVariable('startTime', startTime)
