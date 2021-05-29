@@ -381,9 +381,7 @@ class PredictionDataPromise(PredictionPromise):
         phases = []
         for p in self.predictions:
             ptype = p['type']
-            ptime = p['time']
-            ptime.setTimeSpec(Qt.TimeSpec.UTC)
-            time = self.datetime.secsTo(ptime)
+            time = self.secsTo(p['time'])
             subTimes.append(time)
 
             if ptype == 'slack':
@@ -422,12 +420,13 @@ class PredictionDataPromise(PredictionPromise):
             array of interpolated velocities from this object's predictions.
         """
         currentPredictions = list(filter(lambda p: p['type'] == 'current', self.predictions))
-        currentTimes = [p['time'] for p in currentPredictions]
-        for t in currentTimes:
-            t.setTimeSpec(Qt.TimeSpec.UTC)
-        times = np.array([self.datetime.secsTo(t) for t in currentTimes])
+        times = np.array([self.secsTo(p['time']) for p in currentPredictions])
         values = np.array([p['value'] for p in currentPredictions])
         return interp1d(times, values, 'cubic')
+
+    def secsTo(self, dt):
+        dt.setTimeSpec(Qt.TimeSpec.UTC)
+        return self.datetime.secsTo(dt)
 
 
 # low-level request for data regarding a station feature around a date range
