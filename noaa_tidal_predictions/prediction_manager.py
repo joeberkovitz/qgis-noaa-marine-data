@@ -166,10 +166,6 @@ class PredictionDataPromise(PredictionPromise):
     """ Get all the data needed to resolve this promise
     """
     def doStart(self):
-        if self.predictions is not None:
-            self.done()
-            return
-
         # first see if we can pull data from the predictions layer
         startTime = self.datetime
         endTime = self.datetime.addDays(1)
