@@ -381,7 +381,9 @@ class PredictionDataPromise(PredictionPromise):
         phases = []
         for p in self.predictions:
             ptype = p['type']
-            time = self.datetime.secsTo(p['time'])
+            ptime = p['time']
+            ptime.setTimeSpec(Qt.TimeSpec.UTC)
+            time = self.datetime.secsTo(ptime)
             subTimes.append(time)
 
             if ptype == 'slack':
@@ -420,7 +422,10 @@ class PredictionDataPromise(PredictionPromise):
             array of interpolated velocities from this object's predictions.
         """
         currentPredictions = list(filter(lambda p: p['type'] == 'current', self.predictions))
-        times = np.array([self.datetime.secsTo(p['time']) for p in currentPredictions])
+        currentTimes = [p['time'] for p in currentPredictions]
+        for t in currentTimes:
+            t.setTimeSpec(Qt.TimeSpec.UTC)
+        times = np.array([self.datetime.secsTo(t) for t in currentTimes])
         values = np.array([p['value'] for p in currentPredictions])
         return interp1d(times, values, 'cubic')
 
