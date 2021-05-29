@@ -84,6 +84,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.show()
 
         if not self.active:
+            self.active = True
             self.currentStationsLayer = currentStationsLayer()
             self.currentPredictionsLayer = currentPredictionsLayer()
             self.predictionManager = PredictionManager(self.currentStationsLayer, self.currentPredictionsLayer)
@@ -93,8 +94,6 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.autoLoadTimer.timeout.connect(self.loadMapExtentPredictions)
             self.canvas.extentsChanged.connect(self.triggerAutoLoad)
             QgsProject.instance().layerWillBeRemoved.connect(self.removalCheck)
-
-            self.active = True
 
     def deactivate(self):
         self.hide()
@@ -106,7 +105,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             QgsProject.instance().layerWillBeRemoved.disconnect(self.removalCheck)
 
             self.tableWidget.clearContents()
-            self.predictionCanvas.hide()
+            if self.predictionCanvas is not None:
+                self.predictionCanvas.hide()
             if self.stationHighlight is not None:
                 self.stationHighlight.hide()
 

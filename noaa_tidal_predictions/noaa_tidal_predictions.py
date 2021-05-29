@@ -166,10 +166,13 @@ class NoaaTidalPredictions:
         except Exception:
             pass
 
-    def unload(self):
+    def deactivatePredictionTool(self):
         self.dock.hide()
         if self.canvas.mapTool() == self.predictionTool:
             self.canvas.setMapTool(self.savedMapTool)
+
+    def unload(self):
+        self.deactivatePredictionTool()
 
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -183,6 +186,7 @@ class NoaaTidalPredictions:
         PredictionExpressions.unregisterFunctions()
 
     def addCurrentStationsLayer(self):
+        self.deactivatePredictionTool()
         processing.execAlgorithmDialog('NoaaTidalPredictions:addcurrentstationslayer', {})
 
     def getTidalPredictions(self):
