@@ -276,7 +276,11 @@ class PredictionDataPromise(PredictionPromise):
             self.predictions = self.eventRequest.predictions
 
             if self.refStationData is not None:
-                print('Interpolating ref station {} for {}'.format(self.refStationData.stationFeature['station'],self.stationFeature['station']))
+                print('Interpolating ref station {} for {} with {} features'.format(
+                    self.refStationData.stationFeature['station'],
+                    self.stationFeature['station'],
+                    len(self.refStationData.predictions)
+                    ))
                 # use interpolated reference station data to fill this out
                 valueInterpolation = self.refStationData.valueInterpolation()
 
@@ -533,4 +537,5 @@ class CurrentPredictionRequest(PredictionRequest):
 
             features.append(f)
 
+        print('{}: Response had {} features'.format(self.stationFeature['station'],len(features)))
         return features
