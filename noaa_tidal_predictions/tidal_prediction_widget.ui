@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>459</width>
-    <height>495</height>
+    <height>504</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -175,6 +175,13 @@
        </spacer>
       </item>
      </layout>
+    </item>
+    <item>
+     <widget class="QProgressBar" name="progressBar">
+      <property name="value">
+       <number>0</number>
+      </property>
+     </widget>
     </item>
     <item>
      <spacer name="verticalSpacer">

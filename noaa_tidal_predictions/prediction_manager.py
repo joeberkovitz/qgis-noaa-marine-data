@@ -22,7 +22,7 @@ from qgis.PyQt.QtNetwork import (
 from .utils import *
 
 
-class PredictionManager:
+class PredictionManager(QObject):
     """Manager object overseeing the loading and caching of predictions
         organized by station-dates.
     """
@@ -30,13 +30,19 @@ class PredictionManager:
     # The time increment used for prediction requests and temporal display control.
     STEP_MINUTES = 30
 
+    progressChanged = pyqtSignal(int)
+
     # Each manager has a stations and a prediction layer. There's a manager for tides
     # and one for currents.
     def __init__(self, stationsLayer, predictionsLayer):
+        super(QObject,self).__init__()
+
         # Initialize a map of cached PredictionDataPromises
         self.promiseDict = {}
         self.stationsLayer = stationsLayer
         self.predictionsLayer = predictionsLayer
+        self.activeCount = 0
+        self.activeHighWater = 0
 
 
     # Obtain a PredictionDataPromise for 24-hour period starting with the given local-station-time date
@@ -48,9 +54,31 @@ class PredictionManager:
             # if it is not already in the predictions layer.
             promise = PredictionDataPromise(self, stationFeature, date)
             self.promiseDict[key] = promise
+
+            self.activeCount += 1
+            self.activeHighWater = max(self.activeHighWater, self.activeCount)
+            self.progressChanged.emit(self.progressValue())
+
+            promise.resolved(self.promiseDone)
+            promise.rejected(self.promiseDone)
+
             promise.start()
 
         return promise
+
+    # track the conclusion of a promise, successful or otherwise
+    def promiseDone(self):
+        self.activeCount -= 1
+        if self.activeCount == 0:
+            self.activeHighWater = 0
+        self.progressChanged.emit(self.progressValue())
+
+    # determine the progress value. -1 means no activity in progress
+    def progressValue(self):
+        if self.activeCount == 0:
+            return -1
+        else:
+            return int(100 * (self.activeHighWater - self.activeCount) / self.activeHighWater)
 
     # Return a list of surface station features included in the given rectangle.
     def getExtentStations(self, rect):

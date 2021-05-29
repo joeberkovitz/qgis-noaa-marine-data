@@ -76,6 +76,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.autoLoadTimer = QTimer()
         self.autoLoadTimer.setSingleShot(True)
 
+        self.progressBar.hide()
+
     def activate(self):
         if currentStationsLayer() is None or currentPredictionsLayer() is None:
             QMessageBox.critical(None, None, tr('You must add current station layers before this tool can be used.'))
@@ -88,6 +90,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.currentStationsLayer = currentStationsLayer()
             self.currentPredictionsLayer = currentPredictionsLayer()
             self.predictionManager = PredictionManager(self.currentStationsLayer, self.currentPredictionsLayer)
+            self.predictionManager.progressChanged.connect(self.predictionProgress)
             self.setTemporalRange()
             self.loadMapExtentPredictions()
 
@@ -110,10 +113,19 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             if self.stationHighlight is not None:
                 self.stationHighlight.hide()
 
+            self.predictionManager.progressChanged.disconnect(self.predictionProgress)
             self.predictionManager = None
+
             self.stationFeature = None
             self.active = False
 
+    def predictionProgress(self, progress):
+        if progress < 0:
+            self.progressBar.hide()
+        else:
+            self.progressBar.show()
+            self.progressBar.setValue(progress)
+            
     def maxAutoLoadCount(self):
         return 100;   # TODO: have a widget for this
 

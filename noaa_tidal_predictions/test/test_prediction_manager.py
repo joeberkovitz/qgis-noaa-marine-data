@@ -79,10 +79,7 @@ class PredictionManagerTest(unittest.TestCase):
             return cpr.predictions
 
 
-    """ This patch to the doStart() method of PredictionRequest causes files to be loaded
-        from a fixture rather than from the network.
-    """
-    def mock_doStart(self):
+    def mock_doStartPrepare(self):
         PredictionManagerTest.request_urls.append(self.url())
 
         query = QUrlQuery(QUrl(self.url()))
@@ -95,6 +92,12 @@ class PredictionManagerTest(unittest.TestCase):
         self.fetcher = Mock(QgsNetworkContentFetcher)
         with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
             self.fetcher.contentAsString = Mock(return_value=dataFile.read())
+
+    """ This patch to the doStart() method of PredictionRequest causes files to be loaded
+        from a fixture rather than from the network.
+    """
+    def mock_doStart(self):
+        PredictionManagerTest.mock_doStartPrepare(self)
         self.processReply()
 
 
@@ -301,6 +304,39 @@ class PredictionManagerTest(unittest.TestCase):
 
         # Verify that this IS just the same object being coughed up
         self.assertIs(pdp2, pdp1)
+
+    @patch.object(PredictionRequest, 'doStart', mock_doStartPrepare)
+    def test_prediction_progress(self):
+        self.assertEqual(self.pm.progressValue(), -1)
+
+        progressList = []
+        def appendProgress(p):
+            progressList.append(p)
+        self.pm.progressChanged.connect(appendProgress)
+
+        datetime = QDate(2020,1,1)
+        pdp1 = self.pm.getDataPromise(
+            self.refStation,
+            datetime)
+
+        self.assertEqual(progressList,[0])
+
+        # the second call should return exactly the same promise object
+        pdp2 = self.pm.getDataPromise(
+            self.refStation,
+            datetime.addDays(1))
+
+        self.assertEqual(progressList,[0, 0])
+
+        for dep in pdp1.dependencies:
+            dep.processReply()
+
+        self.assertEqual(progressList,[0, 0, 50])
+
+        for dep in pdp2.dependencies:
+            dep.processReply()
+
+        self.assertEqual(progressList,[0, 0, 50, -1])
 
     def test_current_request_error(self):
         features = self.getPredictions(
