@@ -1,6 +1,15 @@
 <current_predictions>
 <units>feet, knots</units>
 <cp>
+<Type>slack</Type>
+<meanFloodDir>259.0</meanFloodDir>
+<Bin>1</Bin>
+<meanEbbDir>66.0</meanEbbDir>
+<Time>2020-01-01 03:49</Time>
+<Depth>10</Depth>
+<Velocity_Major>0.01</Velocity_Major>
+</cp>
+<cp>
 <Type>flood</Type>
 <meanFloodDir>259.0</meanFloodDir>
 <Bin>1</Bin>

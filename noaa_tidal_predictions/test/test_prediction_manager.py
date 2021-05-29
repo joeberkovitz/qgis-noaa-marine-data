@@ -118,7 +118,7 @@ class PredictionManagerTest(unittest.TestCase):
         resolver.assert_not_called()
         cpr.start()
         resolver.assert_called_once()
-        self.assertEqual(len(cpr.predictions), 8)
+        self.assertEqual(len(cpr.predictions), 9)
         self.assertEqual(len(PredictionManagerTest.request_urls), 1)
         self.assertEqual(PredictionManagerTest.request_urls[0], 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?application=qgis-noaa-tidal-predictions&begin_date=20200101 05:00&end_date=20200102 04:59&units=english&time_zone=gmt&product=currents_predictions&format=xml&station=ACT0926&bin=1&interval=MAX_SLACK')
 
@@ -177,13 +177,6 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['dir'], 185.0)
         self.assertEqual(feature['magnitude'], 0.365)
 
-        # verify that value interpolation is working
-        interp = pdp.valueInterpolation()([0, 3*3600, 3.5*3600, 3.499*3600])
-        self.assertAlmostEqual(interp[0], 1.06135306)
-        self.assertAlmostEqual(interp[1], 0.0774541)
-        self.assertAlmostEqual(interp[2], -0.1067157)
-        self.assertAlmostEqual(interp[3], -0.10613375)
-
     """ Test a PredictionDataPromise for a harmonic station with Unknown flood/ebb directions
     """
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
@@ -222,35 +215,35 @@ class PredictionManagerTest(unittest.TestCase):
     """
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
     def test_subordinate_prediction_data_promise(self):
-        datetime = QDate(2020,1,1)
+        datetime = QDate(2020,1,2)
         pdp = PredictionDataPromise(
             self.pm,
             self.subStation,
             datetime)
         pdp.start()
         features = pdp.predictions
-        self.assertEqual(len(features), 48)  # 40 time intervals plus 8 events
+        self.assertEqual(len(features), 56)  # 40 time intervals plus 8 events
 
         currents = list(filter(lambda p: p['type'] == 'current', features))
-        self.assertEqual(len(currents), 40)
+        self.assertEqual(len(currents), 48)
         events = list(filter(lambda p: p['type'] != 'current', features))
         self.assertEqual(len(events), 8)
 
         feature = events[0]
         self.assertEqual(feature['station'], 'ACT0926_1')
-        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 6, 49, 0, 0, Qt.TimeSpec.UTC))
-        self.assertEqual(feature['value'], 0.62)
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 7, 49, 0, 0, Qt.TimeSpec.UTC))
+        self.assertEqual(feature['value'], 0.57)
         self.assertEqual(feature['type'], 'flood')
         self.assertEqual(feature['dir'], 259.0)
-        self.assertEqual(feature['magnitude'], 0.62)
+        self.assertEqual(feature['magnitude'], 0.57)
 
         feature = currents[4]
         self.assertEqual(feature['station'], 'ACT0926_1')
-        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 49, 0, 0, Qt.TimeSpec.UTC))
-        self.assertAlmostEqual(feature['value'], 0.08397517)
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 7, 0, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 0.5820566261196971)
         self.assertEqual(feature['type'], 'current')
         self.assertEqual(feature['dir'], 259.0)
-        self.assertAlmostEqual(feature['magnitude'], 0.08397517)
+        self.assertAlmostEqual(feature['magnitude'], 0.5820566261196971)
 
 
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
@@ -292,6 +285,7 @@ class PredictionManagerTest(unittest.TestCase):
         pdp1 = self.pm.getDataPromise(
             self.refStation,
             datetime)
+        pdp1.start()
         self.assertEqual(len(pdp1.predictions), 56)  # 48 time intervals plus 8 events
         self.assertEqual(len(PredictionManagerTest.request_urls), 2) # events and currents
 
@@ -299,6 +293,7 @@ class PredictionManagerTest(unittest.TestCase):
         pdp2 = self.pm.getDataPromise(
             self.refStation,
             datetime)
+        pdp2.start()
         self.assertEqual(len(pdp2.predictions), 56)  # 48 time intervals plus 8 events
         self.assertEqual(len(PredictionManagerTest.request_urls), 2)
 
@@ -318,6 +313,7 @@ class PredictionManagerTest(unittest.TestCase):
         pdp1 = self.pm.getDataPromise(
             self.refStation,
             datetime)
+        pdp1.start()
 
         self.assertEqual(progressList,[0])
 
@@ -325,6 +321,7 @@ class PredictionManagerTest(unittest.TestCase):
         pdp2 = self.pm.getDataPromise(
             self.refStation,
             datetime.addDays(1))
+        pdp2.start()
 
         self.assertEqual(progressList,[0, 0])
 
@@ -360,8 +357,8 @@ class PredictionManagerTest(unittest.TestCase):
             QDateTime(2020,1,1,5,0),
             CurrentPredictionRequest.EventType,
             url)
-        self.assertEqual(len(features), 8)
-        feature = features[0]
+        self.assertEqual(len(features), 9)
+        feature = features[1]
         self.assertEqual(feature['station'], 'ACT0926_1')
         self.assertEqual(feature['depth'], 10.0)
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 6, 49, 0, 0, Qt.TimeSpec.UTC))
@@ -370,11 +367,11 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['dir'], 259.0)
         self.assertEqual(feature['magnitude'], 0.62)
 
-        feature = features[1]
+        feature = features[2]
         self.assertEqual(feature['type'], 'slack')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 59, 0, 0, Qt.TimeSpec.UTC))
 
-        feature = features[2]
+        feature = features[3]
         self.assertEqual(feature['type'], 'ebb')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 11, 46, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], -0.58)

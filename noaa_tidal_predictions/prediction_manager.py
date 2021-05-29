@@ -38,22 +38,24 @@ class PredictionManager(QObject):
         super(QObject,self).__init__()
 
         # Initialize a map of cached PredictionDataPromises
-        self.promiseDict = {}
+        self.dataCache = {}
+
+        # also a map of cached EventDataPromises
+        self.eventCache = {}
+
         self.stationsLayer = stationsLayer
         self.predictionsLayer = predictionsLayer
         self.activeCount = 0
         self.activeHighWater = 0
 
-
-    # Obtain a PredictionDataPromise for 24-hour period starting with the given local-station-time date
-    def getDataPromise(self, stationFeature, date):
+    def getPromise(self, stationFeature, date, promiseClass, cache):
         key = self.promiseKey(stationFeature, date)
-        promise = self.promiseDict.get(key)
+        promise = cache.get(key)
         if promise is None:
             # we have no cached data promise. so make one. This implicitly requests the data
             # if it is not already in the predictions layer.
-            promise = PredictionDataPromise(self, stationFeature, date)
-            self.promiseDict[key] = promise
+            promise = promiseClass(self, stationFeature, date)
+            cache[key] = promise
 
             self.activeCount += 1
             self.activeHighWater = max(self.activeHighWater, self.activeCount)
@@ -61,10 +63,15 @@ class PredictionManager(QObject):
 
             promise.resolved(self.promiseDone)
             promise.rejected(self.promiseDone)
-
-            promise.start()
-
         return promise
+
+    # Obtain a PredictionDataPromise for 24-hour period starting with the given local-station-time date
+    def getDataPromise(self, stationFeature, date):
+        return self.getPromise(stationFeature, date, PredictionDataPromise, self.dataCache)
+
+    # Obtain a PredictionEventPromise for 24-hour period starting with the given local-station-time date
+    def getEventPromise(self, stationFeature, date):
+        return self.getPromise(stationFeature, date, PredictionEventPromise, self.eventCache)
 
     # track the conclusion of a promise, successful or otherwise
     def promiseDone(self):
@@ -123,6 +130,8 @@ class PredictionPromise(QObject):
         self.state = PredictionPromise.StartedState
         self.doStart()
         for p in self.dependencies:
+            p.resolved(self.checkDependencies)
+            p.rejected(self.checkDependencies)
             p.start()
 
     def doStart(self):
@@ -156,8 +165,6 @@ class PredictionPromise(QObject):
     # add a promise on which we are dependent. when all dependents are resolved, this one will too.
     def addDependency(self, p):
         self.dependencies.append(p)
-        p.resolved(self.checkDependencies)
-        p.rejected(self.checkDependencies)
 
     def checkDependencies(self):
         allResolved = True
@@ -176,6 +183,36 @@ class PredictionPromise(QObject):
     def doProcessing(self):
         # subclasses should override this to process dependencies or other intermediate results
         return
+
+class PredictionEventPromise(PredictionPromise):
+    """ Promise to obtain event-style predictions for a given station and local date.
+    """
+
+    # initialize this promise for a given manager, station and date.
+    def __init__(self, manager, stationFeature, date):
+        super(PredictionEventPromise, self).__init__()
+        self.manager = manager
+        self.stationFeature = stationFeature
+        self.predictions = None
+
+        # convert local station timezone QDate to a full UTC QDateTime.
+        self.localDate = date
+        self.datetime = QDateTime(date, QTime(0,0), stationTimeZone(stationFeature)).toUTC()
+
+    """ Get all the data needed to resolve this promise
+    """
+    def doStart(self):
+        self.eventRequest = CurrentPredictionRequest(
+            self.manager,
+            self.stationFeature,
+            self.datetime,
+            self.datetime.addDays(1),
+            CurrentPredictionRequest.EventType)
+        self.addDependency(self.eventRequest)
+
+    def doProcessing(self):
+        self.predictions = self.eventRequest.predictions
+
 
 class PredictionDataPromise(PredictionPromise):
     """ Promise to obtain a full set of predictions (events and timeline) for a given station and local date.
@@ -269,26 +306,23 @@ class PredictionDataPromise(PredictionPromise):
                     self.velocityRequest = None
 
             # Case 3: A Subordinate station which only knows its events. Here we need the following:
-            #   3a: EventType (for this station)
-            #   3b: A resolved data promise for the reference station (which may itself be Cases 1 or 2, but
-            #       we don't care as long as its data is present.)
+            #   3a: PredictionEventPromises for this station in a 3-day window surrounding the date of interest
+            #   3b: PredictionDataPromises for the reference station in the same 3-day window.
             else:
-                self.eventRequest = CurrentPredictionRequest(
-                    self.manager,
-                    self.stationFeature,
-                    startTime,
-                    endTime,
-                    CurrentPredictionRequest.EventType)
-                self.addDependency(self.eventRequest)
-
-                # get reference station promise
+                self.eventPromises = []
+                self.refPromises = []
                 refStation = self.manager.getStation(self.stationFeature['refStation'])
                 if refStation is None:
                     print("Could not find ref station {} for {}".format(self.stationFeature['refStation'], self.stationFeature['station']))
-                    self.refStationData = None
                 else:
-                    self.refStationData = self.manager.getDataPromise(refStation, self.localDate)
-                    self.addDependency(self.refStationData)
+                    for dayOffset in [-1, 0, 1]:
+                        windowDate = self.localDate.addDays(dayOffset)
+                        dataPromise = self.manager.getDataPromise(refStation, windowDate)
+                        self.refPromises.append(dataPromise)
+                        self.addDependency(dataPromise)
+                        eventPromise = self.manager.getEventPromise(self.stationFeature, windowDate)
+                        self.eventPromises.append(eventPromise)
+                        self.addDependency(eventPromise)
 
     def doProcessing(self):
         if self.stationFeature['type'] == 'H':
@@ -306,60 +340,44 @@ class PredictionDataPromise(PredictionPromise):
             self.predictions.extend(self.eventRequest.predictions)
             self.predictions.sort(key=(lambda p: p['time']))
         else:
-            # subordinate-station case
-            self.predictions = self.eventRequest.predictions
+            # subordinate-station case: we need to cook up two different interpolations based on 
+            # the 3-day windows of a) subordinate events and b) reference currents.
 
-            if self.refStationData is not None:
-                print('Interpolating ref station {} for {} with {} features'.format(
-                    self.refStationData.stationFeature['station'],
-                    self.stationFeature['station'],
-                    len(self.refStationData.predictions)
-                    ))
-                # use interpolated reference station data to fill this out
-                valueInterpolation = self.refStationData.valueInterpolation()
+            print('Interpolating ref station {} for {}'.format(
+                self.stationFeature['refStation'],
+                self.stationFeature['station']
+                ))
 
-                # create a time interpolation function that maps events in the subordinate station
-                # to adjusted and filtered times in the reference station
-                timeInterpolation = self.timeInterpolation()
+            # use interpolated reference station data to fill this out
+            valueInterpolation = self.valueInterpolation()
+            timeInterpolation = self.timeInterpolation()
 
-                # TODO: these times should just be regular 30-minute intervals starting at 00:00. We need the
-                # adjacent time windows to do this because we need to know where we are in the subordinate tide cycle.
-                firstEventTime = self.datetime.secsTo(self.predictions[0]['time'])
-                lastEventTime = self.datetime.secsTo(self.predictions[-1]['time'])
-                subTimes = list(range(firstEventTime, lastEventTime, PredictionManager.STEP_MINUTES * 60))
-                refTimes = timeInterpolation(np.array(subTimes))
+            subTimes = np.linspace(0, 24 * 60 * 60, 24 * 60 // PredictionManager.STEP_MINUTES, False)
+            refTimes = timeInterpolation(subTimes)
+            refValues = valueInterpolation(refTimes)
+            ebbDir = self.stationFeature['meanEbbDir'] 
+            ebbFactor = self.stationFeature['mecAmpAdj']
+            floodDir = self.stationFeature['meanFloodDir'] 
+            floodFactor = self.stationFeature['mfcAmpAdj']
+            refValues = [v * (ebbFactor if v < 0 else floodFactor) for v in refValues]
 
-                i = 0
-                while refTimes[i] < 0:
-                    i += 1
-                maxSecs = ((24 * 60) - PredictionManager.STEP_MINUTES) * 60
-                j = len(refTimes)
-                while refTimes[j-1] > maxSecs:
-                    j -= 1
-                subTimes = subTimes[i:j]
-                refTimes = refTimes[i:j]
+            fields = self.manager.predictionsLayer.fields()
+            self.predictions = []
+            for i in range(0, len(subTimes)):
+                f = QgsFeature(fields)
+                f.setGeometry(QgsGeometry(self.stationFeature.geometry()))
+                f['station'] = self.stationFeature['station']
+                f['depth'] = self.stationFeature['depth']
+                f['time'] = self.datetime.addSecs(int(subTimes[i]))
+                f['value'] = float(refValues[i])
+                f['dir'] = ebbDir if refValues[i] < 0 else floodDir
+                f['magnitude'] = abs(f['value'])
+                f['type'] = 'current'
+                self.predictions.append(f)
 
-                refValues = valueInterpolation(refTimes)
-                ebbDir = self.stationFeature['meanEbbDir'] 
-                ebbFactor = self.stationFeature['mecAmpAdj']
-                floodDir = self.stationFeature['meanFloodDir'] 
-                floodFactor = self.stationFeature['mfcAmpAdj']
-                refValues = [v * (ebbFactor if v < 0 else floodFactor) for v in refValues]
-
-                fields = self.manager.predictionsLayer.fields()
-                for i in range(0, len(subTimes)):
-                    f = QgsFeature(fields)
-                    f.setGeometry(QgsGeometry(self.stationFeature.geometry()))
-                    f['station'] = self.stationFeature['station']
-                    f['depth'] = self.stationFeature['depth']
-                    f['time'] = self.datetime.addSecs(int(subTimes[i]))
-                    f['value'] = float(refValues[i])
-                    f['dir'] = ebbDir if refValues[i] < 0 else floodDir
-                    f['magnitude'] = abs(f['value'])
-                    f['type'] = 'current'
-                    self.predictions.append(f)
-
-                self.predictions.sort(key=(lambda p: p['time']))
+            # Now mix in the event data from the central day in the 3-day window and sort everything
+            self.predictions.extend(self.eventPromises[1].predictions)
+            self.predictions.sort(key=(lambda p: p['time']))
 
         # add everything into the predictions layer
         self.manager.predictionsLayer.startEditing()
@@ -375,43 +393,32 @@ class PredictionDataPromise(PredictionPromise):
 
         # search for events, ignoring any initial slack event
         phase = 0    # unknown whether we are in ebb or flood initially
-        initialSlack = False
         subTimes = []
         refTimes = []
-        phases = []
-        for p in self.predictions:
-            ptype = p['type']
-            time = self.secsTo(p['time'])
-            subTimes.append(time)
+        for eventPromise in self.eventPromises:
+            for p in eventPromise.predictions:
+                ptype = p['type']
+                time = self.secsTo(p['time'])
 
-            if ptype == 'slack':
-                if phase > 0:
-                    # slack before ebb (after flood)
-                    refTimes.append(time - 60*self.stationFeature['sbeTimeAdjMin'])
-                elif phase < 0:
-                    # slack before flood (after ebb)
-                    refTimes.append(time - 60*self.stationFeature['sbfTimeAdjMin'])
+                if ptype == 'slack':
+                    if phase > 0:
+                        # slack before ebb (after flood)
+                        subTimes.append(time)
+                        refTimes.append(time - 60*self.stationFeature['sbeTimeAdjMin'])
+                    elif phase < 0:
+                        # slack before flood (after ebb)
+                        subTimes.append(time)
+                        refTimes.append(time - 60*self.stationFeature['sbfTimeAdjMin'])
+                elif ptype == 'flood':
+                    phase = 1
+                    subTimes.append(time)
+                    refTimes.append(time - 60*self.stationFeature['mfcTimeAdjMin'])
+                elif ptype == 'ebb':
+                    phase = -1
+                    subTimes.append(time)
+                    refTimes.append(time - 60*self.stationFeature['mecTimeAdjMin'])
                 else:
-                    initialSlack = True
-                    refTimes.append(time) # we'll correct this after we know what the first phase is
-            elif ptype == 'flood':
-                phase = 1
-                refTimes.append(time - 60*self.stationFeature['mfcTimeAdjMin'])
-            elif ptype == 'ebb':
-                phase = -1
-                refTimes.append(time - 60*self.stationFeature['mecTimeAdjMin'])
-            else:
-                raise Exception('Unexpected event type ' + ptype)
-
-            phases.append(phase)
-
-        # now fix up any initial slack event we found
-        if initialSlack:
-            initialPhase = phases[0]
-            if initialPhase < 0:
-                refTimes[0] = (subTimes[0] - 60*self.stationFeature['sbeTimeAdjMin'])
-            else:
-                refTimes[0] = (subTimes[0] - 60*self.stationFeature['sbfTimeAdjMin'])
+                    raise Exception('Unexpected event type ' + ptype)
 
         return interp1d(subTimes, refTimes, 'linear')
 
@@ -419,9 +426,14 @@ class PredictionDataPromise(PredictionPromise):
         """ return a function that takes an array of offsets from the start time in seconds, and returns an
             array of interpolated velocities from this object's predictions.
         """
-        currentPredictions = list(filter(lambda p: p['type'] == 'current', self.predictions))
-        times = np.array([self.secsTo(p['time']) for p in currentPredictions])
-        values = np.array([p['value'] for p in currentPredictions])
+        times = []
+        values = []
+        for refPromise in self.refPromises:
+            for p in refPromise.predictions:
+                if p['type'] == 'current':
+                    times.append(self.secsTo(p['time']))
+                    values.append(p['value'])
+
         return interp1d(times, values, 'cubic')
 
     def secsTo(self, dt):

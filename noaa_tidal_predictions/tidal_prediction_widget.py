@@ -149,7 +149,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             print('autoloading ', len(mapFeatures))
             if len(mapFeatures) <= self.maxAutoLoadCount():
                 for f in mapFeatures:
-                    self.predictionManager.getDataPromise(f, self.dateEdit.date())
+                    self.predictionManager.getDataPromise(f, self.dateEdit.date()).start()
             if self.stationZone is None and len(mapFeatures) > 0:
                 self.stationZone = stationTimeZone(mapFeatures[0])
 
@@ -162,6 +162,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.stationData = self.predictionManager.getDataPromise(self.stationFeature, self.dateEdit.date())
         self.tableWidget.clearContents()
         self.stationData.resolved(self.predictionsResolved)
+        self.stationData.start()
 
     def setTemporalRange(self):
         """ Set up the temporal range of either based on the current time, or on the temporal
