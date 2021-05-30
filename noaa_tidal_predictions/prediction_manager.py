@@ -143,23 +143,31 @@ class PredictionPromise(QObject):
             return
         self.state = PredictionPromise.ResolvedState
         self._resolved.emit()
+        try:
+            self._resolved.disconnect()
+        except TypeError:
+            pass
 
     def reject(self):
         if self.state >= PredictionPromise.ResolvedState:
             return
         self.state = PredictionPromise.RejectedState
         self._rejected.emit()
+        try:
+            self._rejected.disconnect()
+        except TypeError:
+            pass
 
     def resolved(self, slot):
         if self.state == PredictionPromise.ResolvedState:
             slot()
-        else:
+        elif self.state != PredictionPromise.RejectedState:
             self._resolved.connect(slot)
 
     def rejected(self, slot):
         if self.state == PredictionPromise.RejectedState:
             slot()
-        else:
+        elif self.state != PredictionPromise.ResolvedState:
             self._rejected.connect(slot)
 
     # add a promise on which we are dependent. when all dependents are resolved, this one will too.
