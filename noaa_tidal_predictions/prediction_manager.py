@@ -357,17 +357,15 @@ class PredictionDataPromise(PredictionPromise):
                 ))
 
             # use interpolated reference station data to fill this out
-            valueInterpolation = self.valueInterpolation()
+            factorInterpolation = self.factorInterpolation()
+            valueInterpolation = self.valueInterpolation(factorInterpolation)
             timeInterpolation = self.timeInterpolation()
 
             subTimes = np.linspace(0, 24 * 60 * 60, 24 * 60 // PredictionManager.STEP_MINUTES, False)
             refTimes = timeInterpolation(subTimes)
             refValues = valueInterpolation(refTimes)
             ebbDir = self.stationFeature['meanEbbDir'] 
-            ebbFactor = self.stationFeature['mecAmpAdj']
             floodDir = self.stationFeature['meanFloodDir'] 
-            floodFactor = self.stationFeature['mfcAmpAdj']
-            refValues = [v * (ebbFactor if v < 0 else floodFactor) for v in refValues]
 
             fields = self.manager.predictionsLayer.fields()
             self.predictions = []
@@ -430,7 +428,30 @@ class PredictionDataPromise(PredictionPromise):
 
         return interp1d(subTimes, refTimes, 'linear')
 
-    def valueInterpolation(self):
+    def factorInterpolation(self):
+        """ return a function that takes an array of time offsets in seconds on a reference station
+            and returns an array of correction factors, relative
+            to the start date of this prediction set.
+        """
+
+        # search for events, ignoring any initial slack event
+        refTimes = []
+        refFactors = []
+        for refPromise in self.refPromises:
+            for p in refPromise.predictions:
+                ptype = p['type']
+                time = self.secsTo(p['time'])
+
+                if ptype == 'flood':
+                    refTimes.append(time)
+                    refFactors.append(self.stationFeature['mfcAmpAdj'])
+                elif ptype == 'ebb':
+                    refTimes.append(time)
+                    refFactors.append(self.stationFeature['mecAmpAdj'])
+
+        return interp1d(refTimes, refFactors, 'cubic')
+
+    def valueInterpolation(self, factorInterpolation):
         """ return a function that takes an array of offsets from the start time in seconds, and returns an
             array of interpolated velocities from this object's predictions.
         """
@@ -439,8 +460,12 @@ class PredictionDataPromise(PredictionPromise):
         for refPromise in self.refPromises:
             for p in refPromise.predictions:
                 if p['type'] == 'current':
-                    times.append(self.secsTo(p['time']))
-                    values.append(p['value'])
+                    time = self.secsTo(p['time'])
+                    try:
+                        values.append(p['value'] * factorInterpolation(time))
+                        times.append(time)
+                    except ValueError:
+                        pass  # some values will be outside the range of factorInterpolation()
 
         return interp1d(times, values, 'cubic')
 

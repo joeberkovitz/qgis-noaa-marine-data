@@ -47,7 +47,7 @@
       <sbeTimeAdjMin>53</sbeTimeAdjMin>
       <mecTimeAdjMin>-26</mecTimeAdjMin>
       <sbfTimeAdjMin>-31</sbfTimeAdjMin>
-      <mfcAmpAdj>0.6</mfcAmpAdj>
+      <mfcAmpAdj>0.7</mfcAmpAdj>
       <mecAmpAdj>0.6</mecAmpAdj>
     </currentpredictionoffsets>
     <currbin>1</currbin>

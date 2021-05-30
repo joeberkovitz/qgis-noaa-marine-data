@@ -241,10 +241,10 @@ class PredictionManagerTest(unittest.TestCase):
         feature = currents[4]
         self.assertEqual(feature['station'], 'ACT0926_1')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 7, 0, 0, 0, Qt.TimeSpec.UTC))
-        self.assertAlmostEqual(feature['value'], 0.5820566261196971)
+        self.assertAlmostEqual(feature['value'], 0.677023434)
         self.assertEqual(feature['type'], 'current')
         self.assertEqual(feature['dir'], 259.0)
-        self.assertAlmostEqual(feature['magnitude'], 0.5820566261196971)
+        self.assertAlmostEqual(feature['magnitude'], 0.677023434)
 
 
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
