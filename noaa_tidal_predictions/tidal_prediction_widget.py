@@ -286,9 +286,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.plotLayout.addWidget(self.predictionCanvas)
 
         self.plotAxes = self.predictionCanvas.figure.subplots()
-        t0 = QDateTime(self.datetime.date())
-        t0.setTimeZone(self.stationZone)
-        t0 = t0.toUTC()
+        # zero time in this plot = 00:00 local time on the date of interest
+        t0 = QDateTime(self.dateEdit.date(), QTime(0,0), stationTimeZone(self.stationFeature)).toUTC()
         t = []
         val = []
         for f in self.stationData.predictions:
