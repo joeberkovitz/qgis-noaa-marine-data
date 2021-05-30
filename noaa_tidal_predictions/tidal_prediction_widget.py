@@ -43,7 +43,6 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         """Constructor."""
         super(TidalPredictionWidget, self).__init__(parent)
         self.canvas = canvas
-        self.mapSettings = canvas.mapSettings()
         self.temporal = canvas.temporalController()
         self.setupUi(self)
 
@@ -141,12 +140,12 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         """ ensure all stations in visible extent of the map are loaded
         """
         if self.active and self.predictionManager is not None:
-            xform = QgsCoordinateTransform(self.mapSettings.destinationCrs(),
+            xform = QgsCoordinateTransform(self.canvas.mapSettings().destinationCrs(),
                         epsg4326,
                         QgsProject.instance())
             rect = xform.transform(self.canvas.extent())
             mapFeatures = self.predictionManager.getExtentStations(rect)
-            print('autoloading ', len(mapFeatures))
+            print('autoloading ', len(mapFeatures), ' in ', rect)
             if len(mapFeatures) <= self.maxAutoLoadCount():
                 for f in mapFeatures:
                     self.predictionManager.getDataPromise(f, self.dateEdit.date()).start()
