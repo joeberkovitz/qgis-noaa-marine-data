@@ -47,6 +47,9 @@ class PredictionManagerTest(unittest.TestCase):
         self.currentFixtures.cleanUp()
         return
 
+    def timeToSecs(self, timeString):
+        return QTime(0,0).secsTo(QTime.fromString(timeString))
+
     def print_predictions(self, predictions):
         for feature in predictions:
             print('{} {} {} {} {}'.format(feature['station'],feature['time'].toString('yyyyMMdd hh:mm'),feature['type'],feature['dir'],feature['value']))
@@ -241,10 +244,10 @@ class PredictionManagerTest(unittest.TestCase):
         feature = currents[4]
         self.assertEqual(feature['station'], 'ACT0926_1')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 7, 0, 0, 0, Qt.TimeSpec.UTC))
-        self.assertAlmostEqual(feature['value'], 0.677023434)
+        self.assertAlmostEqual(feature['value'], 0.6826690037)
         self.assertEqual(feature['type'], 'current')
         self.assertEqual(feature['dir'], 259.0)
-        self.assertAlmostEqual(feature['magnitude'], 0.677023434)
+        self.assertAlmostEqual(feature['magnitude'], 0.6826690037)
 
 
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
@@ -279,6 +282,78 @@ class PredictionManagerTest(unittest.TestCase):
         pdp3.start()
         self.assertEqual(len(pdp3.predictions), 56)  # 48 time intervals plus 8 events
         self.assertEqual(len(PredictionManagerTest.request_urls), 4)
+
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_prediction_interpolator(self):
+        refPromises = []
+        subPromises = []
+        date = QDate(2020,1,1)
+        for dt in [date.addDays(i) for i in range(0,3)]:
+            dp = self.pm.getDataPromise(self.refStation, dt)
+            refPromises.append(dp)
+            ep = self.pm.getEventPromise(self.subStation, dt)
+            subPromises.append(ep)
+            dp.start()
+            ep.start()
+
+        """ sub station specs this:
+                <mfcTimeAdjMin>85</mfcTimeAdjMin>
+                <sbeTimeAdjMin>53</sbeTimeAdjMin>
+                <mecTimeAdjMin>-26</mecTimeAdjMin>
+                <sbfTimeAdjMin>-31</sbfTimeAdjMin>
+                <mfcAmpAdj>0.7</mfcAmpAdj>
+                <mecAmpAdj>0.6</mecAmpAdj>
+
+            for 2020-01-02, sub station events include:
+                flood, 07:49, 0.57
+                slack, 09:47, 0.01
+                ebb, 12:16, -0.56
+        """
+
+        datetime = QDateTime(2020, 1, 2, 5, 0, 0, 0, Qt.TimeSpec.UTC)
+        interp = PredictionInterpolator(self.subStation, datetime, subPromises, refPromises)
+
+        timeInterp = interp.timeInterpolation()
+        def timeDiff(str):
+            t = self.timeToSecs(str)
+            return (t - timeInterp([t])[0]) / 60
+
+        # exact results
+        self.assertAlmostEqual(timeDiff('02:49'), 85)  # note the times are local since relative to datetime
+        self.assertAlmostEqual(timeDiff('04:47'), 53)
+        self.assertAlmostEqual(timeDiff('07:16'), -26)
+
+        # interpolated results
+        self.assertAlmostEqual(timeDiff('02:48'),  84.630573248)
+        self.assertAlmostEqual(timeDiff('02:50'),  84.72881355)
+        self.assertAlmostEqual(timeDiff('03:48'), 69)
+        self.assertAlmostEqual(timeDiff('07:15'),  -25.469798657)
+
+        factorInterp = interp.factorInterpolation()
+        # exact results
+        self.assertAlmostEqual(factorInterp(self.timeToSecs('02:49')), 0.7)
+        self.assertAlmostEqual(factorInterp(self.timeToSecs('07:16')), 0.6)
+
+        # interpolated results
+        self.assertAlmostEqual(factorInterp(self.timeToSecs('04:47')), 0.6567736)
+
+        """ ref station predictions include:
+                0.877, 05:00
+                0.939, 05:30
+                0.984, 06:00
+                1.009, 06:30
+                0.974, 07:00
+                0.839, 07:30
+                0.611, 08:00
+                0.362, 08:30
+                0.284, 09:00
+        """
+        valueInterp = interp.valueInterpolation()
+        # exact results
+        self.assertAlmostEqual(valueInterp(self.timeToSecs('02:00')), 0.974)
+        # interpolated
+        self.assertAlmostEqual(valueInterp(self.timeToSecs('01:59')), 0.97671513)
+        self.assertAlmostEqual(valueInterp(self.timeToSecs('02:01')), 0.97111623)
 
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
     def test_prediction_data_promise_object_cache(self):

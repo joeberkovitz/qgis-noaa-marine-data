@@ -32,7 +32,7 @@
 <Speed>0.974</Speed>
 <Bin>14</Bin>
 <Time>2020-01-02 07:00</Time>
-<Direction>255</Direction>
+<Direction>264</Direction> <!-- tweaked to exactly match flood direction for testing -->
 <Depth>8</Depth>
 </cp>
 <cp>

@@ -356,14 +356,9 @@ class PredictionDataPromise(PredictionPromise):
                 self.stationFeature['station']
                 ))
 
-            # use interpolated reference station data to fill this out
-            factorInterpolation = self.factorInterpolation()
-            valueInterpolation = self.valueInterpolation(factorInterpolation)
-            timeInterpolation = self.timeInterpolation()
-
+            interpolator = PredictionInterpolator(self.stationFeature, self.datetime, self.eventPromises, self.refPromises)
             subTimes = np.linspace(0, 24 * 60 * 60, 24 * 60 // PredictionManager.STEP_MINUTES, False)
-            refTimes = timeInterpolation(subTimes)
-            refValues = valueInterpolation(refTimes)
+            refValues = interpolator.valuesFor(subTimes)
             ebbDir = self.stationFeature['meanEbbDir'] 
             floodDir = self.stationFeature['meanFloodDir'] 
 
@@ -391,6 +386,23 @@ class PredictionDataPromise(PredictionPromise):
         self.manager.predictionsLayer.commitChanges()
         self.manager.predictionsLayer.triggerRepaint()
 
+
+class PredictionInterpolator:
+    def __init__(self, stationFeature, datetime, subPromises, refPromises):
+        self.stationFeature = stationFeature
+        self.datetime = datetime
+        self.subPromises = subPromises
+        self.refPromises = refPromises
+
+    def valuesFor(self, subTimes):
+        factorInterp = self.factorInterpolation()
+        valueInterp = self.valueInterpolation()
+        timeInterp = self.timeInterpolation()
+
+        refTimes = timeInterp(subTimes)
+        refFactors = factorInterp(subTimes)
+        return np.multiply(valueInterp(refTimes), refFactors)
+
     def timeInterpolation(self):
         """ return a function that takes an array of time offsets in seconds on this (subordinate) station
             and returns an array of time offsets in seconds on the reference station, relative
@@ -401,8 +413,8 @@ class PredictionDataPromise(PredictionPromise):
         phase = 0    # unknown whether we are in ebb or flood initially
         subTimes = []
         refTimes = []
-        for eventPromise in self.eventPromises:
-            for p in eventPromise.predictions:
+        for subPromise in self.subPromises:
+            for p in subPromise.predictions:
                 ptype = p['type']
                 time = self.secsTo(p['time'])
 
@@ -429,29 +441,29 @@ class PredictionDataPromise(PredictionPromise):
         return interp1d(subTimes, refTimes, 'linear')
 
     def factorInterpolation(self):
-        """ return a function that takes an array of time offsets in seconds on a reference station
-            and returns an array of correction factors, relative
+        """ return a function that takes an array of time offsets in seconds on a subordinate station
+            and returns an array of reference station correction factors, relative
             to the start date of this prediction set.
         """
 
         # search for events, ignoring any initial slack event
-        refTimes = []
+        subTimes = []
         refFactors = []
-        for refPromise in self.refPromises:
-            for p in refPromise.predictions:
+        for subPromise in self.subPromises:
+            for p in subPromise.predictions:
                 ptype = p['type']
                 time = self.secsTo(p['time'])
 
                 if ptype == 'flood':
-                    refTimes.append(time)
+                    subTimes.append(time)
                     refFactors.append(self.stationFeature['mfcAmpAdj'])
                 elif ptype == 'ebb':
-                    refTimes.append(time)
+                    subTimes.append(time)
                     refFactors.append(self.stationFeature['mecAmpAdj'])
 
-        return interp1d(refTimes, refFactors, 'cubic')
+        return interp1d(subTimes, refFactors, 'cubic')
 
-    def valueInterpolation(self, factorInterpolation):
+    def valueInterpolation(self):
         """ return a function that takes an array of offsets from the start time in seconds, and returns an
             array of interpolated velocities from this object's predictions.
         """
@@ -462,7 +474,7 @@ class PredictionDataPromise(PredictionPromise):
                 if p['type'] == 'current':
                     time = self.secsTo(p['time'])
                     try:
-                        values.append(p['value'] * factorInterpolation(time))
+                        values.append(p['value'])
                         times.append(time)
                     except ValueError:
                         pass  # some values will be outside the range of factorInterpolation()
