@@ -142,8 +142,8 @@ class NoaaTidalPredictions:
 
         self.add_action(
             os.path.join(self.plugin_dir, 'svg/add_current_stations_layer.svg'),
-            text=tr(u'Add Current Stations Layer'),
-            callback=self.addCurrentStationsLayer,
+            text=tr(u'Add Tidal Stations Layers'),
+            callback=self.addStationsLayer,
             parent=self.iface.mainWindow())
 
         self.predictionAction = self.add_action(
@@ -185,9 +185,9 @@ class NoaaTidalPredictions:
 
         PredictionExpressions.unregisterFunctions()
 
-    def addCurrentStationsLayer(self):
+    def addStationsLayer(self):
         self.deactivatePredictionTool()
-        processing.execAlgorithmDialog('NoaaTidalPredictions:addcurrentstationslayer', {})
+        processing.execAlgorithmDialog('NoaaTidalPredictions:addtidalstationslayer', {})
 
     def getTidalPredictions(self):
         self.predictionAction.setChecked(True)

@@ -32,8 +32,7 @@ class PredictionManager(QObject):
 
     progressChanged = pyqtSignal(int)
 
-    # Each manager has a stations and a prediction layer. There's a manager for tides
-    # and one for currents.
+    # Each manager has a stations and a prediction layer.
     def __init__(self, stationsLayer, predictionsLayer):
         super(QObject,self).__init__()
 

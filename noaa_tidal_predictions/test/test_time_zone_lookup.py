@@ -41,6 +41,6 @@ class TimeZoneLookupTest(unittest.TestCase):
             (zid, zutc) = self.tz.getZoneByCoordinates(100,0)
 
 if __name__ == "__main__":
-    suite = unittest.makeSuite(CurrentStationsTest)
+    suite = unittest.makeSuite(TimeZoneLookupTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)

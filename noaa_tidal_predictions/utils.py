@@ -7,8 +7,8 @@ epsg4326 = QgsCoordinateReferenceSystem("EPSG:4326")
 # project variable names
 NOAA_LAYER_TYPE = 'noaa_tidal_predictions/layer_type'
 
-CurrentStationsLayerType = 'current_stations'
-CurrentPredictionsLayerType = 'current_predictions'
+StationsLayerType = 'stations'
+PredictionsLayerType = 'predictions'
 
 CoopsApplicationName = 'qgis-noaa-tidal-predictions'
 
@@ -25,11 +25,11 @@ def getNoaaLayerByType(layerType):
             return layer
     return None
 
-def currentStationsLayer():
-    return getNoaaLayerByType(CurrentStationsLayerType)
+def getStationsLayer():
+    return getNoaaLayerByType(StationsLayerType)
 
-def currentPredictionsLayer():
-    return getNoaaLayerByType(CurrentPredictionsLayerType)
+def getPredictionsLayer():
+    return getNoaaLayerByType(PredictionsLayerType)
 
 def layerStoragePath():
     return os.path.join(QgsProject.instance().homePath(), 'noaa_tidal_predictions')

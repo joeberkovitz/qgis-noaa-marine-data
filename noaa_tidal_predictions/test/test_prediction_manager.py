@@ -18,7 +18,7 @@ from qgis.core import (
 
 from noaa_tidal_predictions.prediction_manager import *
 from noaa_tidal_predictions.utils import *
-from .test_add_current_stations import CurrentStationsFixtures
+from .test_add_current_stations import StationsFixtures
 
 QGIS_APP = get_qgis_app()
 
@@ -29,22 +29,22 @@ class PredictionManagerTest(unittest.TestCase):
     """Test suite for many aspects of PredictionManager and its associated classes. """
 
     def setUp(self):
-        self.currentFixtures = CurrentStationsFixtures()
-        self.currentStationsLayer = self.currentFixtures.getFixtureLayer('currentRefSub.xml')
-        self.subStation = next(self.currentStationsLayer.getFeatures(
+        self.fixtures = StationsFixtures()
+        self.stationsLayer = self.fixtures.getFixtureLayer('currentRefSub.xml')
+        self.subCurrentStation = next(self.stationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = 'ACT0926_1'")))
-        self.refStation = next(self.currentStationsLayer.getFeatures(
+        self.refCurrentStation = next(self.stationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = 'BOS1111_14'")))
 
-        self.currentPredictionsLayer = currentPredictionsLayer()
-        self.pm = PredictionManager(self.currentStationsLayer, self.currentPredictionsLayer)
+        self.predictionsLayer = getPredictionsLayer()
+        self.pm = PredictionManager(self.stationsLayer, self.predictionsLayer)
 
         PredictionManagerTest.request_urls = []
 
         return
 
     def tearDown(self):
-        self.currentFixtures.cleanUp()
+        self.fixtures.cleanUp()
         return
 
     def timeToSecs(self, timeString):
@@ -115,7 +115,7 @@ class PredictionManagerTest(unittest.TestCase):
         datetime = QDateTime(2020,1,1,5,0)
         cpr = CurrentPredictionRequest(
             self.pm,
-            self.subStation,
+            self.subCurrentStation,
             datetime, datetime.addDays(1),
             CurrentPredictionRequest.EventType)
         cpr.resolved(resolver)
@@ -133,7 +133,7 @@ class PredictionManagerTest(unittest.TestCase):
         datetime = QDate(2020,1,1)
         pdp = PredictionDataPromise(
             self.pm,
-            self.refStation,
+            self.refCurrentStation,
             datetime)
         pdp.start()
         features = pdp.predictions
@@ -185,12 +185,12 @@ class PredictionManagerTest(unittest.TestCase):
     """
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
     def test_no_flood_ebb_prediction_data_promise(self):
-        self.refStation = next(self.currentStationsLayer.getFeatures(
+        self.refCurrentStation = next(self.stationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = 'SFB1212_9'")))
         datetime = QDate(2020,1,1)
         pdp = PredictionDataPromise(
             self.pm,
-            self.refStation,
+            self.refCurrentStation,
             datetime)
         pdp.start()
         features = pdp.predictions
@@ -222,7 +222,7 @@ class PredictionManagerTest(unittest.TestCase):
         datetime = QDate(2020,1,2)
         pdp = PredictionDataPromise(
             self.pm,
-            self.subStation,
+            self.subCurrentStation,
             datetime)
         pdp.start()
         features = pdp.predictions
@@ -255,7 +255,7 @@ class PredictionManagerTest(unittest.TestCase):
         datetime = QDate(2020,1,1)
         pdp1 = PredictionDataPromise(
             self.pm,
-            self.refStation,
+            self.refCurrentStation,
             datetime)
         pdp1.start()
         self.assertEqual(len(pdp1.predictions), 56)  # 48 time intervals plus 8 events
@@ -264,7 +264,7 @@ class PredictionManagerTest(unittest.TestCase):
         # the second call should pull the data from the predictions layer with no new requests
         pdp2 = PredictionDataPromise(
             self.pm,
-            self.refStation,
+            self.refCurrentStation,
             datetime)
         pdp2.start()
         self.assertEqual(len(pdp2.predictions), 56)  # 48 time intervals plus 8 events
@@ -277,7 +277,7 @@ class PredictionManagerTest(unittest.TestCase):
         datetime = QDate(2020,1,2)
         pdp3 = PredictionDataPromise(
             self.pm,
-            self.refStation,
+            self.refCurrentStation,
             datetime)
         pdp3.start()
         self.assertEqual(len(pdp3.predictions), 56)  # 48 time intervals plus 8 events
@@ -289,9 +289,9 @@ class PredictionManagerTest(unittest.TestCase):
         subPromises = []
         date = QDate(2020,1,1)
         for dt in [date.addDays(i) for i in range(0,3)]:
-            dp = self.pm.getDataPromise(self.refStation, dt)
+            dp = self.pm.getDataPromise(self.refCurrentStation, dt)
             refPromises.append(dp)
-            ep = self.pm.getEventPromise(self.subStation, dt)
+            ep = self.pm.getEventPromise(self.subCurrentStation, dt)
             subPromises.append(ep)
             dp.start()
             ep.start()
@@ -311,7 +311,7 @@ class PredictionManagerTest(unittest.TestCase):
         """
 
         datetime = QDateTime(2020, 1, 2, 5, 0, 0, 0, Qt.TimeSpec.UTC)
-        interp = PredictionInterpolator(self.subStation, datetime, subPromises, refPromises)
+        interp = PredictionInterpolator(self.subCurrentStation, datetime, subPromises, refPromises)
 
         timeInterp = interp.timeInterpolation()
         def timeDiff(str):
@@ -359,7 +359,7 @@ class PredictionManagerTest(unittest.TestCase):
     def test_prediction_data_promise_object_cache(self):
         datetime = QDate(2020,1,1)
         pdp1 = self.pm.getDataPromise(
-            self.refStation,
+            self.refCurrentStation,
             datetime)
         pdp1.start()
         self.assertEqual(len(pdp1.predictions), 56)  # 48 time intervals plus 8 events
@@ -367,7 +367,7 @@ class PredictionManagerTest(unittest.TestCase):
 
         # the second call should return exactly the same promise object
         pdp2 = self.pm.getDataPromise(
-            self.refStation,
+            self.refCurrentStation,
             datetime)
         pdp2.start()
         self.assertEqual(len(pdp2.predictions), 56)  # 48 time intervals plus 8 events
@@ -387,7 +387,7 @@ class PredictionManagerTest(unittest.TestCase):
 
         datetime = QDate(2020,1,1)
         pdp1 = self.pm.getDataPromise(
-            self.refStation,
+            self.refCurrentStation,
             datetime)
         pdp1.start()
 
@@ -395,7 +395,7 @@ class PredictionManagerTest(unittest.TestCase):
 
         # the second call should return exactly the same promise object
         pdp2 = self.pm.getDataPromise(
-            self.refStation,
+            self.refCurrentStation,
             datetime.addDays(1))
         pdp2.start()
 
@@ -414,7 +414,7 @@ class PredictionManagerTest(unittest.TestCase):
     def test_current_request_error(self):
         features = self.getPredictions(
             'error.xml',
-            self.subStation,
+            self.subCurrentStation,
             QDateTime(2020,1,1,5,0),
             CurrentPredictionRequest.EventType,
             None,
@@ -429,7 +429,7 @@ class PredictionManagerTest(unittest.TestCase):
              '&station=ACT0926&bin=1&interval=MAX_SLACK')
         features = self.getPredictions(
             'ACT0926_1-20200101T05:00--MAX_SLACK.xml',
-            self.subStation,
+            self.subCurrentStation,
             QDateTime(2020,1,1,5,0),
             CurrentPredictionRequest.EventType,
             url)
@@ -461,7 +461,7 @@ class PredictionManagerTest(unittest.TestCase):
             '&station=BOS1111&bin=14&vel_type=speed_dir&interval=30')
         features = self.getPredictions(
             'BOS1111_14-20200101T05:00-speed_dir-30.xml',
-            self.refStation,
+            self.refCurrentStation,
             QDateTime(2020,1,1,5,0),
             CurrentPredictionRequest.SpeedDirectionType,
             url)
@@ -498,7 +498,7 @@ class PredictionManagerTest(unittest.TestCase):
             '&station=BOS1111&bin=14&vel_type=default&interval=30')
         features = self.getPredictions(
             'BOS1111_14-20200101T05:00-default-30.xml',
-            self.refStation,
+            self.refCurrentStation,
             QDateTime(2020,1,1,5,0),
             CurrentPredictionRequest.VelocityMajorType,
             url)

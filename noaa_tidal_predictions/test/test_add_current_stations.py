@@ -17,21 +17,21 @@ from qgis.core import (
     QgsFeature,
     NULL
     )
-from noaa_tidal_predictions.add_station_layers import AddCurrentStationsLayerAlgorithm
+from noaa_tidal_predictions.add_station_layers import AddStationsLayerAlgorithm
 from noaa_tidal_predictions.prediction_expressions import PredictionExpressions
 from noaa_tidal_predictions.utils import *
 
 QGIS_APP = get_qgis_app()
 
-class CurrentStationsFixtures:
+class StationsFixtures:
     def __init__(self):
-        self.alg = AddCurrentStationsLayerAlgorithm()
+        self.alg = AddStationsLayerAlgorithm()
         self.alg.initAlgorithm({})
         self.alg.context = QgsProcessingContext()
         self.alg.feedback = Mock(spec=QgsProcessingFeedback)
         self.alg.parameters = {
-            'CurrentStationsLayer': QgsProcessingUtils.generateTempFilename('stations.gpkg'),
-            'CurrentPredictionsLayer': QgsProcessingUtils.generateTempFilename('predictions.gpkg'),
+            'StationsLayer': QgsProcessingUtils.generateTempFilename('stations.gpkg'),
+            'PredictionsLayer': QgsProcessingUtils.generateTempFilename('predictions.gpkg'),
         }
         PredictionExpressions.registerFunctions()
 
@@ -44,15 +44,15 @@ class CurrentStationsFixtures:
 
     def loadOnCompletion(self):
         details = QgsProcessingContext.LayerDetails('stations', QgsProject.instance())
-        self.alg.context.addLayerToLoadOnCompletion(self.alg.parameters['CurrentStationsLayer'], details)
-        self.alg.context.addLayerToLoadOnCompletion(self.alg.parameters['CurrentPredictionsLayer'], details)
+        self.alg.context.addLayerToLoadOnCompletion(self.alg.parameters['StationsLayer'], details)
+        self.alg.context.addLayerToLoadOnCompletion(self.alg.parameters['PredictionsLayer'], details)
 
     def getFixtureLayer(self, filename):
         self.loadOnCompletion()
         with patch('requests.get') as mockGet:
             mockGet.return_value = self.getMockRequest(filename)
-            dest_id = self.alg.getCurrentStations()
-            predictions_dest_id = self.alg.getCurrentPredictions()
+            dest_id = self.alg.getStations()
+            predictions_dest_id = self.alg.getPredictions()
             for layer_id in [dest_id, predictions_dest_id]:
                 layer = QgsProcessingUtils.mapLayerFromString(layer_id, self.alg.context)
                 QgsProject.instance().addMapLayer(layer)
@@ -73,9 +73,9 @@ class CurrentStationsFixtures:
             QgsProject.instance().removeMapLayer(layer)
         PredictionExpressions.unregisterFunctions()
        
-class CurrentStationsTest(unittest.TestCase):
+class StationsTest(unittest.TestCase):
     def setUp(self):
-        self.fixtures = CurrentStationsFixtures()
+        self.fixtures = StationsFixtures()
         return
 
     def tearDown(self):
@@ -85,14 +85,14 @@ class CurrentStationsTest(unittest.TestCase):
     @patch('requests.get')
     def test_request_url(self, mockGet):
         mockGet.return_value = self.fixtures.getMockRequest('currentSubordinate.xml')
-        dest_id = self.fixtures.alg.getCurrentStations()
+        dest_id = self.fixtures.alg.getStations()
         mockGet.assert_called_once_with('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets', timeout=30)
 
     @patch('requests.get')
     def test_bad_request(self, mockGet):
         mockGet.return_value = self.fixtures.getMockRequest('currentSubordinate.xml', 400)
         with self.assertRaises(QgsProcessingException):
-            dest_id = self.fixtures.alg.getCurrentStations()
+            dest_id = self.fixtures.alg.getStations()
 
     def test_layers_already_exist(self):
         dest = self.fixtures.getFixtureLayer('currentRefSub.xml')
@@ -172,14 +172,14 @@ class CurrentStationsTest(unittest.TestCase):
         self.assertEqual(feature['surface'], 0)
 
     def test_layer_utilities(self):
-        stationsLayer = currentStationsLayer()
-        predictionsLayer = currentPredictionsLayer()
+        stationsLayer = getStationsLayer()
+        predictionsLayer = getPredictionsLayer()
         self.assertIsNone(stationsLayer)        
         self.assertIsNone(predictionsLayer)
         
         dest = self.fixtures.getFixtureLayer('currentRefSub.xml')
 
-        stationsLayer = currentStationsLayer()
+        stationsLayer = getStationsLayer()
         self.assertIsInstance(stationsLayer,QgsVectorLayer)
         self.assertEqual(stationsLayer.storageType(),'GPKG')
 
@@ -189,14 +189,14 @@ class CurrentStationsTest(unittest.TestCase):
         self.assertEqual(feature['station'], 'BOS1111_14')
         self.assertEqual(stationTimeZone(feature).id(), 'America/New_York')
 
-        predictionsLayer = currentPredictionsLayer()
+        predictionsLayer = getPredictionsLayer()
         self.assertIsInstance(predictionsLayer,QgsVectorLayer)
         self.assertEqual(predictionsLayer.storageType(),'GPKG')
 
     def test_prediction_station_join(self):
         dest = self.fixtures.getFixtureLayer('currentRefSub.xml')
 
-        predictionsLayer = currentPredictionsLayer()
+        predictionsLayer = getPredictionsLayer()
         feature = QgsFeature(predictionsLayer.fields())
         feature['station'] = 'BOS1111_14'
         feature['time'] = QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC)
@@ -225,6 +225,6 @@ class CurrentStationsTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    suite = unittest.makeSuite(CurrentStationsTest)
+    suite = unittest.makeSuite(StationsTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)

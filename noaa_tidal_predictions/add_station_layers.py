@@ -30,38 +30,38 @@ from qgis.PyQt.QtCore import QVariant, QUrl
 from .utils import *
 from .time_zone_lookup import TimeZoneLookup
 
-class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
-    PrmCurrentStationsLayer = 'CurrentStationsLayer'
-    PrmCurrentPredictionsLayer = 'CurrentPredictionsLayer'
+class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
+    PrmStationsLayer = 'StationsLayer'
+    PrmPredictionsLayer = 'PredictionsLayer'
 
 # boilerplate methods
     def name(self):
-        return 'addcurrentstationslayer'
+        return 'addtidalstationslayer'
 
     def displayName(self):
-        return tr('Add Current Stations Layer')
+        return tr('Add Tidal Stations Layer')
 
     def helpUrl(self):
         return ''
 
     def createInstance(self):
-        return AddCurrentStationsLayerAlgorithm()
+        return AddStationsLayerAlgorithm()
 
     # Set up this algorithm
     def initAlgorithm(self, config):
         self.addParameter(
             QgsProcessingParameterFeatureSink(
-                self.PrmCurrentStationsLayer,
-                tr('Current stations layer'),
+                self.PrmStationsLayer,
+                tr('Stations layer'),
                 QgsProcessing.TypeVectorPoint,
-                os.path.join(layerStoragePath(), 'current_stations.gpkg'))
+                os.path.join(layerStoragePath(), 'stations.gpkg'))
         )
         self.addParameter(
             QgsProcessingParameterFeatureSink(
-                self.PrmCurrentPredictionsLayer,
-                tr('Current predictions layer'),
+                self.PrmPredictionsLayer,
+                tr('Predictions layer'),
                 QgsProcessing.TypeVectorPoint,
-                os.path.join(layerStoragePath(), 'current_predictions.gpkg'))
+                os.path.join(layerStoragePath(), 'predictions.gpkg'))
         )
         self.feedback = QgsProcessingFeedback()
 
@@ -75,12 +75,12 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         except FileExistsError:
             pass
 
-        current_dest_id = self.getCurrentStations()
-        predictions_dest_id = self.getCurrentPredictions()
+        stations_dest_id = self.getStations()
+        predictions_dest_id = self.getPredictions()
 
         return {
-            self.PrmCurrentStationsLayer: current_dest_id,
-            self.PrmCurrentPredictionsLayer: predictions_dest_id
+            self.PrmStationsLayer: stations_dest_id,
+            self.PrmPredictionsLayer: predictions_dest_id
         }
 
     def baseStationFields(self):
@@ -94,41 +94,37 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         fields.append(QgsField("refStation", QVariant.String,'', 12))
         return fields
 
-    def basePredictionFields(self):
+    def predictionFields(self):
         fields = QgsFields()
         fields.append(QgsField("station", QVariant.String,'',16))
         fields.append(QgsField("depth",  QVariant.Double))
         fields.append(QgsField("time",  QVariant.DateTime))
         fields.append(QgsField("value", QVariant.Double))  # signed value, on flood/ebb dimension for current
         fields.append(QgsField("type", QVariant.String))
-        return fields
-
-    def currentPredictionFields(self):
-        fields = self.basePredictionFields()
         fields.append(QgsField("dir", QVariant.Double))
         fields.append(QgsField("magnitude", QVariant.Double))  # value along direction if known
         return fields
 
-    def getCurrentPredictions(self):
-        if currentPredictionsLayer() != None:
-            raise QgsProcessingException(tr('Existing current layers must be removed before creating new ones.'))
+    def getPredictions(self):
+        if getPredictionsLayer() != None:
+            raise QgsProcessingException(tr('Existing tidal layers must be removed before creating new ones.'))
 
         (predictionsSink, predictions_dest_id) = self.parameterAsSink(
-            self.parameters, self.PrmCurrentPredictionsLayer, self.context,
-            self.currentPredictionFields(),
+            self.parameters, self.PrmPredictionsLayer, self.context,
+            self.predictionFields(),
             QgsWkbTypes.Point, epsg4326)
 
         if self.context.willLoadLayerOnCompletion(predictions_dest_id):
-            proc = CurrentPredictionsStylePostProcessor.create(
-                tr('Current Predictions'), 'current_predictions.qml', CurrentPredictionsLayerType
+            proc = PredictionsStylePostProcessor.create(
+                tr('Tidal Predictions'), 'predictions.qml', PredictionsLayerType
             )
             self.context.layerToLoadOnCompletionDetails(predictions_dest_id).setPostProcessor(proc)
 
         return predictions_dest_id
 
-    def getCurrentStations(self):
-        if currentStationsLayer() != None:
-            raise QgsProcessingException(tr('Existing current layers must be removed before creating new ones.'))
+    def getStations(self):
+        if getStationsLayer() != None:
+            raise QgsProcessingException(tr('Existing tidal layers must be removed before creating new ones.'))
 
         self.feedback.pushInfo("Requesting metadata for NOAA current stations...")
         url = 'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets'
@@ -157,8 +153,8 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
         fields.append(QgsField("mfcAmpAdj", QVariant.Double))
         fields.append(QgsField("mecAmpAdj", QVariant.Double))
 
-        (currentSink, current_dest_id) = self.parameterAsSink(
-            self.parameters, self.PrmCurrentStationsLayer, self.context, fields,
+        (stationSink, stations_dest_id) = self.parameterAsSink(
+            self.parameters, self.PrmStationsLayer, self.context, fields,
             QgsWkbTypes.Point, epsg4326)
 
         # This script converts a stations XML result obtained from this URL:
@@ -202,11 +198,11 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
             surfaceMap[stationId] = s
 
-        if self.context.willLoadLayerOnCompletion(current_dest_id):
-            proc = CurrentStationsStylePostProcessor.create(
-                tr('Current Stations'), 'current_stations.qml', CurrentStationsLayerType
+        if self.context.willLoadLayerOnCompletion(stations_dest_id):
+            proc = StationsStylePostProcessor.create(
+                tr('Tidal Stations'), 'stations.qml', StationsLayerType
             )
-            self.context.layerToLoadOnCompletionDetails(current_dest_id).setPostProcessor(proc)
+            self.context.layerToLoadOnCompletionDetails(stations_dest_id).setPostProcessor(proc)
 
         # Now build the features for all stations in the map.
 
@@ -249,12 +245,12 @@ class AddCurrentStationsLayerAlgorithm(QgsProcessingAlgorithm):
             f['mfcAmpAdj'] = parseFloatNullable(cpo.find('mfcAmpAdj').text)
             f['mecAmpAdj'] = parseFloatNullable(cpo.find('mecAmpAdj').text)
 
-            currentSink.addFeature(f)
+            stationSink.addFeature(f)
 
             progress_count += 1
             self.feedback.setProgress(100*progress_count/len(stationMap))
  
-        return current_dest_id
+        return stations_dest_id
 
 class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
     def __init__(self, layerName, styleName, layerType):
@@ -273,8 +269,8 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
         layer.setCustomProperty(NOAA_LAYER_TYPE, self.layerType)
 
         # if both layers are available (meaning both post processors have run) then configure joins
-        stationsLayer = currentStationsLayer()
-        predictionsLayer = currentPredictionsLayer()
+        stationsLayer = getStationsLayer()
+        predictionsLayer = getPredictionsLayer()
         if stationsLayer is not None and predictionsLayer is not None:
             joinInfo = QgsVectorLayerJoinInfo()
             joinInfo.setJoinLayer(stationsLayer)
@@ -305,7 +301,7 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
             predictionsLayer.updateFields()
 
 
-class CurrentStationsStylePostProcessor(StylePostProcessor):
+class StationsStylePostProcessor(StylePostProcessor):
     instance = None
 
     def postProcessLayer(self, layer, context, feedback):
@@ -315,13 +311,13 @@ class CurrentStationsStylePostProcessor(StylePostProcessor):
         layer.dataProvider().createAttributeIndex(stationIndex)
 
     @staticmethod
-    def create(layerName, styleName, layerType) -> 'CurrentStationsStylePostProcessor':
-        CurrentStationsStylePostProcessor.instance = CurrentStationsStylePostProcessor(
+    def create(layerName, styleName, layerType) -> 'StationsStylePostProcessor':
+        StationsStylePostProcessor.instance = StationsStylePostProcessor(
             layerName, styleName, layerType
         )
-        return CurrentStationsStylePostProcessor.instance
+        return StationsStylePostProcessor.instance
 
-class CurrentPredictionsStylePostProcessor(StylePostProcessor):
+class PredictionsStylePostProcessor(StylePostProcessor):
     instance = None
 
     def postProcessLayer(self, layer, context, feedback):
@@ -331,9 +327,9 @@ class CurrentPredictionsStylePostProcessor(StylePostProcessor):
         layer.dataProvider().createAttributeIndex(stationIndex)
 
     @staticmethod
-    def create(layerName, styleName, layerType) -> 'CurrentStationsStylePostProcessor':
-        CurrentPredictionsStylePostProcessor.instance = CurrentPredictionsStylePostProcessor(
+    def create(layerName, styleName, layerType) -> 'StationsStylePostProcessor':
+        PredictionsStylePostProcessor.instance = PredictionsStylePostProcessor(
             layerName, styleName, layerType
         )
-        return CurrentPredictionsStylePostProcessor.instance
+        return PredictionsStylePostProcessor.instance
 

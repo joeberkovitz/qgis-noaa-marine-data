@@ -78,7 +78,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.progressBar.hide()
 
     def activate(self):
-        if currentStationsLayer() is None or currentPredictionsLayer() is None:
+        if getStationsLayer() is None or getPredictionsLayer() is None:
             QMessageBox.critical(None, None, tr('You must add current station layers before this tool can be used.'))
             return
 
@@ -86,9 +86,9 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         if not self.active:
             self.active = True
-            self.currentStationsLayer = currentStationsLayer()
-            self.currentPredictionsLayer = currentPredictionsLayer()
-            self.predictionManager = PredictionManager(self.currentStationsLayer, self.currentPredictionsLayer)
+            self.stationsLayer = getStationsLayer()
+            self.predictionsLayer = getPredictionsLayer()
+            self.predictionManager = PredictionManager(self.stationsLayer, self.predictionsLayer)
             self.predictionManager.progressChanged.connect(self.predictionProgress)
             self.setTemporalRange()
             self.loadMapExtentPredictions()
@@ -129,7 +129,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         return 100;   # TODO: have a widget for this
 
     def removalCheck(self, layerId):
-        if layerId == self.currentStationsLayer.id() or layerId == self.currentPredictionsLayer.id():
+        if layerId == self.stationsLayer.id() or layerId == self.predictionsLayer.id():
             self.deactivate()
 
     def triggerAutoLoad(self):
@@ -197,7 +197,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.loadStationPredictions()
 
 
-    def setCurrentStation(self, feature):
+    def setStation(self, feature):
         """ set the panel's current prediction station to the one described by the given feature
         """
         self.stationFeature = feature
@@ -211,7 +211,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if self.stationHighlight is not None:
             self.stationHighlight.hide()
 
-        self.stationHighlight = QgsHighlight(self.canvas, self.stationFeature, self.currentStationsLayer)
+        self.stationHighlight = QgsHighlight(self.canvas, self.stationFeature, self.stationsLayer)
         self.stationHighlight.setColor(QColor(Qt.red))
         self.stationHighlight.setFillColor(QColor(Qt.red))
         self.stationHighlight.show()

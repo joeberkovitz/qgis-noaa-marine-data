@@ -35,19 +35,19 @@ class TidalPredictionTool(QgsMapToolIdentify):
         self.setCursor(self.cursor)
 
         layers = []
-        currentStations = currentStationsLayer()
-        if currentStations is not None:
-            layers.append(currentStations)
+        stationsLayer = getStationsLayer()
+        if stationsLayer is not None:
+            layers.append(stationsLayer)
 
         results = self.identify(mouseEvent.x(), mouseEvent.y(), layers)
         for r in results:
             layer = r.mLayer
 
-            if layer == currentStations:
+            if layer == stationsLayer:
                 feature = r.mFeature
                 if feature['surface'] > 0:
                     self.dock.activate()
-                    self.dock.setCurrentStation(feature)
+                    self.dock.setStation(feature)
                     break
 
     def activate(self):
