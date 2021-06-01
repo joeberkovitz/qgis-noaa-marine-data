@@ -35,10 +35,13 @@ class StationsFixtures:
         }
         PredictionExpressions.registerFunctions()
 
+    def dataFilename(self, fn):
+        return os.path.join(os.path.dirname(__file__), 'data', fn)
+
     def getMockRequest(self, filename, status_code=200):
         mockRequest = Mock()
         mockRequest.status_code = status_code
-        with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
+        with open(self.dataFilename(filename), 'r') as dataFile:
             mockRequest.text = dataFile.read()
         return mockRequest
 
@@ -48,17 +51,19 @@ class StationsFixtures:
         self.alg.context.addLayerToLoadOnCompletion(self.alg.parameters['PredictionsLayer'], details)
 
     def getFixtureLayer(self, filename):
+        self.alg.parameters['CurrentMetadataURI'] = self.dataFilename(filename)
+        self.alg.parameters['TideMetadataURI'] = ''
         self.loadOnCompletion()
-        with patch('requests.get') as mockGet:
-            mockGet.return_value = self.getMockRequest(filename)
-            dest_id = self.alg.getStations()
-            predictions_dest_id = self.alg.getPredictions()
-            for layer_id in [dest_id, predictions_dest_id]:
-                layer = QgsProcessingUtils.mapLayerFromString(layer_id, self.alg.context)
-                QgsProject.instance().addMapLayer(layer)
-                postProcessor = self.alg.context.layersToLoadOnCompletion().get(layer_id).postProcessor()
-                postProcessor.postProcessLayer(layer, self.alg.context, self.alg.feedback)
-            return QgsProcessingUtils.mapLayerFromString(dest_id, self.alg.context)
+
+        stations_dest_id = self.alg.getStations()
+        predictions_dest_id = self.alg.getPredictions()
+        for layer_id in [stations_dest_id, predictions_dest_id]:
+            layer = QgsProcessingUtils.mapLayerFromString(layer_id, self.alg.context)
+            QgsProject.instance().addMapLayer(layer)
+            postProcessor = self.alg.context.layersToLoadOnCompletion().get(layer_id).postProcessor()
+            postProcessor.postProcessLayer(layer, self.alg.context, self.alg.feedback)
+
+        return QgsProcessingUtils.mapLayerFromString(stations_dest_id, self.alg.context)
 
     def getFeatures(self, filename, expression):
         layer = self.getFixtureLayer(filename)
@@ -84,12 +89,16 @@ class StationsTest(unittest.TestCase):
 
     @patch('requests.get')
     def test_request_url(self, mockGet):
+        self.fixtures.alg.parameters['CurrentMetadataURI'] = 'http://example.com'
+        self.fixtures.alg.parameters['TideMetadataURI'] = ''
         mockGet.return_value = self.fixtures.getMockRequest('currentSubordinate.xml')
         dest_id = self.fixtures.alg.getStations()
-        mockGet.assert_called_once_with('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets', timeout=30)
+        mockGet.assert_called_once_with('http://example.com', timeout=30)
 
     @patch('requests.get')
     def test_bad_request(self, mockGet):
+        self.fixtures.alg.parameters['CurrentMetadataURI'] = 'http://example.com'
+        self.fixtures.alg.parameters['TideMetadataURI'] = ''
         mockGet.return_value = self.fixtures.getMockRequest('currentSubordinate.xml', 400)
         with self.assertRaises(QgsProcessingException):
             dest_id = self.fixtures.alg.getStations()

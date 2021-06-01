@@ -2,6 +2,7 @@ import os
 import math
 from datetime import *
 import requests
+from requests.exceptions import MissingSchema
 import xml.etree.ElementTree as ET
 
 from qgis.core import (
@@ -22,7 +23,8 @@ from qgis.core import (
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
     QgsProcessingParameterExtent,
-    QgsProcessingParameterFeatureSink)
+    QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterString)
 
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import QVariant, QUrl
@@ -31,6 +33,8 @@ from .utils import *
 from .time_zone_lookup import TimeZoneLookup
 
 class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
+    PrmCurrentStationsURI = 'CurrentMetadataURI'
+    PrmTideStationsURI = 'TideMetadataURI'
     PrmStationsLayer = 'StationsLayer'
     PrmPredictionsLayer = 'PredictionsLayer'
 
@@ -49,6 +53,18 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
     # Set up this algorithm
     def initAlgorithm(self, config):
+        self.addParameter(
+            QgsProcessingParameterString(
+                self.PrmTideStationsURI,
+                tr('Tide stations URL or file'),
+                'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?expand=tidepredoffsets&type=tidepredictions')
+        )
+        self.addParameter(
+            QgsProcessingParameterString(
+                self.PrmCurrentStationsURI,
+                tr('Current stations URL or file'),
+                'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets')
+        )
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.PrmStationsLayer,
@@ -127,12 +143,21 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
             raise QgsProcessingException(tr('Existing tidal layers must be removed before creating new ones.'))
 
         self.feedback.pushInfo("Requesting metadata for NOAA current stations...")
-        url = 'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets'
-        r = requests.get(url, timeout=30)
-        if r.status_code != 200:
-            raise QgsProcessingException(tr('Request failed with status {}').format(r.status_code))
+        url = self.parameters[self.PrmCurrentStationsURI]
 
-        content = r.text
+        content = ''
+        try:
+            r = requests.get(url, timeout=30)
+
+            if r.status_code != 200:
+                raise QgsProcessingException(tr('Request failed with status {}').format(r.status_code))
+
+            content = r.text
+        except MissingSchema:
+            # if no schema present, treat it as a filename
+            with open(url, 'r') as dataFile:
+                content = dataFile.read()
+
         if len(content) == 0:
             return
 
