@@ -391,8 +391,25 @@ class PredictionInterpolator:
     def __init__(self, stationFeature, datetime, subPromises, refPromises):
         self.stationFeature = stationFeature
         self.datetime = datetime
-        self.subPromises = subPromises
-        self.refPromises = refPromises
+
+        self.refData = []
+        for refPromise in refPromises:
+            for p in refPromise.predictions:
+                self.refData.append((self.secsTo(p['time']), p['type'], p))
+
+        self.subData = []
+        for subPromise in subPromises:
+            for p in subPromise.predictions:
+                self.subData.append((self.secsTo(p['time']), p['type'], p))
+
+        # segregate reference events into a map of arrays keyed on event type
+        self.refMap = {}
+        for (ptime, ptype, p) in self.refData:
+            eventList = self.refMap.get(ptype)
+            if eventList is None:
+                eventList = []
+                self.refMap[ptype] = eventList
+            eventList.append((ptime, ptype, p))
 
     def valuesFor(self, subTimes):
         factorInterp = self.factorInterpolation()
@@ -413,30 +430,26 @@ class PredictionInterpolator:
         phase = 0    # unknown whether we are in ebb or flood initially
         subTimes = []
         refTimes = []
-        for subPromise in self.subPromises:
-            for p in subPromise.predictions:
-                ptype = p['type']
-                time = self.secsTo(p['time'])
-
-                if ptype == 'slack':
-                    if phase > 0:
-                        # slack before ebb (after flood)
-                        subTimes.append(time)
-                        refTimes.append(time - 60*self.stationFeature['sbeTimeAdjMin'])
-                    elif phase < 0:
-                        # slack before flood (after ebb)
-                        subTimes.append(time)
-                        refTimes.append(time - 60*self.stationFeature['sbfTimeAdjMin'])
-                elif ptype == 'flood':
-                    phase = 1
+        for (time, ptype, p) in self.subData:
+            if ptype == 'slack':
+                if phase > 0:
+                    # slack before ebb (after flood)
                     subTimes.append(time)
-                    refTimes.append(time - 60*self.stationFeature['mfcTimeAdjMin'])
-                elif ptype == 'ebb':
-                    phase = -1
+                    refTimes.append(time - 60*self.stationFeature['sbeTimeAdjMin'])
+                elif phase < 0:
+                    # slack before flood (after ebb)
                     subTimes.append(time)
-                    refTimes.append(time - 60*self.stationFeature['mecTimeAdjMin'])
-                else:
-                    raise Exception('Unexpected event type ' + ptype)
+                    refTimes.append(time - 60*self.stationFeature['sbfTimeAdjMin'])
+            elif ptype == 'flood':
+                phase = 1
+                subTimes.append(time)
+                refTimes.append(time - 60*self.stationFeature['mfcTimeAdjMin'])
+            elif ptype == 'ebb':
+                phase = -1
+                subTimes.append(time)
+                refTimes.append(time - 60*self.stationFeature['mecTimeAdjMin'])
+            else:
+                raise Exception('Unexpected event type ' + ptype)
 
         return interp1d(subTimes, refTimes, 'linear')
 
@@ -449,17 +462,13 @@ class PredictionInterpolator:
         # search for events, ignoring any initial slack event
         subTimes = []
         refFactors = []
-        for subPromise in self.subPromises:
-            for p in subPromise.predictions:
-                ptype = p['type']
-                time = self.secsTo(p['time'])
-
-                if ptype == 'flood':
-                    subTimes.append(time)
-                    refFactors.append(self.stationFeature['mfcAmpAdj'])
-                elif ptype == 'ebb':
-                    subTimes.append(time)
-                    refFactors.append(self.stationFeature['mecAmpAdj'])
+        for (time, ptype, p) in self.subData:
+            if ptype == 'flood':
+                subTimes.append(time)
+                refFactors.append(self.stationFeature['mfcAmpAdj'])
+            elif ptype == 'ebb':
+                subTimes.append(time)
+                refFactors.append(self.stationFeature['mecAmpAdj'])
 
         return interp1d(subTimes, refFactors, 'cubic')
 
@@ -469,15 +478,12 @@ class PredictionInterpolator:
         """
         times = []
         values = []
-        for refPromise in self.refPromises:
-            for p in refPromise.predictions:
-                if p['type'] == 'current':
-                    time = self.secsTo(p['time'])
-                    try:
-                        values.append(p['value'])
-                        times.append(time)
-                    except ValueError:
-                        pass  # some values will be outside the range of factorInterpolation()
+        for (time, ptype, p) in self.refMap['current']:
+            try:
+                values.append(p['value'])
+                times.append(time)
+            except ValueError:
+                pass  # some values will be outside the range of factorInterpolation()
 
         return interp1d(times, values, 'cubic')
 
