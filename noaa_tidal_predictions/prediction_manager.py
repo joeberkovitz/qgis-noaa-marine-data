@@ -21,7 +21,6 @@ from qgis.PyQt.QtNetwork import (
 
 from .utils import *
 
-
 class PredictionManager(QObject):
     """Manager object overseeing the loading and caching of predictions
         organized by station-dates.
@@ -89,7 +88,7 @@ class PredictionManager(QObject):
     # Return a list of surface station features included in the given rectangle.
     def getExtentStations(self, rect):
         features = self.stationsLayer.getFeatures(rect)
-        return list(filter(lambda f: f['surface'] > 0, features))
+        return list(filter(lambda f: f['flags'] & StationFlags.Surface, features))
 
     # Return a station feature by its unique identifier
     def getStation(self, stationId):
@@ -282,7 +281,7 @@ class PredictionDataPromise(PredictionPromise):
             #   2c: VelocityMajorType, which only provides current velocity (but for same times as 2b)
 
             # Here we set up requests for cases 1 and 2
-            if self.stationFeature['type'] == 'H':
+            if self.stationFeature['flags'] & StationFlags.Reference:
                 self.speedDirRequest = CurrentPredictionRequest(
                     self.manager,
                     self.stationFeature,
@@ -332,7 +331,7 @@ class PredictionDataPromise(PredictionPromise):
                         self.addDependency(eventPromise)
 
     def doProcessing(self):
-        if self.stationFeature['type'] == 'H':
+        if self.stationFeature['flags'] & StationFlags.Reference:
             # We will always have a speed/direction request
             self.predictions = self.speedDirRequest.predictions
 
@@ -347,15 +346,15 @@ class PredictionDataPromise(PredictionPromise):
             self.predictions.extend(self.eventRequest.predictions)
             self.predictions.sort(key=(lambda p: p['time']))
         else:
-            # subordinate-station case: we need to cook up two different interpolations based on 
+            # subordinate-station case: we need to cook up interpolations based on 
             # the 3-day windows of a) subordinate events and b) reference currents.
 
             print('Interpolating ref station {} for {}'.format(
                 self.stationFeature['refStation'],
                 self.stationFeature['station']
                 ))
-
             interpolator = PredictionInterpolator(self.stationFeature, self.datetime, self.eventPromises, self.refPromises)
+
             subTimes = np.linspace(0, 24 * 60 * 60, 24 * 60 // PredictionManager.STEP_MINUTES, False)
             refValues = interpolator.valuesFor(subTimes)
             ebbDir = self.stationFeature['meanEbbDir'] 
@@ -372,7 +371,8 @@ class PredictionDataPromise(PredictionPromise):
                 f['value'] = float(refValues[i])
                 f['dir'] = ebbDir if refValues[i] < 0 else floodDir
                 f['magnitude'] = abs(f['value'])
-                f['type'] = 'current'
+                f['flags'] = PredictionFlags.Time
+                f['surface'] = 1
                 self.predictions.append(f)
 
             # Now mix in the event data from the central day in the 3-day window and sort everything
@@ -394,12 +394,12 @@ class PredictionInterpolator:
         self.refData = []
         for refPromise in refPromises:
             for p in refPromise.predictions:
-                self.refData.append((self.secsTo(p['time']), p['type'], p))
+                self.refData.append((self.secsTo(p['time']), p['flags'] & PredictionFlags.Type, p))
 
         self.subData = []
         for subPromise in subPromises:
             for p in subPromise.predictions:
-                self.subData.append((self.secsTo(p['time']), p['type'], p))
+                self.subData.append((self.secsTo(p['time']), p['flags'] & PredictionFlags.Type, p))
 
         # segregate reference events into a map of arrays keyed on event type
         self.refMap = {}
@@ -430,23 +430,23 @@ class PredictionInterpolator:
         subTimes = []
         refTimes = []
         for (time, ptype, p) in self.subData:
-            if ptype == 'slack':
+            if ptype == PredictionFlags.Zero:
                 if phase > 0:
                     # slack before ebb (after flood)
                     subTimes.append(time)
-                    refTimes.append(time - 60*self.stationFeature['sbeTimeAdjMin'])
+                    refTimes.append(time - 60*self.stationFeature['fallingZeroTimeAdj'])
                 elif phase < 0:
                     # slack before flood (after ebb)
                     subTimes.append(time)
-                    refTimes.append(time - 60*self.stationFeature['sbfTimeAdjMin'])
-            elif ptype == 'flood':
+                    refTimes.append(time - 60*self.stationFeature['risingZeroTimeAdj'])
+            elif ptype == PredictionFlags.Max:
                 phase = 1
                 subTimes.append(time)
-                refTimes.append(time - 60*self.stationFeature['mfcTimeAdjMin'])
-            elif ptype == 'ebb':
+                refTimes.append(time - 60*self.stationFeature['maxTimeAdj'])
+            elif ptype == PredictionFlags.Min:
                 phase = -1
                 subTimes.append(time)
-                refTimes.append(time - 60*self.stationFeature['mecTimeAdjMin'])
+                refTimes.append(time - 60*self.stationFeature['minTimeAdj'])
             else:
                 raise Exception('Unexpected event type ' + ptype)
 
@@ -462,12 +462,12 @@ class PredictionInterpolator:
         subTimes = []
         refFactors = []
         for (time, ptype, p) in self.subData:
-            if ptype == 'flood':
+            if ptype == PredictionFlags.Max:
                 subTimes.append(time)
-                refFactors.append(self.stationFeature['mfcAmpAdj'])
-            elif ptype == 'ebb':
+                refFactors.append(self.stationFeature['maxValueAdj'])
+            elif ptype == PredictionFlags.Min:
                 subTimes.append(time)
-                refFactors.append(self.stationFeature['mecAmpAdj'])
+                refFactors.append(self.stationFeature['minValueAdj'])
 
         return interp1d(subTimes, refFactors, 'cubic')
 
@@ -477,7 +477,7 @@ class PredictionInterpolator:
         """
         times = []
         values = []
-        for (time, ptype, p) in self.refMap['current']:
+        for (time, ptype, p) in self.refMap[PredictionFlags.Time]:
             try:
                 values.append(p['value'])
                 times.append(time)
@@ -607,11 +607,12 @@ class CurrentPredictionRequest(PredictionRequest):
             #  - max/slack measurement, flood/ebb, signed velocity
             #  - timed measurement, varying angle, unsigned velocity
             directionElement = prediction.find('Direction')
+            valflags = 0
             if directionElement != None:
                 direction = parseFloatNullable(directionElement.text)
 
                 magnitude = float(prediction.find('Speed').text)
-                valtype = 'current'
+                valflags = PredictionFlags.Time
 
                 # synthesize the value along flood/ebb dimension if possible
                 if floodDir != NULL and ebbDir != NULL:
@@ -635,13 +636,25 @@ class CurrentPredictionRequest(PredictionRequest):
                 typeElement = prediction.find('Type')
                 if typeElement != None:
                     valtype = typeElement.text
+                    if valtype == 'slack':
+                        valflags |= PredictionFlags.Zero
+                    elif valtype == 'flood':
+                        valflags |= PredictionFlags.Max
+                    elif valtype == 'ebb':
+                        valflags |= PredictionFlags.Min
+                    else:
+                        valflags = PredictionFlags.Time
                 else:
-                    valtype = 'current'
+                    valflags |= PredictionFlags.Time
 
             f['value'] = value
             f['dir'] = direction
             f['magnitude'] = magnitude
-            f['type'] = valtype
+            f['flags'] = valflags
+            if not (self.stationFeature['flags'] & StationFlags.Surface):
+                f['surface'] = 0
+            else:
+                f['surface'] = 1
 
             features.append(f)
 

@@ -145,7 +145,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['station'], 'BOS1111_14')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 1.0613530582942798)
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 262.0)
         self.assertEqual(feature['magnitude'], 1.062)
 
@@ -154,14 +154,14 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['station'], 'BOS1111_14')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 24, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 1.04)
-        self.assertEqual(feature['type'], 'flood')
+        self.assertTrue(feature['flags'] & PredictionFlags.Max)
         self.assertEqual(feature['dir'], 264.0)
 
         # just on the flood side of the transition
         feature = features[7]
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 0.0774541)   # cosine-rule projection
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 190.0)
         self.assertEqual(feature['magnitude'], 0.281)
 
@@ -170,14 +170,14 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['station'], 'BOS1111_14')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 6, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 0.02)
-        self.assertEqual(feature['type'], 'slack')
+        self.assertTrue(feature['flags'] & PredictionFlags.Zero)
         self.assertEqual(feature['dir'], 264.0)
 
         # just on the ebb side of the transition
         feature = features[9]
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 30, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], -0.1067157)   # cosine-rule projection
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 185.0)
         self.assertEqual(feature['magnitude'], 0.365)
 
@@ -203,7 +203,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 0.62)
         self.assertAlmostEqual(feature['magnitude'], 0.672)
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 35.0)
 
         feature = features[4]
@@ -211,7 +211,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 9, 36, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 1.22)
         self.assertAlmostEqual(feature['magnitude'], 1.22)
-        self.assertEqual(feature['type'], 'flood')
+        self.assertTrue(feature['flags'] & PredictionFlags.Max)
         self.assertEqual(feature['dir'], NULL)
 
 
@@ -228,26 +228,28 @@ class PredictionManagerTest(unittest.TestCase):
         features = pdp.predictions
         self.assertEqual(len(features), 56)  # 40 time intervals plus 8 events
 
-        currents = list(filter(lambda p: p['type'] == 'current', features))
+        currents = list(filter(lambda p: p['flags'] & PredictionFlags.Time, features))
         self.assertEqual(len(currents), 48)
-        events = list(filter(lambda p: p['type'] != 'current', features))
+        events = list(filter(lambda p: not p['flags'] & PredictionFlags.Time, features))
         self.assertEqual(len(events), 8)
 
         feature = events[0]
         self.assertEqual(feature['station'], 'ACT0926_1')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 7, 49, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 0.57)
-        self.assertEqual(feature['type'], 'flood')
+        self.assertTrue(feature['flags'] & PredictionFlags.Max)
         self.assertEqual(feature['dir'], 259.0)
         self.assertEqual(feature['magnitude'], 0.57)
+        self.assertTrue(feature['surface'])
 
         feature = currents[4]
         self.assertEqual(feature['station'], 'ACT0926_1')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 7, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 0.6826690037)
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 259.0)
         self.assertAlmostEqual(feature['magnitude'], 0.6826690037)
+        self.assertTrue(feature['surface'])
 
 
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
@@ -439,20 +441,23 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['depth'], 10.0)
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 6, 49, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 0.62)
-        self.assertEqual(feature['type'], 'flood')
+        self.assertTrue(feature['flags'] & PredictionFlags.Max)
         self.assertEqual(feature['dir'], 259.0)
         self.assertEqual(feature['magnitude'], 0.62)
+        self.assertTrue(feature['surface'])
 
         feature = features[2]
-        self.assertEqual(feature['type'], 'slack')
+        self.assertTrue(feature['flags'] & PredictionFlags.Zero)
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 59, 0, 0, Qt.TimeSpec.UTC))
+        self.assertTrue(feature['surface'])
 
         feature = features[3]
-        self.assertEqual(feature['type'], 'ebb')
+        self.assertTrue(feature['flags'] & PredictionFlags.Min)
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 11, 46, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], -0.58)
         self.assertEqual(feature['dir'], 66.0)
         self.assertEqual(feature['magnitude'], 0.58)
+        self.assertTrue(feature['surface'])
 
     def test_current_speed_dir_requests(self):
         url = QUrl('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?'
@@ -472,21 +477,21 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['depth'], 8.0)
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 1.0613531)
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 262.0)
         self.assertEqual(feature['magnitude'], 1.062)
         # just on the flood side of the transition
         feature = features[6]
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 0.0774541)   # cosine-rule projection
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 190.0)
         self.assertEqual(feature['magnitude'], 0.281)
         # just on the ebb side of the transition
         feature = features[7]
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 30, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], -0.1067157)   # cosine-rule projection
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 185.0)
         self.assertEqual(feature['magnitude'], 0.365)
 
@@ -509,21 +514,21 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['depth'], 8.0)
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 1.03)
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 264.0)
         self.assertEqual(feature['magnitude'], 1.03)
         # just on the flood side of the transition
         feature = features[6]
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 0.08)
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 264.0)
         self.assertEqual(feature['magnitude'], 0.08)
         # just on the ebb side of the transition
         feature = features[7]
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 30, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], -0.21)   # cosine-rule projection
-        self.assertEqual(feature['type'], 'current')
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertEqual(feature['dir'], 112.0)
         self.assertEqual(feature['magnitude'], 0.21)
 

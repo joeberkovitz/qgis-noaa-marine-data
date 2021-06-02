@@ -99,15 +99,26 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
             self.PrmPredictionsLayer: predictions_dest_id
         }
 
-    def baseStationFields(self):
+    def stationFields(self):
         fields = QgsFields()
         fields.append(QgsField("station", QVariant.String,'', 16))
         fields.append(QgsField("id", QVariant.String,'', 12))
-        fields.append(QgsField("name", QVariant.String))
-        fields.append(QgsField("type", QVariant.String,'',1))
+        fields.append(QgsField("name", QVariant.String, '', 64))
+        fields.append(QgsField("flags", QVariant.Int))
+        fields.append(QgsField("bin", QVariant.String,'', 4))
         fields.append(QgsField("timeZoneId", QVariant.String, '', 32))
         fields.append(QgsField("timeZoneUTC", QVariant.String, '', 32))
         fields.append(QgsField("refStation", QVariant.String,'', 12))
+        fields.append(QgsField("depth",  QVariant.Double))
+        fields.append(QgsField("depthType",  QVariant.String, '', 1))
+        fields.append(QgsField("meanFloodDir", QVariant.Double))
+        fields.append(QgsField("meanEbbDir", QVariant.Double))
+        fields.append(QgsField("maxTimeAdj", QVariant.Double))
+        fields.append(QgsField("minTimeAdj", QVariant.Double))
+        fields.append(QgsField("risingZeroTimeAdj", QVariant.Double))
+        fields.append(QgsField("fallingZeroTimeAdj", QVariant.Double))
+        fields.append(QgsField("maxValueAdj", QVariant.Double))
+        fields.append(QgsField("minValueAdj", QVariant.Double))
         return fields
 
     def predictionFields(self):
@@ -116,9 +127,10 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
         fields.append(QgsField("depth",  QVariant.Double))
         fields.append(QgsField("time",  QVariant.DateTime))
         fields.append(QgsField("value", QVariant.Double))  # signed value, on flood/ebb dimension for current
-        fields.append(QgsField("type", QVariant.String))
+        fields.append(QgsField("flags", QVariant.Int))
         fields.append(QgsField("dir", QVariant.Double))
         fields.append(QgsField("magnitude", QVariant.Double))  # value along direction if known
+        fields.append(QgsField("surface", QVariant.Int))
         return fields
 
     def getPredictions(self):
@@ -142,6 +154,27 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
         if getStationsLayer() != None:
             raise QgsProcessingException(tr('Existing tidal layers must be removed before creating new ones.'))
 
+        (stationSink, stations_dest_id) = self.parameterAsSink(
+            self.parameters, self.PrmStationsLayer, self.context,
+            self.stationFields(),
+            QgsWkbTypes.Point, epsg4326)
+
+        self.getTideStations(stationSink)
+        self.getCurrentStations(stationSink)
+
+        if self.context.willLoadLayerOnCompletion(stations_dest_id):
+            proc = StationsStylePostProcessor.create(
+                tr('Tidal Stations'), 'stations.qml', StationsLayerType
+            )
+            self.context.layerToLoadOnCompletionDetails(stations_dest_id).setPostProcessor(proc)
+ 
+        return stations_dest_id
+
+    def getTideStations(self, stationSink):
+        self.feedback.pushInfo("Requesting metadata for NOAA tide stations...")
+        url = self.parameters[self.PrmTideStationsURI]
+
+    def getCurrentStations(self, stationSink):
         self.feedback.pushInfo("Requesting metadata for NOAA current stations...")
         url = self.parameters[self.PrmCurrentStationsURI]
 
@@ -163,30 +196,11 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
         self.feedback.pushInfo('Read {} bytes'.format(len(content)))
 
-        # obtain our current stations output sink          
-        fields = self.baseStationFields()
-        fields.append(QgsField("bin", QVariant.String,'', 4))
-        fields.append(QgsField("depth",  QVariant.Double))
-        fields.append(QgsField("depthType",  QVariant.String, '', 1))
-        fields.append(QgsField("surface", QVariant.Int))
-        fields.append(QgsField("meanFloodDir", QVariant.Double))
-        fields.append(QgsField("meanEbbDir", QVariant.Double))
-        fields.append(QgsField("mfcTimeAdjMin", QVariant.Double))
-        fields.append(QgsField("sbeTimeAdjMin", QVariant.Double))
-        fields.append(QgsField("mecTimeAdjMin", QVariant.Double))
-        fields.append(QgsField("sbfTimeAdjMin", QVariant.Double))
-        fields.append(QgsField("mfcAmpAdj", QVariant.Double))
-        fields.append(QgsField("mecAmpAdj", QVariant.Double))
-
-        (stationSink, stations_dest_id) = self.parameterAsSink(
-            self.parameters, self.PrmStationsLayer, self.context, fields,
-            QgsWkbTypes.Point, epsg4326)
-
         # This script converts a stations XML result obtained from this URL:
         # https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets
         # by including only the bin of minimum depth for each station and eliminating weak/variable stations.
         # The flood and ebb directions are captured from the metadata also.
-        self.feedback.pushInfo("Parsing metadata...")
+        self.feedback.pushInfo("Parsing current station metadata...")
 
         # Parse the XML file into a DOM up front
         xmlparse = ET.fromstring(content) 
@@ -223,22 +237,18 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
             surfaceMap[stationId] = s
 
-        if self.context.willLoadLayerOnCompletion(stations_dest_id):
-            proc = StationsStylePostProcessor.create(
-                tr('Tidal Stations'), 'stations.qml', StationsLayerType
-            )
-            self.context.layerToLoadOnCompletionDetails(stations_dest_id).setPostProcessor(proc)
-
         # Now build the features for all stations in the map.
 
         progress_count = 0
 
         tzl = TimeZoneLookup()
 
+        fields = self.stationFields()
         for key, s in stationMap.items():
             cpo = s.find('currentpredictionoffsets')
 
             f = QgsFeature(fields)
+            flags = StationFlags.Current
 
             lng = float(s.find('lng').text)
             lat = float(s.find('lat').text)
@@ -249,11 +259,17 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
             f['id'] = s.find('id').text
             f['bin'] = s.find('currbin').text
             f['name'] = s.find('name').text
-            f['type'] = s.find('type').text
+
             f['depth'] = parseFloatNullable(s.find('depth').text)
             f['depthType'] = s.find('depthType').text
 
-            f['surface'] = 1 if surfaceMap.get(f['id']) == s else 0
+            stationType = s.find('type').text
+            if stationType == 'R' or stationType == 'H':
+                flags |= StationFlags.Reference
+
+            if surfaceMap.get(f['id']) == s:
+                flags |= StationFlags.Surface
+            f['flags'] = flags
 
             refStationId = cpo.find('refStationId').text
             if refStationId:
@@ -263,19 +279,17 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
             f['meanFloodDir'] = parseFloatNullable(cpo.find('meanFloodDir').text)
             f['meanEbbDir'] = parseFloatNullable(cpo.find('meanEbbDir').text)
-            f['mfcTimeAdjMin'] = parseFloatNullable(cpo.find('mfcTimeAdjMin').text)
-            f['sbeTimeAdjMin'] = parseFloatNullable(cpo.find('sbeTimeAdjMin').text)
-            f['mecTimeAdjMin'] = parseFloatNullable(cpo.find('mecTimeAdjMin').text)
-            f['sbfTimeAdjMin'] = parseFloatNullable(cpo.find('sbfTimeAdjMin').text)
-            f['mfcAmpAdj'] = parseFloatNullable(cpo.find('mfcAmpAdj').text)
-            f['mecAmpAdj'] = parseFloatNullable(cpo.find('mecAmpAdj').text)
+            f['maxTimeAdj'] = parseFloatNullable(cpo.find('mfcTimeAdjMin').text)
+            f['minTimeAdj'] = parseFloatNullable(cpo.find('mecTimeAdjMin').text)
+            f['risingZeroTimeAdj'] = parseFloatNullable(cpo.find('sbfTimeAdjMin').text)
+            f['fallingZeroTimeAdj'] = parseFloatNullable(cpo.find('sbeTimeAdjMin').text)
+            f['maxValueAdj'] = parseFloatNullable(cpo.find('mfcAmpAdj').text)
+            f['minValueAdj'] = parseFloatNullable(cpo.find('mecAmpAdj').text)
 
             stationSink.addFeature(f)
 
             progress_count += 1
             self.feedback.setProgress(100*progress_count/len(stationMap))
- 
-        return stations_dest_id
 
 class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
     def __init__(self, layerName, styleName, layerType):
@@ -293,7 +307,7 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
         # set up custom variable identifying the added layers
         layer.setCustomProperty(NOAA_LAYER_TYPE, self.layerType)
 
-        # if both layers are available (meaning both post processors have run) then configure joins
+        # if both layers are available (meaning both post processors have run) then configure joins and virtual fields
         stationsLayer = getStationsLayer()
         predictionsLayer = getPredictionsLayer()
         if stationsLayer is not None and predictionsLayer is not None:
@@ -301,29 +315,38 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
             joinInfo.setJoinLayer(stationsLayer)
             joinInfo.setTargetFieldName('station')
             joinInfo.setJoinFieldName('station')
-            joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC', 'surface'])
+            joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC'])
             joinInfo.setPrefix('station_')
             predictionsLayer.addJoin(joinInfo)
 
-            localTimeField = QgsField('local_time', QVariant.DateTime)
             predictionsLayer.addExpressionField(
                 'convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId)',
-                localTimeField
+                QgsField('local_time', QVariant.DateTime)
             )
-
-            displayDateField = QgsField('display_date', QVariant.String)
             predictionsLayer.addExpressionField(
                 "format_date(convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId), 'MM/dd')",
-                displayDateField
+                QgsField('display_date', QVariant.String)
             )
 
-            displayTimeField = QgsField('display_time', QVariant.String)
             predictionsLayer.addExpressionField(
                 "format_date(convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId), 'hh:mm a')",
-                displayTimeField
+                QgsField('display_time', QVariant.String)
             )
-
             predictionsLayer.updateFields()
+
+            stationsLayer.addExpressionField(
+                "floor(flags/2) % 2",
+                QgsField('current', QVariant.Int)
+            )
+            stationsLayer.addExpressionField(
+                "floor(flags/4) % 2",
+                QgsField('surface', QVariant.Int)
+            )
+            stationsLayer.addExpressionField(
+                "floor(flags/8) % 2",
+                QgsField('reference', QVariant.Int)
+            )
+            stationsLayer.updateFields()
 
 
 class StationsStylePostProcessor(StylePostProcessor):

@@ -70,7 +70,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.predictionCanvas = None
 
-        self.includeCurrentsInTable = False
+        self.includeAllPredictions = False
 
         self.autoLoadTimer = QTimer()
         self.autoLoadTimer.setSingleShot(True)
@@ -291,7 +291,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         t = []
         val = []
         for f in self.stationData.predictions:
-            if f['type'] == 'current':
+            if f['flags'] & PredictionFlags.Time:
                 utcTime = f['time']
                 utcTime.setTimeSpec(Qt.TimeSpec.UTC)
                 t.append(t0.secsTo(utcTime)/3600)
@@ -321,14 +321,14 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         for p in self.stationData.predictions:
             dt = p['time']
             dt.setTimeSpec(Qt.TimeSpec.UTC)
-            if self.includeCurrentsInTable and p['type'] == 'current' and p['dir'] != NULL:
+            if self.includeAllPredictions and p['flags'] & PredictionFlags.Time and p['dir'] != NULL:
                 self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
                 self.tableWidget.setItem(i, 1, QTableWidgetItem(str(round(p['dir'])) + 'º'))
                 self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['magnitude'])))
                 i += 1
-            elif p['type'] != 'current':
+            elif not p['flags'] & PredictionFlags.Time:
                 self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
-                self.tableWidget.setItem(i, 1, QTableWidgetItem(p['type']))
+                self.tableWidget.setItem(i, 1, QTableWidgetItem(PredictionFlags.currentTypeNames[p['flags'] & PredictionFlags.Type]))
                 self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['value'])))
                 self.tableWidget.setRowHeight(i, 20)
                 i += 1
