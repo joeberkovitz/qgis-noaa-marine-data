@@ -18,7 +18,7 @@ from qgis.core import (
 
 from noaa_tidal_predictions.prediction_manager import *
 from noaa_tidal_predictions.utils import *
-from .test_add_current_stations import StationsFixtures
+from .test_add_stations import StationsFixtures
 
 QGIS_APP = get_qgis_app()
 

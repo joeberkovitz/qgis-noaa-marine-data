@@ -36,6 +36,8 @@ class StationsFixtures:
         PredictionExpressions.registerFunctions()
 
     def dataFilename(self, fn):
+        if fn == '':
+            return fn
         return os.path.join(os.path.dirname(__file__), 'data', fn)
 
     def getMockRequest(self, filename, status_code=200):
@@ -50,9 +52,9 @@ class StationsFixtures:
         self.alg.context.addLayerToLoadOnCompletion(self.alg.parameters['StationsLayer'], details)
         self.alg.context.addLayerToLoadOnCompletion(self.alg.parameters['PredictionsLayer'], details)
 
-    def getFixtureLayer(self, filename):
-        self.alg.parameters['CurrentMetadataURI'] = self.dataFilename(filename)
-        self.alg.parameters['TideMetadataURI'] = ''
+    def getFixtureLayer(self, currentFile, tideFile=''):
+        self.alg.parameters['CurrentMetadataURI'] = self.dataFilename(currentFile)
+        self.alg.parameters['TideMetadataURI'] = self.dataFilename(tideFile)
         self.loadOnCompletion()
 
         stations_dest_id = self.alg.getStations()
@@ -65,8 +67,8 @@ class StationsFixtures:
 
         return QgsProcessingUtils.mapLayerFromString(stations_dest_id, self.alg.context)
 
-    def getFeatures(self, filename, expression):
-        layer = self.getFixtureLayer(filename)
+    def getFeatures(self, currentFile, tideFile, expression):
+        layer = self.getFixtureLayer(currentFile, tideFile)
         return list(layer.getFeatures(QgsFeatureRequest().setFilterExpression(expression)))
 
     def generateAssertions(self, feature):
@@ -108,14 +110,17 @@ class StationsTest(unittest.TestCase):
         with self.assertRaises(QgsProcessingException):
             dest = self.fixtures.getFixtureLayer('currentRefSub.xml')
 
-    def test_add_subordinate(self):
-        features = self.fixtures.getFeatures('currentSubordinate.xml', "station = 'ACT0926_1'")
+    def test_add_current_subordinate(self):
+        features = self.fixtures.getFeatures('currentSubordinate.xml', '', "station = 'ACT0926_1'")
         self.assertEqual(len(features), 1)
         feature = features[0]
         self.assertEqual(feature['station'], 'ACT0926_1')
         self.assertEqual(feature['id'], 'ACT0926')
         self.assertEqual(feature['name'], 'Bass Point, 1.2 n.mi. southeast of')
         self.assertEqual(feature['flags'], StationFlags.Current | StationFlags.Surface)
+        self.assertTrue(feature['current'])
+        self.assertTrue(feature['surface'])
+        self.assertFalse(feature['reference'])
         self.assertEqual(feature['timeZoneId'], 'America/New_York')
         self.assertEqual(feature['timeZoneUTC'], 'UTC-05:00')
         self.assertEqual(feature['refStation'], 'BOS1111_14')
@@ -131,21 +136,23 @@ class StationsTest(unittest.TestCase):
         self.assertEqual(feature['maxValueAdj'], 0.6)
         self.assertEqual(feature['minValueAdj'], 0.6) 
  
-    def test_add_harmonic(self):
-        features = self.fixtures.getFeatures('currentHarmonic.xml', "station = 'BOS1111_14'")
+    def test_add_current_harmonic(self):
+        features = self.fixtures.getFeatures('currentHarmonic.xml', '', "station = 'BOS1111_14'")
         self.assertEqual(len(features), 1)
         feature = features[0]
         self.assertEqual(feature['station'], 'BOS1111_14')
         self.assertEqual(feature['id'], 'BOS1111')
         self.assertEqual(feature['name'], 'Boston Harbor (Deer Island Light)')
         self.assertEqual(feature['flags'],  StationFlags.Current | StationFlags.Surface | StationFlags.Reference)
+        self.assertTrue(feature['current'])
+        self.assertTrue(feature['surface'])
+        self.assertTrue(feature['reference'])
         self.assertEqual(feature['timeZoneId'], 'America/New_York')
         self.assertEqual(feature['timeZoneUTC'], 'UTC-05:00')
         self.assertEqual(feature['refStation'], NULL)
         self.assertEqual(feature['bin'], '14')
         self.assertEqual(feature['depth'], 8.0)
         self.assertEqual(feature['depthType'], 'B')
-        self.assertTrue(feature['flags'] & StationFlags.Surface)
         self.assertEqual(feature['meanFloodDir'], 264.0)
         self.assertEqual(feature['meanEbbDir'], 112.0)
         self.assertEqual(feature['maxTimeAdj'], NULL)
@@ -154,6 +161,44 @@ class StationsTest(unittest.TestCase):
         self.assertEqual(feature['risingZeroTimeAdj'], NULL)
         self.assertEqual(feature['maxValueAdj'], NULL)
         self.assertEqual(feature['minValueAdj'], NULL)
+
+    def test_add_tide_harmonic(self):
+        features = self.fixtures.getFeatures('', 'tideRefSub.xml', "station = '8443970'")
+        self.assertEqual(len(features), 1)
+        feature = features[0]
+        self.assertEqual(feature['station'], '8443970')
+        self.assertEqual(feature['id'], '8443970')
+        self.assertEqual(feature['name'], 'BOSTON')
+        self.assertEqual(feature['flags'],  StationFlags.Tide | StationFlags.Surface | StationFlags.Reference)
+        self.assertFalse(feature['current'])
+        self.assertTrue(feature['surface'])
+        self.assertTrue(feature['reference'])
+        self.assertEqual(feature['timeZoneId'], 'America/New_York')
+        self.assertEqual(feature['timeZoneUTC'], 'UTC-05:00')
+        self.assertEqual(feature['refStation'], NULL)
+        self.assertEqual(feature['maxTimeAdj'], 0)
+        self.assertEqual(feature['minTimeAdj'], 0)
+        self.assertEqual(feature['maxValueAdj'], 0)
+        self.assertEqual(feature['minValueAdj'], 0)
+
+    def test_add_tide_subordinate(self):
+        features = self.fixtures.getFeatures('', 'tideRefSub.xml', "station = '8447291'")
+        self.assertEqual(len(features), 1)
+        feature = features[0]
+        self.assertEqual(feature['station'], '8447291')
+        self.assertEqual(feature['id'], '8447291')
+        self.assertEqual(feature['name'], 'Pleasant Bay & Tyler Too')
+        self.assertEqual(feature['flags'],  StationFlags.Tide | StationFlags.Surface)
+        self.assertFalse(feature['current'])
+        self.assertTrue(feature['surface'])
+        self.assertFalse(feature['reference'])
+        self.assertEqual(feature['timeZoneId'], 'America/New_York')
+        self.assertEqual(feature['timeZoneUTC'], 'UTC-05:00')
+        self.assertEqual(feature['refStation'], '8443970')
+        self.assertEqual(feature['maxTimeAdj'], 148)
+        self.assertEqual(feature['minTimeAdj'], 207)
+        self.assertEqual(feature['maxValueAdj'], 0.34)
+        self.assertEqual(feature['minValueAdj'], 0.34)
 
     def test_detect_surface(self):
         dest = self.fixtures.getFixtureLayer('currentMultiDepth.xml')

@@ -1,8 +1,11 @@
 import os
 import math
+import re as re
 from datetime import *
+
 import requests
 from requests.exceptions import MissingSchema
+
 import xml.etree.ElementTree as ET
 
 from qgis.core import (
@@ -150,6 +153,36 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
         return predictions_dest_id
 
+    def getMetadataTree(self, paramName):
+        url = self.parameters[paramName]
+        if url == '':
+            return None
+
+        content = ''
+        try:
+            r = requests.get(url, timeout=30)
+
+            if r.status_code != 200:
+                raise QgsProcessingException(tr('Request failed with status {}').format(r.status_code))
+
+            content = r.text
+        except MissingSchema:
+            # if no schema present, treat it as a filename
+            with open(url, 'r') as dataFile:
+                content = dataFile.read()
+
+        if content == '':
+            return None
+
+        self.feedback.pushInfo('Read {} bytes'.format(len(content)))
+
+        # Work around heinous lack of entity escaping on & characters in station names.
+        p = re.compile('&([^;]{1,10})')   # match any & not followed by a ; within 10 characters
+        content = p.sub(r'&amp;\1', content)
+
+        # parse into an element tree
+        return ET.fromstring(content) 
+
     def getStations(self):
         if getStationsLayer() != None:
             raise QgsProcessingException(tr('Existing tidal layers must be removed before creating new ones.'))
@@ -172,38 +205,56 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
     def getTideStations(self, stationSink):
         self.feedback.pushInfo("Requesting metadata for NOAA tide stations...")
-        url = self.parameters[self.PrmTideStationsURI]
+        xmlparse = self.getMetadataTree(self.PrmTideStationsURI)
+        if xmlparse is None:
+            return
+
+        # Get the list of stations
+        root = xmlparse
+        stations = root.findall('Station')
+
+        # Build the features for all stations in the map.
+
+        progress_count = 0
+
+        tzl = TimeZoneLookup()
+
+        fields = self.stationFields()
+        for s in stations: 
+            tpo = s.find('tidepredoffsets')
+
+            f = QgsFeature(fields)
+
+            lng = float(s.find('lng').text)
+            lat = float(s.find('lat').text)
+            geom = QgsGeometry(QgsPoint(lng, lat))
+            f.setGeometry(geom)
+
+            f['station'] = f['id'] = s.find('id').text
+            f['name'] = s.find('name').text
+
+            stationType = s.find('type').text
+            flags = StationFlags.Tide | StationFlags.Surface
+            if stationType == 'R':
+                flags |= StationFlags.Reference
+            f['flags'] = flags
+            f['refStation'] = tpo.find('refStationId').text
+            (f['timeZoneId'], f['timeZoneUTC']) = tzl.getZoneByCoordinates(lat, lng)
+            f['maxTimeAdj'] = parseFloatNullable(tpo.find('timeOffsetHighTide').text)
+            f['minTimeAdj'] = parseFloatNullable(tpo.find('timeOffsetLowTide').text)
+            f['maxValueAdj'] = parseFloatNullable(tpo.find('heightOffsetHighTide').text)
+            f['minValueAdj'] = parseFloatNullable(tpo.find('heightOffsetLowTide').text)
+
+            stationSink.addFeature(f)
+
+            progress_count += 1
+            self.feedback.setProgress(50*progress_count/len(stations))
 
     def getCurrentStations(self, stationSink):
         self.feedback.pushInfo("Requesting metadata for NOAA current stations...")
-        url = self.parameters[self.PrmCurrentStationsURI]
-
-        content = ''
-        try:
-            r = requests.get(url, timeout=30)
-
-            if r.status_code != 200:
-                raise QgsProcessingException(tr('Request failed with status {}').format(r.status_code))
-
-            content = r.text
-        except MissingSchema:
-            # if no schema present, treat it as a filename
-            with open(url, 'r') as dataFile:
-                content = dataFile.read()
-
-        if len(content) == 0:
+        xmlparse = self.getMetadataTree(self.PrmCurrentStationsURI)
+        if xmlparse is None:
             return
-
-        self.feedback.pushInfo('Read {} bytes'.format(len(content)))
-
-        # This script converts a stations XML result obtained from this URL:
-        # https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets
-        # by including only the bin of minimum depth for each station and eliminating weak/variable stations.
-        # The flood and ebb directions are captured from the metadata also.
-        self.feedback.pushInfo("Parsing current station metadata...")
-
-        # Parse the XML file into a DOM up front
-        xmlparse = ET.fromstring(content) 
 
         # Get the list of stations
         root = xmlparse
@@ -264,7 +315,7 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
             f['depthType'] = s.find('depthType').text
 
             stationType = s.find('type').text
-            if stationType == 'R' or stationType == 'H':
+            if stationType == 'H':
                 flags |= StationFlags.Reference
 
             if surfaceMap.get(f['id']) == s:
@@ -289,7 +340,7 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
             stationSink.addFeature(f)
 
             progress_count += 1
-            self.feedback.setProgress(100*progress_count/len(stationMap))
+            self.feedback.setProgress(50 + (50*progress_count/len(stationMap)))
 
 class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
     def __init__(self, layerName, styleName, layerType):
@@ -316,6 +367,7 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
             joinInfo.setTargetFieldName('station')
             joinInfo.setJoinFieldName('station')
             joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC'])
+            joinInfo.setUsingMemoryCache(True)
             joinInfo.setPrefix('station_')
             predictionsLayer.addJoin(joinInfo)
 

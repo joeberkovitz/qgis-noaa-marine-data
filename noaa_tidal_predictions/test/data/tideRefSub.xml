@@ -1,0 +1,72 @@
+<Stations>
+    <count>2</count>
+    <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="tidePredStation">
+        <id>8443970</id>
+        <name>BOSTON</name>
+        <lat>42.354801177978516</lat>
+        <lng>-71.05339813232422</lng>
+        <affiliations/>
+        <portscode/>
+        <tideType/>
+        <state>MA</state>
+        <tidepredoffsets xsi:type="tidePredOffsets">
+            <refStationId/>
+            <type>R</type>
+            <heightOffsetHighTide>0.0</heightOffsetHighTide>
+            <heightOffsetLowTide>0.0</heightOffsetLowTide>
+            <timeOffsetHighTide>0</timeOffsetHighTide>
+            <timeOffsetLowTide>0</timeOffsetLowTide>
+            <heightAdjustedType/>
+        </tidepredoffsets>
+        <type>R</type>
+        <timemeridian>0</timemeridian>
+        <reference_id/>
+        <timezonecorr>-5</timezonecorr>
+    </Station>
+    <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="tidePredStation">
+        <id>8444012</id>
+        <name>Deer Island (south end)</name>
+        <lat>42.3483</lat>
+        <lng>-70.96</lng>
+        <affiliations/>
+        <portscode/>
+        <tideType/>
+        <state>MA</state>
+        <tidepredoffsets xsi:type="tidePredOffsets">&sdsd;
+            <refStationId>8443970</refStationId>
+            <type>S</type>
+            <heightOffsetHighTide>0.97</heightOffsetHighTide>
+            <heightOffsetLowTide>0.97</heightOffsetLowTide>
+            <timeOffsetHighTide>1</timeOffsetHighTide>
+            <timeOffsetLowTide>0</timeOffsetLowTide>
+            <heightAdjustedType>R</heightAdjustedType>
+        </tidepredoffsets>
+        <type>S</type>
+        <timemeridian>-75</timemeridian>
+        <reference_id>8443970</reference_id>
+        <timezonecorr>-5</timezonecorr>
+    </Station>
+    <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="tidePredStation">
+        <id>8447291</id>
+        <name>Pleasant Bay & Tyler Too</name>
+        <lat>41.7367</lat>
+        <lng>-69.9817</lng>
+        <affiliations/>
+        <portscode/>
+        <tideType/>
+        <state>MA</state>
+        <tidepredoffsets xsi:type="tidePredOffsets">
+            <refStationId>8443970</refStationId>
+            <type>S</type>
+            <heightOffsetHighTide>0.34</heightOffsetHighTide>
+            <heightOffsetLowTide>0.34</heightOffsetLowTide>
+            <timeOffsetHighTide>148</timeOffsetHighTide>
+            <timeOffsetLowTide>207</timeOffsetLowTide>
+            <heightAdjustedType>R</heightAdjustedType>
+        </tidepredoffsets>
+        <type>S</type>
+        <timemeridian>-75</timemeridian>
+        <reference_id>8443970</reference_id>
+        <timezonecorr>-5</timezonecorr>
+    </Station>
+</Stations>
