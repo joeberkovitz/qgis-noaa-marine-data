@@ -252,8 +252,12 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def updateStationLink(self):
         if self.stationFeature is not None:
-            linkUrl = 'https://tidesandcurrents.noaa.gov/noaacurrents/Predictions?id={}&d={}&r=1&tz=LST%2FLDT'
-            linkUrl = linkUrl.format(self.stationFeature['station'], self.dateEdit.date().toString('yyyy-MM-dd'))
+            if self.stationFeature['flags'] & StationFlags.Current:
+                linkUrl = 'https://tidesandcurrents.noaa.gov/noaacurrents/Predictions?id={}&d={}&r=1&tz=LST%2FLDT'
+                linkUrl = linkUrl.format(self.stationFeature['station'], self.dateEdit.date().toString('yyyy-MM-dd'))
+            else:
+                linkUrl = 'https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id={}&bdate={}&timezone=LST/LDT&clock=12hour&datum=MLLW'
+                linkUrl = linkUrl.format(self.stationFeature['station'], self.dateEdit.date().toString('yyyyMMdd'))
             self.linkLabel.setText('<a href="{}">{} Station Page</a>'.format(linkUrl, self.stationFeature['id']))
         else:
             self.linkLabel.setText('')
@@ -318,6 +322,12 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.tableWidget.setRowCount(len(self.stationData.predictions))
         i = 0
+
+        if self.stationFeature['flags'] & StationFlags.Current:
+            typeNames = PredictionFlags.currentTypeNames
+        else:
+            typeNames = PredictionFlags.tideTypeNames
+
         for p in self.stationData.predictions:
             dt = p['time']
             dt.setTimeSpec(Qt.TimeSpec.UTC)
@@ -328,7 +338,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 i += 1
             elif not p['flags'] & PredictionFlags.Time:
                 self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
-                self.tableWidget.setItem(i, 1, QTableWidgetItem(PredictionFlags.currentTypeNames[p['flags'] & PredictionFlags.Type]))
+                self.tableWidget.setItem(i, 1, QTableWidgetItem(typeNames[p['flags'] & PredictionFlags.Type]))
                 self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['value'])))
                 self.tableWidget.setRowHeight(i, 20)
                 i += 1

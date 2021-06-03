@@ -1,0 +1,7 @@
+<!-- https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?application=qgis-noaa-tidal-predictions&begin_date=20200101%2005:00&end_date=20200102%2004:59&units=english&time_zone=gmt&product=predictions&format=xml&station=8443970&interval=hilo&datum=MLLW -->
+<data>
+<pr t="2020-01-01 08:21"  v="8.606"  type="H" />
+<pr t="2020-01-01 14:21"  v="1.578"  type="L" />
+<pr t="2020-01-01 20:30"  v="8.954"  type="H" />
+<pr t="2020-01-02 02:50"  v="0.981"  type="L" />
+</data>

@@ -30,11 +30,15 @@ class PredictionManagerTest(unittest.TestCase):
 
     def setUp(self):
         self.fixtures = StationsFixtures()
-        self.stationsLayer = self.fixtures.getFixtureLayer('currentRefSub.xml')
+        self.stationsLayer = self.fixtures.getFixtureLayer('currentRefSub.xml','tideRefSub.xml')
         self.subCurrentStation = next(self.stationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = 'ACT0926_1'")))
         self.refCurrentStation = next(self.stationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = 'BOS1111_14'")))
+        self.refTideStation = next(self.stationsLayer.getFeatures(
+            QgsFeatureRequest().setFilterExpression("station = '8443970'")))
+        self.subTideStation = next(self.stationsLayer.getFeatures(
+            QgsFeatureRequest().setFilterExpression("station = '8447291'")))
 
         self.predictionsLayer = getPredictionsLayer()
         self.pm = PredictionManager(self.stationsLayer, self.predictionsLayer)
@@ -52,35 +56,42 @@ class PredictionManagerTest(unittest.TestCase):
 
     def print_predictions(self, predictions):
         for feature in predictions:
-            print('{} {} {} {} {}'.format(feature['station'],feature['time'].toString('yyyyMMdd hh:mm'),feature['type'],feature['dir'],feature['value']))
+            print('{} {} {} {} {}'.format(feature['station'],feature['time'].toString('yyyyMMdd hh:mm'),feature['flags'],feature['dir'],feature['value']))
 
     def getPredictions(self, filename, station, datetime, type, url=None, parseError=False):
-        cpr = CurrentPredictionRequest(
-            self.pm,
-            station,
-            datetime, datetime.addDays(1),
-            type)
+        if station['flags'] & StationFlags.Current:
+            pr = CurrentPredictionRequest(
+                self.pm,
+                station,
+                datetime, datetime.addDays(1),
+                type)
+        else:
+            pr = TidePredictionRequest(
+                self.pm,
+                station,
+                datetime, datetime.addDays(1),
+                type)
         resolved = Mock()
-        cpr.resolved(resolved)
+        pr.resolved(resolved)
         rejected = Mock()
-        cpr.rejected(rejected)
+        pr.rejected(rejected)
 
-        cpr.start()
+        pr.start()
 
         if url:
-            self.assertIsNotNone(cpr.fetcher)
+            self.assertIsNotNone(pr.fetcher)
                 
-        cpr.fetcher = Mock(QgsNetworkContentFetcherTask)
+        pr.fetcher = Mock(QgsNetworkContentFetcherTask)
         with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
-            cpr.content = dataFile.read()
-        cpr.processFinish()
+            pr.content = dataFile.read()
+        pr.processFinish()
 
         if parseError:
             rejected.assert_called_once()
             return None
         else:
             resolved.assert_called_once()
-            return cpr.predictions
+            return pr.predictions
 
 
     def mock_doStartPrepare(self):
@@ -92,7 +103,10 @@ class PredictionManagerTest(unittest.TestCase):
         query_interval = query.queryItemValue('interval')
         query_station = query.queryItemValue('station')
         query_bin = query.queryItemValue('bin')
-        filename = '{}_{}-{}-{}-{}.xml'.format(query_station,query_bin,query_date,query_vel_type,query_interval)
+        if query_bin:
+            filename = '{}_{}-{}-{}-{}.xml'.format(query_station,query_bin,query_date,query_vel_type,query_interval)
+        else:
+            filename = '{}-{}-{}-{}.xml'.format(query_station,query_date,query_vel_type,query_interval)
         self.fetcher = Mock(QgsNetworkContentFetcherTask)
         with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
             self.content = dataFile.read()
@@ -105,11 +119,11 @@ class PredictionManagerTest(unittest.TestCase):
         self.processFinish()
 
 
-    """ Test the ability to mock out PredictionRequests by loading files based on query parameters
-        without touching any other classes.
+    """ Test the ability to mock out CurrentPredictionRequests by loading files based on query parameters
+        without touching any other classes. Also verifies generated URL contents.
     """
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
-    def test_mocked_request(self):
+    def test_mocked_current_request(self):
         self.assertEqual(len(PredictionManagerTest.request_urls), 0)
         resolver = Mock()
         datetime = QDateTime(2020,1,1,5,0)
@@ -124,14 +138,38 @@ class PredictionManagerTest(unittest.TestCase):
         resolver.assert_called_once()
         self.assertEqual(len(cpr.predictions), 9)
         self.assertEqual(len(PredictionManagerTest.request_urls), 1)
-        self.assertEqual(PredictionManagerTest.request_urls[0], 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?application=qgis-noaa-tidal-predictions&begin_date=20200101 05:00&end_date=20200102 04:59&units=english&time_zone=gmt&product=currents_predictions&format=xml&station=ACT0926&bin=1&interval=MAX_SLACK')
+        self.assertEqual(PredictionManagerTest.request_urls[0],
+            'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?application=qgis-noaa-tidal-predictions&begin_date=20200101 05:00&end_date=20200102 04:59&units=english&time_zone=gmt&product=currents_predictions&format=xml&station=ACT0926&bin=1&interval=MAX_SLACK')
 
-    """ Test a PredictionDataPromise for a harmonic station with known flood/ebb directions
+    """ Test the ability to mock out TidePredictionRequests by loading files based on query parameters
+        without touching any other classes. Also verifies generated URL contents.
     """
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
-    def test_harmonic_prediction_data_promise(self):
+    def test_mocked_tide_request(self):
+        self.assertEqual(len(PredictionManagerTest.request_urls), 0)
+        resolver = Mock()
+        datetime = QDateTime(2020,1,1,5,0)
+        cpr = TidePredictionRequest(
+            self.pm,
+            self.subTideStation,
+            datetime, datetime.addDays(1),
+            TidePredictionRequest.EventType)
+        cpr.resolved(resolver)
+        resolver.assert_not_called()
+        cpr.start()
+        resolver.assert_called_once()
+        self.assertEqual(len(cpr.predictions), 4)
+        self.assertEqual(len(PredictionManagerTest.request_urls), 1)
+        self.maxDiff = None
+        self.assertEqual(PredictionManagerTest.request_urls[0],
+            'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?application=qgis-noaa-tidal-predictions&begin_date=20200101 05:00&end_date=20200102 04:59&units=english&time_zone=gmt&product=predictions&format=xml&datum=MLLW&station=8447291&interval=hilo')
+
+    """ Test a CurrentDataPromise for a harmonic station with known flood/ebb directions
+    """
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_harmonic_current(self):
         datetime = QDate(2020,1,1)
-        pdp = PredictionDataPromise(
+        pdp = CurrentDataPromise(
             self.pm,
             self.refCurrentStation,
             datetime)
@@ -181,14 +219,14 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['dir'], 185.0)
         self.assertEqual(feature['magnitude'], 0.365)
 
-    """ Test a PredictionDataPromise for a harmonic station with Unknown flood/ebb directions
+    """ Test a CurrentDataPromise for a harmonic station with Unknown flood/ebb directions
     """
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
-    def test_no_flood_ebb_prediction_data_promise(self):
+    def test_no_flood_ebb_current(self):
         self.refCurrentStation = next(self.stationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = 'SFB1212_9'")))
         datetime = QDate(2020,1,1)
-        pdp = PredictionDataPromise(
+        pdp = CurrentDataPromise(
             self.pm,
             self.refCurrentStation,
             datetime)
@@ -215,12 +253,12 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['dir'], NULL)
 
 
-    """ Test a PredictionDataPromise for a harmonic station with known flood/ebb directions
+    """ Test a CurrentDataPromise for a harmonic station with known flood/ebb directions
     """
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
-    def test_subordinate_prediction_data_promise(self):
+    def test_subordinate_current(self):
         datetime = QDate(2020,1,2)
-        pdp = PredictionDataPromise(
+        pdp = CurrentDataPromise(
             self.pm,
             self.subCurrentStation,
             datetime)
@@ -251,11 +289,69 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertAlmostEqual(feature['magnitude'], 0.6826690037)
         self.assertTrue(feature['surface'])
 
+    """ Test a TideDataPromise for a harmonic tide station
+    """
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_harmonic_tide(self):
+        datetime = QDate(2020,1,1)
+        pdp = TideDataPromise(
+            self.pm,
+            self.refTideStation,
+            datetime)
+        pdp.start()
+        features = pdp.predictions
+        self.assertEqual(len(features), 52)  # 48 time intervals plus 4 events
+
+        # verify that the data is present and sorted in the way we would expect
+        feature = features[0]
+        self.assertEqual(feature['station'], '8443970')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 0, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 4.098)
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
+
+        feature = features[7]
+        self.assertEqual(feature['station'], '8443970')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 21, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 8.606)
+        self.assertTrue(feature['flags'] & PredictionFlags.Max)
+
+        feature = features[20]
+        self.assertEqual(feature['station'], '8443970')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 14, 21, 0, 0, Qt.TimeSpec.UTC))
+        self.assertEqual(feature['value'], 1.578)
+        self.assertTrue(feature['flags'] & PredictionFlags.Min)
+        self.assertTrue(feature['surface'])
+
+    """ Test a TideDataPromise for a subordinate tide station
+    """
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_subordinate_tide(self):
+        datetime = QDate(2020,1,2)
+        pdp = TideDataPromise(
+            self.pm,
+            self.subTideStation,
+            datetime)
+        pdp.start()
+        features = pdp.predictions
+        self.assertEqual(len(features), 52)  # 48 time intervals plus 4 events
+
+        # verify that the data is present and sorted in the way we would expect
+        feature = features[0]
+        self.assertEqual(feature['station'], '8447291')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 5, 0, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 0.5804967373)
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
+
+        feature = features[3]
+        self.assertEqual(feature['station'], '8447291')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 6, 17, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 0.334)
+        self.assertTrue(feature['flags'] & PredictionFlags.Min)
 
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
     def test_prediction_data_promise_layer_cache(self):
         datetime = QDate(2020,1,1)
-        pdp1 = PredictionDataPromise(
+        pdp1 = CurrentDataPromise(
             self.pm,
             self.refCurrentStation,
             datetime)
@@ -264,7 +360,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(len(PredictionManagerTest.request_urls), 2) # events and currents
 
         # the second call should pull the data from the predictions layer with no new requests
-        pdp2 = PredictionDataPromise(
+        pdp2 = CurrentDataPromise(
             self.pm,
             self.refCurrentStation,
             datetime)
@@ -277,7 +373,7 @@ class PredictionManagerTest(unittest.TestCase):
 
         # This is for a different date, so new requests again
         datetime = QDate(2020,1,2)
-        pdp3 = PredictionDataPromise(
+        pdp3 = CurrentDataPromise(
             self.pm,
             self.refCurrentStation,
             datetime)
@@ -286,7 +382,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(len(PredictionManagerTest.request_urls), 4)
 
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
-    def test_prediction_interpolator(self):
+    def test_current_interpolator(self):
         refPromises = []
         subPromises = []
         date = QDate(2020,1,1)
@@ -457,6 +553,32 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['value'], -0.58)
         self.assertEqual(feature['dir'], 66.0)
         self.assertEqual(feature['magnitude'], 0.58)
+        self.assertTrue(feature['surface'])
+
+    def test_tide_event_requests(self):
+        url = QUrl('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
+             '?application=qgis-noaa-tidal-predictions&begin_date=20200101 05:00&end_date=20200102 04:59'
+             '&units=english&time_zone=gmt&product=predictions&format=xml'
+             '&station=8443970&interval=hilo')
+        features = self.getPredictions(
+            '8443970-20200101T05:00--hilo.xml',
+            self.refTideStation,
+            QDateTime(2020,1,1,5,0),
+            TidePredictionRequest.EventType,
+            url)
+        self.assertEqual(len(features), 4)
+        feature = features[0]
+        self.assertEqual(feature['station'], '8443970')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 21, 0, 0, Qt.TimeSpec.UTC))
+        self.assertEqual(feature['value'], 8.606)
+        self.assertTrue(feature['flags'] & PredictionFlags.Max)
+        self.assertTrue(feature['surface'])
+
+        feature = features[1]
+        self.assertEqual(feature['station'], '8443970')
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 14, 21, 0, 0, Qt.TimeSpec.UTC))
+        self.assertEqual(feature['value'], 1.578)
+        self.assertTrue(feature['flags'] & PredictionFlags.Min)
         self.assertTrue(feature['surface'])
 
     def test_current_speed_dir_requests(self):

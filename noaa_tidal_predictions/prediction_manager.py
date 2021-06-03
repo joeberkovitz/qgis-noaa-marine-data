@@ -38,7 +38,7 @@ class PredictionManager(QObject):
         # Initialize a map of cached PredictionDataPromises
         self.dataCache = {}
 
-        # also a map of cached EventDataPromises
+        # also a map of cached PredictionEventPromise
         self.eventCache = {}
 
         self.stationsLayer = stationsLayer
@@ -65,11 +65,13 @@ class PredictionManager(QObject):
 
     # Obtain a PredictionDataPromise for 24-hour period starting with the given local-station-time date
     def getDataPromise(self, stationFeature, date):
-        return self.getPromise(stationFeature, date, PredictionDataPromise, self.dataCache)
+        promiseClass = CurrentDataPromise if stationFeature['flags'] & StationFlags.Current else TideDataPromise
+        return self.getPromise(stationFeature, date, promiseClass, self.dataCache)
 
     # Obtain a PredictionEventPromise for 24-hour period starting with the given local-station-time date
     def getEventPromise(self, stationFeature, date):
-        return self.getPromise(stationFeature, date, PredictionEventPromise, self.eventCache)
+        promiseClass = CurrentEventPromise if stationFeature['flags'] & StationFlags.Current else TideEventPromise
+        return self.getPromise(stationFeature, date, promiseClass, self.eventCache)
 
     # track the conclusion of a promise, successful or otherwise
     def promiseDone(self):
@@ -205,6 +207,10 @@ class PredictionEventPromise(PredictionPromise):
         self.localDate = date
         self.datetime = QDateTime(date, QTime(0,0), stationTimeZone(stationFeature)).toUTC()
 
+    def doProcessing(self):
+        self.predictions = self.eventRequest.predictions
+
+class CurrentEventPromise(PredictionEventPromise):
     """ Get all the data needed to resolve this promise
     """
     def doStart(self):
@@ -216,9 +222,17 @@ class PredictionEventPromise(PredictionPromise):
             CurrentPredictionRequest.EventType)
         self.addDependency(self.eventRequest)
 
-    def doProcessing(self):
-        self.predictions = self.eventRequest.predictions
-
+class TideEventPromise(PredictionEventPromise):
+    """ Get all the data needed to resolve this promise
+    """
+    def doStart(self):
+        self.eventRequest = TidePredictionRequest(
+            self.manager,
+            self.stationFeature,
+            self.datetime,
+            self.datetime.addDays(1),
+            TidePredictionRequest.EventType)
+        self.addDependency(self.eventRequest)
 
 class PredictionDataPromise(PredictionPromise):
     """ Promise to obtain a full set of predictions (events and timeline) for a given station and local date.
@@ -239,8 +253,8 @@ class PredictionDataPromise(PredictionPromise):
     """
     def doStart(self):
         # first see if we can pull data from the predictions layer
-        startTime = self.datetime
-        endTime = self.datetime.addDays(1)
+        self.startTime = self.datetime
+        self.endTime = self.datetime.addDays(1)
 
         featureRequest = QgsFeatureRequest()
         stationPt = QgsPointXY(self.stationFeature.geometry().vertexAt(0))
@@ -251,8 +265,8 @@ class PredictionDataPromise(PredictionPromise):
         # Create a time based query
         ctx = featureRequest.expressionContext()
         scope = QgsExpressionContextScope()
-        scope.setVariable('startTime', startTime)
-        scope.setVariable('endTime', endTime)
+        scope.setVariable('startTime', self.startTime)
+        scope.setVariable('endTime', self.endTime)
         scope.setVariable('station', self.stationFeature['station'])
         ctx.appendScope(scope)
         featureRequest.setFilterExpression("station = @station and time >= @startTime and time < @endTime")
@@ -266,71 +280,91 @@ class PredictionDataPromise(PredictionPromise):
             self.predictions = savedFeatures
             self.resolve()
         else:
-            # The layer didn't have what we wanted, so we must request the data we need.
-            # At this point, the situation falls into several possible cases.
-
-            # Case 1: A Harmonic station with known flood/ebb directions. Here
-            # we need two requests which can simply be combined and sorted:
-            #   1a: EventType, i.e. slack, flood and ebb
-            #   1b: SpeedDirType, as velocity can be calculated by projecting along flood/ebb
-            #
-            # Case 2: A Harmonic station with unknown flood and/or ebb.
-            # We actually need to combine 3 requests:
-            #   2a: EventType
-            #   2b: SpeedDirType, which only provides vector magnitude/angle
-            #   2c: VelocityMajorType, which only provides current velocity (but for same times as 2b)
-
-            # Here we set up requests for cases 1 and 2
-            if self.stationFeature['flags'] & StationFlags.Reference:
-                self.speedDirRequest = CurrentPredictionRequest(
-                    self.manager,
-                    self.stationFeature,
-                    startTime,
-                    endTime,
-                    CurrentPredictionRequest.SpeedDirectionType)
-                self.addDependency(self.speedDirRequest)
-
-                self.eventRequest = CurrentPredictionRequest(
-                    self.manager,
-                    self.stationFeature,
-                    startTime,
-                    endTime,
-                    CurrentPredictionRequest.EventType)
-                self.addDependency(self.eventRequest)
-
-                floodDir = self.stationFeature['meanFloodDir']
-                ebbDir = self.stationFeature['meanEbbDir']
-                if floodDir == NULL or ebbDir == NULL:
-                    self.velocityRequest = CurrentPredictionRequest(
-                        self.manager,
-                        self.stationFeature,
-                        startTime,
-                        endTime,
-                        CurrentPredictionRequest.VelocityMajorType)
-                    self.addDependency(self.velocityRequest)
-                else:
-                    self.velocityRequest = None
-
-            # Case 3: A Subordinate station which only knows its events. Here we need the following:
-            #   3a: PredictionEventPromises for this station in a 3-day window surrounding the date of interest
-            #   3b: PredictionDataPromises for the reference station in the same 3-day window.
-            else:
-                self.eventPromises = []
-                self.refPromises = []
-                refStation = self.manager.getStation(self.stationFeature['refStation'])
-                if refStation is None:
-                    print("Could not find ref station {} for {}".format(self.stationFeature['refStation'], self.stationFeature['station']))
-                else:
-                    for dayOffset in [-1, 0, 1]:
-                        windowDate = self.localDate.addDays(dayOffset)
-                        dataPromise = self.manager.getDataPromise(refStation, windowDate)
-                        self.refPromises.append(dataPromise)
-                        self.addDependency(dataPromise)
-                        eventPromise = self.manager.getEventPromise(self.stationFeature, windowDate)
-                        self.eventPromises.append(eventPromise)
-                        self.addDependency(eventPromise)
+            self.requestData()
 
     def doProcessing(self):
+        self.processRequest()
+
+        # add everything into the predictions layer
+        self.manager.predictionsLayer.startEditing()
+        self.manager.predictionsLayer.addFeatures(self.predictions, QgsFeatureSink.FastInsert)
+        self.manager.predictionsLayer.commitChanges()
+        self.manager.predictionsLayer.triggerRepaint()
+
+    def requestData(self):
+        return # overridden by subclasses
+
+    def processRequest(self):
+        return # overridden by subclasses
+
+
+class CurrentDataPromise(PredictionDataPromise):
+    def requestData(self):
+        # The layer didn't have what we wanted, so we must request the data we need.
+        # At this point, the situation falls into several possible cases.
+
+        # Case 1: A Harmonic station with known flood/ebb directions. Here
+        # we need two requests which can simply be combined and sorted:
+        #   1a: EventType, i.e. slack, flood and ebb
+        #   1b: SpeedDirType, as velocity can be calculated by projecting along flood/ebb
+        #
+        # Case 2: A Harmonic station with unknown flood and/or ebb.
+        # We actually need to combine 3 requests:
+        #   2a: EventType
+        #   2b: SpeedDirType, which only provides vector magnitude/angle
+        #   2c: VelocityMajorType, which only provides current velocity (but for same times as 2b)
+
+        # Here we set up requests for cases 1 and 2
+        if self.stationFeature['flags'] & StationFlags.Reference:
+            self.speedDirRequest = CurrentPredictionRequest(
+                self.manager,
+                self.stationFeature,
+                self.startTime,
+                self.endTime,
+                CurrentPredictionRequest.SpeedDirectionType)
+            self.addDependency(self.speedDirRequest)
+
+            self.eventRequest = CurrentPredictionRequest(
+                self.manager,
+                self.stationFeature,
+                self.startTime,
+                self.endTime,
+                CurrentPredictionRequest.EventType)
+            self.addDependency(self.eventRequest)
+
+            floodDir = self.stationFeature['meanFloodDir']
+            ebbDir = self.stationFeature['meanEbbDir']
+            if floodDir == NULL or ebbDir == NULL:
+                self.velocityRequest = CurrentPredictionRequest(
+                    self.manager,
+                    self.stationFeature,
+                    self.startTime,
+                    self.endTime,
+                    CurrentPredictionRequest.VelocityMajorType)
+                self.addDependency(self.velocityRequest)
+            else:
+                self.velocityRequest = None
+
+        # Case 3: A Subordinate station which only knows its events. Here we need the following:
+        #   3a: PredictionEventPromises for this station in a 3-day window surrounding the date of interest
+        #   3b: PredictionDataPromises for the reference station in the same 3-day window.
+        else:
+            self.eventPromises = []
+            self.refPromises = []
+            refStation = self.manager.getStation(self.stationFeature['refStation'])
+            if refStation is None:
+                print("Could not find ref station {} for {}".format(self.stationFeature['refStation'], self.stationFeature['station']))
+            else:
+                for dayOffset in [-1, 0, 1]:
+                    windowDate = self.localDate.addDays(dayOffset)
+                    dataPromise = self.manager.getDataPromise(refStation, windowDate)
+                    self.refPromises.append(dataPromise)
+                    self.addDependency(dataPromise)
+                    eventPromise = self.manager.getEventPromise(self.stationFeature, windowDate)
+                    self.eventPromises.append(eventPromise)
+                    self.addDependency(eventPromise)
+
+    def processRequest(self):
         if self.stationFeature['flags'] & StationFlags.Reference:
             # We will always have a speed/direction request
             self.predictions = self.speedDirRequest.predictions
@@ -379,12 +413,84 @@ class PredictionDataPromise(PredictionPromise):
             self.predictions.extend(self.eventPromises[1].predictions)
             self.predictions.sort(key=(lambda p: p['time']))
 
-        # add everything into the predictions layer
-        self.manager.predictionsLayer.startEditing()
-        self.manager.predictionsLayer.addFeatures(self.predictions, QgsFeatureSink.FastInsert)
-        self.manager.predictionsLayer.commitChanges()
-        self.manager.predictionsLayer.triggerRepaint()
+class TideDataPromise(PredictionDataPromise):
+    def requestData(self):
+        # The layer didn't have what we wanted, so we must request the data we need.
+        # At this point, the situation falls into several possible cases.
 
+        # Case 1: A Harmonic station with known flood/ebb directions. Here
+        # we need two requests which can simply be combined and sorted:
+        #   1a: EventType, i.e. H and L
+        #   1b: WaterLevelType
+        if self.stationFeature['flags'] & StationFlags.Reference:
+            self.waterLevelRequest = TidePredictionRequest(
+                self.manager,
+                self.stationFeature,
+                self.startTime,
+                self.endTime,
+                TidePredictionRequest.WaterLevelType)
+            self.addDependency(self.waterLevelRequest)
+
+            self.eventRequest = TidePredictionRequest(
+                self.manager,
+                self.stationFeature,
+                self.startTime,
+                self.endTime,
+                TidePredictionRequest.EventType)
+            self.addDependency(self.eventRequest)
+
+
+        # Case 2: A Subordinate station which only knows its events. Here we need the following:
+        #   3a: PredictionEventPromises for this station in a 3-day window surrounding the date of interest
+        #   3b: PredictionDataPromises for the reference station in the same 3-day window.
+        else:
+            self.eventPromises = []
+            self.refPromises = []
+            refStation = self.manager.getStation(self.stationFeature['refStation'])
+            if refStation is None:
+                print("Could not find ref station {} for {}".format(self.stationFeature['refStation'], self.stationFeature['station']))
+            else:
+                for dayOffset in [-1, 0, 1]:
+                    windowDate = self.localDate.addDays(dayOffset)
+                    dataPromise = self.manager.getDataPromise(refStation, windowDate)
+                    self.refPromises.append(dataPromise)
+                    self.addDependency(dataPromise)
+                    eventPromise = self.manager.getEventPromise(self.stationFeature, windowDate)
+                    self.eventPromises.append(eventPromise)
+                    self.addDependency(eventPromise)
+
+    def processRequest(self):
+        if self.stationFeature['flags'] & StationFlags.Reference:
+            self.predictions = self.waterLevelRequest.predictions
+            self.predictions.extend(self.eventRequest.predictions)
+            self.predictions.sort(key=(lambda p: p['time']))
+        else:
+            # subordinate-station case: we need to cook up interpolations based on 
+            # the 3-day windows of a) subordinate events and b) reference currents.
+
+            print('Interpolating ref station {} for {}'.format(
+                self.stationFeature['refStation'],
+                self.stationFeature['station']
+                ))
+            interpolator = PredictionInterpolator(self.stationFeature, self.datetime, self.eventPromises, self.refPromises)
+            subTimes = np.linspace(0, 24 * 60 * 60, 24 * 60 // PredictionManager.STEP_MINUTES, False)
+            refValues = interpolator.valuesFor(subTimes)
+
+            fields = self.manager.predictionsLayer.fields()
+            self.predictions = []
+            for i in range(0, len(subTimes)):
+                f = QgsFeature(fields)
+                f.setGeometry(QgsGeometry(self.stationFeature.geometry()))
+                f['station'] = self.stationFeature['station']
+                f['time'] = self.datetime.addSecs(int(subTimes[i]))
+                f['value'] = float(refValues[i])
+                f['flags'] = PredictionFlags.Time
+                f['surface'] = 1
+                self.predictions.append(f)
+
+            # Now mix in the event data from the central day in the 3-day window and sort everything
+            self.predictions.extend(self.eventPromises[1].predictions)
+            self.predictions.sort(key=(lambda p: p['time']))
 
 class PredictionInterpolator:
     def __init__(self, stationFeature, datetime, subPromises, refPromises):
@@ -540,7 +646,8 @@ class PredictionRequest(PredictionPromise):
         try:
             self.predictions = self.parseContent(self.content)
             self.resolve()
-        except Exception:
+        except Exception as e:
+            print('Exception in parsing: ', e)
             self.reject()    
 
 class CurrentPredictionRequest(PredictionRequest):
@@ -655,6 +762,69 @@ class CurrentPredictionRequest(PredictionRequest):
                 f['surface'] = 0
             else:
                 f['surface'] = 1
+
+            features.append(f)
+
+        print('{}: Response had {} features'.format(self.stationFeature['station'],len(features)))
+        return features
+
+class TidePredictionRequest(PredictionRequest):
+    WaterLevelType = 0
+    EventType = 1
+
+    INTERVAL_HILO = 'hilo'
+    INTERVAL_DEFAULT = str(PredictionManager.STEP_MINUTES)
+
+    def __init__(self, manager, stationFeature, start, end, requestType):
+        super(TidePredictionRequest, self).__init__(manager, stationFeature, start, end)
+        self.productName = 'predictions'
+        self.baseUrl = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
+        self.requestType = requestType
+        print('{}: Requesting type {} for {}'.format(self.stationFeature['station'],self.requestType,start.toString()))
+
+    def addQueryItems(self, query):
+        query.addQueryItem('datum', 'MLLW')
+        query.addQueryItem('station', self.stationFeature['id'])
+        if self.requestType == self.WaterLevelType:
+            query.addQueryItem('interval', self.INTERVAL_DEFAULT)
+        else:
+            query.addQueryItem('interval', self.INTERVAL_HILO)
+
+    def parseContent(self, content):
+        root = ET.fromstring(content) 
+
+        f = None
+        layer = self.manager.predictionsLayer
+        fields = layer.fields()
+        features = []
+        floodDir = self.stationFeature['meanFloodDir']
+        ebbDir = self.stationFeature['meanEbbDir']
+
+        # Get the list of predictions
+        pr = root.findall('pr')
+        for prediction in pr:
+            dt = QDateTime.fromString(prediction.get('t'), 'yyyy-MM-dd hh:mm')
+            dt.setTimeSpec(Qt.TimeSpec.UTC)   # just to be clear on this, this is a UTC time
+
+            f = QgsFeature(fields)
+            f.setGeometry(QgsGeometry(self.stationFeature.geometry()))
+
+            f['station'] = self.stationFeature['station']
+            f['time'] = dt
+            
+            valflags = 0
+            value = float(prediction.get('v'))
+            valtype = prediction.get('type')
+            if valtype == 'H':
+                valflags |= PredictionFlags.Max
+            elif valtype == 'L':
+                valflags |= PredictionFlags.Min
+            else:
+                valflags = PredictionFlags.Time
+
+            f['value'] = value
+            f['flags'] = valflags
+            f['surface'] = 1
 
             features.append(f)
 
