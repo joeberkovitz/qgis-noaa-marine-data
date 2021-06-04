@@ -11,9 +11,8 @@ TZ_IANA_ID = 'tz_name1st'
 TZ_UTC_ID = 'time_zone'
 
 class TimeZoneLookup:
-    def __init__(self):
-        self.zones = []
-        self.tzLayer = None
+    zones = []
+    tzLayer = None
 
     def getZoneByCoordinates(self, lat, lng):
         point = QgsPoint(lng, lat)
@@ -25,17 +24,17 @@ class TimeZoneLookup:
     
     def getZones(self):
         self.ensureZonesLoaded()
-        return self.zones
+        return TimeZoneLookup.zones
 
     def ensureZonesLoaded(self):
-        if not self.tzLayer:
+        if not TimeZoneLookup.tzLayer:
             filename = os.path.join(os.path.dirname(__file__),'data','timezones.gpkg')
-            self.tzLayer = QgsVectorLayer(filename, 'timezones', 'ogr')
+            TimeZoneLookup.tzLayer = QgsVectorLayer(filename, 'timezones', 'ogr')
 
-            for (index, feature) in enumerate(self.tzLayer.getFeatures()):
+            for (index, feature) in enumerate(TimeZoneLookup.tzLayer.getFeatures()):
                 zid = feature[TZ_IANA_ID]
                 zutc = feature[TZ_UTC_ID]
                 engine = QgsGeometry.createGeometryEngine(feature.geometry().constGet())
                 engine.prepareGeometry()
                 zone = (zid, zutc, engine)
-                self.zones.append(zone)
+                TimeZoneLookup.zones.append(zone)
