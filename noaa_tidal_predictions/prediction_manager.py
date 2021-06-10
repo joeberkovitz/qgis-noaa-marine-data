@@ -194,6 +194,7 @@ class PredictionPromise(QObject):
 
 class PredictionEventPromise(PredictionPromise):
     """ Promise to obtain event-style predictions for a given station and local date.
+        These are cached in the promise and are not saved in a vector layer.
     """
 
     # initialize this promise for a given manager, station and date.
@@ -252,17 +253,18 @@ class PredictionDataPromise(PredictionPromise):
     """ Get all the data needed to resolve this promise
     """
     def doStart(self):
-        # first see if we can pull data from the predictions layer
+        # first see if we can pull data from the predictions layer for this station
         self.startTime = self.datetime
         self.endTime = self.datetime.addDays(1)
 
+        # we have to make it a spatial query because there is no easy way to index predictions by station ID
         featureRequest = QgsFeatureRequest()
         stationPt = QgsPointXY(self.stationFeature.geometry().vertexAt(0))
         searchRect = QgsRectangle(stationPt, stationPt)
         searchRect.grow(0.01/60)   # in the neighborhood of .01 nm as 1/60 = 1 arc minute in this proj.
         featureRequest.setFilterRect(searchRect)
 
-        # Create a time based query
+        # Refine this with additional time based query conditions
         ctx = featureRequest.expressionContext()
         scope = QgsExpressionContextScope()
         scope.setVariable('startTime', self.startTime)
