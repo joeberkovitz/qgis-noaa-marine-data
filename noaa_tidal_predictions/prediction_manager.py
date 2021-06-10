@@ -405,7 +405,7 @@ class CurrentDataPromise(PredictionDataPromise):
                 f['value'] = float(refValues[i])
                 f['dir'] = ebbDir if refValues[i] < 0 else floodDir
                 f['magnitude'] = abs(f['value'])
-                f['flags'] = PredictionFlags.Time
+                f['flags'] = PredictionFlags.Time | PredictionFlags.Current
                 f['surface'] = 1
                 self.predictions.append(f)
 
@@ -717,12 +717,12 @@ class CurrentPredictionRequest(PredictionRequest):
             #  - max/slack measurement, flood/ebb, signed velocity
             #  - timed measurement, varying angle, unsigned velocity
             directionElement = prediction.find('Direction')
-            valflags = 0
+            valflags = PredictionFlags.Current
             if directionElement != None:
                 direction = parseFloatNullable(directionElement.text)
 
                 magnitude = float(prediction.find('Speed').text)
-                valflags = PredictionFlags.Time
+                valflags |= PredictionFlags.Time
 
                 # synthesize the value along flood/ebb dimension if possible
                 if floodDir != NULL and ebbDir != NULL:

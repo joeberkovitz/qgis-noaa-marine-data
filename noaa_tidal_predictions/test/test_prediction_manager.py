@@ -199,6 +199,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 1.0613530582942798)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
+        self.assertTrue(feature['flags'] & PredictionFlags.Current)
         self.assertEqual(feature['dir'], 262.0)
         self.assertEqual(feature['magnitude'], 1.062)
 
@@ -257,6 +258,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertAlmostEqual(feature['value'], 0.62)
         self.assertAlmostEqual(feature['magnitude'], 0.672)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
+        self.assertTrue(feature['flags'] & PredictionFlags.Current)
         self.assertEqual(feature['dir'], 35.0)
 
         feature = features[4]
@@ -323,6 +325,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 4.098)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
+        self.assertFalse(feature['flags'] & PredictionFlags.Current)
 
         feature = features[7]
         self.assertEqual(feature['station'], '8443970')

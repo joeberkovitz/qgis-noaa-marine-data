@@ -383,11 +383,15 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
                 "format_date(convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId), 'MM/dd')",
                 QgsField('display_date', QVariant.String)
             )
-
             predictionsLayer.addExpressionField(
                 "format_date(convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId), 'hh:mm a')",
                 QgsField('display_time', QVariant.String)
             )
+            predictionsLayer.addExpressionField(
+                "floor(flags/64) % 2",
+                QgsField('current', QVariant.Int)
+            )
+
             predictionsLayer.updateFields()
 
             stationsLayer.addExpressionField(

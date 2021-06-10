@@ -261,6 +261,7 @@ class StationsTest(unittest.TestCase):
         feature = QgsFeature(predictionsLayer.fields())
         feature['station'] = 'BOS1111_14'
         feature['time'] = QDateTime(2020, 1, 2, 3, 0, 0, 0, Qt.TimeSpec.UTC)
+        feature['flags'] = PredictionFlags.Time | PredictionFlags.Current
         predictionsLayer.startEditing()
         predictionsLayer.addFeature(feature)
         predictionsLayer.commitChanges()
@@ -282,7 +283,7 @@ class StationsTest(unittest.TestCase):
 
         self.assertEqual(feature['display_date'],'01/01')
         self.assertEqual(feature['display_time'],'10:00 pm')
-
+        self.assertTrue(feature['current'])
 
 if __name__ == "__main__":
     suite = unittest.makeSuite(StationsTest)
