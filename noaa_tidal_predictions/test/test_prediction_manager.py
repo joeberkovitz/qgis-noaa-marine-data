@@ -4,6 +4,8 @@ import unittest
 from unittest.mock import *
 import os
 
+import requests
+
 from qgis.PyQt.QtCore import pyqtSlot, pyqtSignal, QCoreApplication, QDateTime, QUrl, QUrlQuery
 from qgis.PyQt.QtNetwork import QNetworkReply
 
@@ -25,6 +27,7 @@ QGIS_APP = get_qgis_app()
 
 class PredictionManagerTest(unittest.TestCase):
     request_urls = None
+    download_data_files = False    # set to True to download new data files that don't exist yet
 
     """Test suite for many aspects of PredictionManager and its associated classes. """
 
@@ -39,6 +42,10 @@ class PredictionManagerTest(unittest.TestCase):
             QgsFeatureRequest().setFilterExpression("station = '8443970'")))
         self.subTideStation = next(self.stationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = '8447291'")))
+        self.refFixedTideStation = next(self.stationsLayer.getFeatures(
+            QgsFeatureRequest().setFilterExpression("station = '9439040'")))
+        self.subFixedTideStation = next(self.stationsLayer.getFeatures(
+            QgsFeatureRequest().setFilterExpression("station = '9440574'")))
 
         self.predictionsLayer = getPredictionsLayer()
         self.pm = PredictionManager(self.stationsLayer, self.predictionsLayer)
@@ -108,7 +115,15 @@ class PredictionManagerTest(unittest.TestCase):
         else:
             filename = '{}-{}-{}-{}.xml'.format(query_station,query_date,query_vel_type,query_interval)
         self.fetcher = Mock(QgsNetworkContentFetcherTask)
-        with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
+        path = os.path.join(os.path.dirname(__file__), 'data', filename)
+
+        if PredictionManagerTest.download_data_files and not os.path.exists(path):
+            print('downloading ', filename)
+            r = requests.get(self.url())
+            with open(path, 'w') as dataFile:
+                dataFile.write(r.text)
+
+        with open(path, 'r') as dataFile:
             self.content = dataFile.read()
 
     """ This patch to the doStart() method of PredictionRequest causes files to be loaded
@@ -322,10 +337,10 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertTrue(feature['flags'] & PredictionFlags.Min)
         self.assertTrue(feature['surface'])
 
-    """ Test a TideDataPromise for a subordinate tide station
+    """ Test a TideDataPromise for a subordinate tide station using ratio adjustment
     """
     @patch.object(PredictionRequest, 'doStart', mock_doStart)
-    def test_subordinate_tide(self):
+    def test_subordinate_tide_ratio_adj(self):
         datetime = QDate(2020,1,2)
         pdp = TideDataPromise(
             self.pm,
@@ -346,6 +361,40 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['station'], '8447291')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 6, 17, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 0.334)
+        self.assertTrue(feature['flags'] & PredictionFlags.Min)
+
+    """ Test a TideDataPromise for a subordinate tide station using fixed (offset) adjustment
+    """
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_subordinate_tide_fixed_adj(self):
+        datetime = QDate(2020,1,2)
+        pdp = TideDataPromise(
+            self.pm,
+            self.subFixedTideStation,
+            datetime)
+        pdp.start()
+        features = pdp.predictions
+        self.assertEqual(len(features), 52)  # 48 time intervals plus 4 events
+
+        # verify that the data is present and sorted in the way we would expect
+        feature = features[11]
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 13, 30, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 6.84221308)
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
+
+        feature = features[12]
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 13, 45, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 6.884)
+        self.assertTrue(feature['flags'] & PredictionFlags.Max)
+
+        feature = features[24]
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 19, 30, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 3.34045046)
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
+
+        feature = features[25]
+        self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 19, 39, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 3.331)
         self.assertTrue(feature['flags'] & PredictionFlags.Min)
 
     @patch.object(PredictionRequest, 'doStart', mock_doStart)

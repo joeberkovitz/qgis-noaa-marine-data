@@ -44,6 +44,7 @@ class StationFlags:
     Current = 1 << 1
     Surface = 1 << 2
     Reference = 1 << 3
+    FixedAdj = 1 << 4   # adjustment from ref station is a fixed offset
 
 def parseFloatNullable(str):
     return float(str) if str and str != 'null' and str != 'NULL' else None

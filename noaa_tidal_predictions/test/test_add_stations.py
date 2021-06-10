@@ -200,6 +200,14 @@ class StationsTest(unittest.TestCase):
         self.assertEqual(feature['maxValueAdj'], 0.34)
         self.assertEqual(feature['minValueAdj'], 0.34)
 
+    def test_add_tide_subordinate_fixed(self):
+        features = self.fixtures.getFeatures('', 'tideRefSub.xml', "station = '9440574'")
+        self.assertEqual(len(features), 1)
+        feature = features[0]
+        self.assertEqual(feature['station'], '9440574')
+        self.assertEqual(feature['id'], '9440574')
+        self.assertEqual(feature['flags'],  StationFlags.Tide | StationFlags.Surface | StationFlags.FixedAdj)
+
     def test_detect_surface(self):
         dest = self.fixtures.getFixtureLayer('currentMultiDepth.xml')
 
@@ -252,7 +260,7 @@ class StationsTest(unittest.TestCase):
         predictionsLayer = getPredictionsLayer()
         feature = QgsFeature(predictionsLayer.fields())
         feature['station'] = 'BOS1111_14'
-        feature['time'] = QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC)
+        feature['time'] = QDateTime(2020, 1, 2, 3, 0, 0, 0, Qt.TimeSpec.UTC)
         predictionsLayer.startEditing()
         predictionsLayer.addFeature(feature)
         predictionsLayer.commitChanges()
@@ -266,14 +274,14 @@ class StationsTest(unittest.TestCase):
 
         time = feature['time']
         time.setTimeSpec(Qt.TimeSpec.UTC)
-        self.assertEqual(time, QDateTime(2020, 1, 1, 8, 0, 0, 0, Qt.TimeSpec.UTC))
+        self.assertEqual(time, QDateTime(2020, 1, 2, 3, 0, 0, 0, Qt.TimeSpec.UTC))
 
-        localTime = QDateTime(time)
-        localTime.setTimeZone(QTimeZone(b'America/New_York'))
+        localTime = time.toTimeZone(QTimeZone(b'America/New_York'))
+        print(localTime)
         self.assertEqual(feature['local_time'],localTime)
 
         self.assertEqual(feature['display_date'],'01/01')
-        self.assertEqual(feature['display_time'],'08:00 am')
+        self.assertEqual(feature['display_time'],'10:00 pm')
 
 
 if __name__ == "__main__":

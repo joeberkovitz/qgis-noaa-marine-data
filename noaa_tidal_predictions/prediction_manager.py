@@ -523,7 +523,10 @@ class PredictionInterpolator:
 
         refTimes = timeInterp(subTimes)
         refFactors = factorInterp(subTimes)
-        return np.multiply(valueInterp(refTimes), refFactors)
+        if self.stationFeature['flags'] & StationFlags.FixedAdj:
+            return np.add(valueInterp(refTimes), refFactors)
+        else:
+            return np.multiply(valueInterp(refTimes), refFactors)
 
     def timeInterpolation(self):
         """ return a function that takes an array of time offsets in seconds on this (subordinate) station

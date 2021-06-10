@@ -239,6 +239,8 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
             flags = StationFlags.Tide | StationFlags.Surface
             if stationType == 'R':
                 flags |= StationFlags.Reference
+            if tpo.find('heightAdjustedType').text == 'F':
+                flags |= StationFlags.FixedAdj
             f['flags'] = flags
             f['refStation'] = tpo.find('refStationId').text
             (f['timeZoneId'], f['timeZoneUTC']) = tzl.getZoneByCoordinates(lat, lng)

@@ -1,5 +1,5 @@
 <Stations>
-    <count>2</count>
+    <count>5</count>
     <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="tidePredStation">
         <id>8443970</id>
         <name>BOSTON</name>
@@ -68,5 +68,51 @@
         <timemeridian>-75</timemeridian>
         <reference_id>8443970</reference_id>
         <timezonecorr>-5</timezonecorr>
+    </Station>
+    <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="tidePredStation">
+        <id>9440574</id>
+        <name>Columbia River entrance (N. Jetty)</name>
+        <lat>46.2733</lat>
+        <lng>-124.072</lng>
+        <affiliations/>
+        <portscode/>
+        <tideType/>
+        <state>WA</state>
+        <tidepredoffsets xsi:type="tidePredOffsets">
+            <refStationId>9439040</refStationId>
+            <type>S</type>
+            <heightOffsetHighTide>-1.0</heightOffsetHighTide>
+            <heightOffsetLowTide>0.1</heightOffsetLowTide>
+            <timeOffsetHighTide>-44</timeOffsetHighTide>
+            <timeOffsetLowTide>-60</timeOffsetLowTide>
+            <heightAdjustedType>F</heightAdjustedType>
+        </tidepredoffsets>
+        <type>S</type>
+        <timemeridian>-120</timemeridian>
+        <reference_id>9439040</reference_id>
+        <timezonecorr>-8</timezonecorr>
+    </Station>
+    <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="tidePredStation">
+        <id>9439040</id>
+        <name>ASTORIA (Tongue Point), Oreg.</name>
+        <lat>46.20731</lat>
+        <lng>-123.76830555558205</lng>
+        <affiliations/>
+        <portscode/>
+        <tideType/>
+        <state>OR</state>
+        <tidepredoffsets xsi:type="tidePredOffsets">
+            <refStationId>9439040</refStationId>
+            <type>R</type>
+            <heightOffsetHighTide>0.0</heightOffsetHighTide>
+            <heightOffsetLowTide>0.0</heightOffsetLowTide>
+            <timeOffsetHighTide>0</timeOffsetHighTide>
+            <timeOffsetLowTide>0</timeOffsetLowTide>
+            <heightAdjustedType>F</heightAdjustedType>
+        </tidepredoffsets>
+        <type>R</type>
+        <timemeridian>-120</timemeridian>
+        <reference_id>9439040</reference_id>
+        <timezonecorr>-8</timezonecorr>
     </Station>
 </Stations>

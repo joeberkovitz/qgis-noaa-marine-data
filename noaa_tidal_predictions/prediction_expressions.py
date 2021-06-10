@@ -20,14 +20,13 @@ class PredictionExpressions:
         QgsExpression.unregisterFunction('is_time_visible')
         QgsExpression.unregisterFunction('convert_to_time_zone')
 
-    # Custom expression function to determine whether a prediction feature's time is subject to temporal filtering or not
     @qgsfunction(args=-1, group='Date and Time', register=False)
     def convert_to_time_zone(values, feature, parent):
         """Converts the given datetime to a time zone.<br>
         <br>
         convert_to_time_zone(datetime, utcId[, ianaId])<br>
         <br>
-        datetime -- a datetime to convert<br>
+        datetime -- a UTC datetime to convert<br>
         utcId -- a required string UTC offset, e.g. 'UTC+01:00'
         ianaId -- an optional IANA timezone ID, e.g. 'America/Chicago'
         """
@@ -44,6 +43,7 @@ class PredictionExpressions:
         if not tz:
             tz = QTimeZone(QByteArray(utcId.encode()))   # our fallback position is to use UTC
 
+        dt.setTimeSpec(Qt.TimeSpec.UTC)    # force the time to UTC
         return dt.toTimeZone(tz)
 
     @qgsfunction(args=2, group='Date and Time', register=False)
