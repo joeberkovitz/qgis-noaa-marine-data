@@ -63,7 +63,7 @@ class PredictionManagerTest(unittest.TestCase):
 
     def print_predictions(self, predictions):
         for feature in predictions:
-            print('{} {} {} {} {}'.format(feature['station'],feature['time'].toString('yyyyMMdd hh:mm'),feature['flags'],feature['dir'],feature['value']))
+            print('{} {} {} {} {} {}'.format(feature['station'],feature['time'].toString('yyyyMMdd hh:mm'),feature['flags'],feature['dir'],feature['value'], feature['magnitude']))
 
     def getPredictions(self, filename, station, datetime, type, url=None, parseError=False):
         if station['flags'] & StationFlags.Current:
@@ -324,6 +324,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['station'], '8443970')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 4.098)
+        self.assertAlmostEqual(feature['magnitude'], 0.45767254)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertFalse(feature['flags'] & PredictionFlags.Current)
 
@@ -331,12 +332,14 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['station'], '8443970')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 21, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 8.606)
+        self.assertAlmostEqual(feature['magnitude'], 0.96113468)
         self.assertTrue(feature['flags'] & PredictionFlags.Max)
 
         feature = features[20]
         self.assertEqual(feature['station'], '8443970')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 14, 21, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 1.578)
+        self.assertAlmostEqual(feature['magnitude'], 0.17623408)
         self.assertTrue(feature['flags'] & PredictionFlags.Min)
         self.assertTrue(feature['surface'])
 
@@ -352,18 +355,20 @@ class PredictionManagerTest(unittest.TestCase):
         pdp.start()
         features = pdp.predictions
         self.assertEqual(len(features), 52)  # 48 time intervals plus 4 events
-
+        
         # verify that the data is present and sorted in the way we would expect
         feature = features[0]
         self.assertEqual(feature['station'], '8447291')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 5, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 0.5804967373)
+        self.assertAlmostEqual(feature['magnitude'], 0.198800252)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
 
         feature = features[3]
         self.assertEqual(feature['station'], '8447291')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 6, 17, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 0.334)
+        self.assertAlmostEqual(feature['magnitude'], 0.114383561)
         self.assertTrue(feature['flags'] & PredictionFlags.Min)
 
     """ Test a TideDataPromise for a subordinate tide station using fixed (offset) adjustment
