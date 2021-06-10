@@ -72,16 +72,16 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSink(
                 self.PrmStationsLayer,
                 tr('Stations layer'),
-                #QgsProcessing.TypeVectorPoint,
-                #os.path.join(layerStoragePath(), 'stations.gpkg')
+                QgsProcessing.TypeVectorPoint,
+                os.path.join(layerStoragePath(), 'stations.gpkg')
                 )
         )
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.PrmPredictionsLayer,
                 tr('Predictions layer'),
-                #QgsProcessing.TypeVectorPoint,
-                #os.path.join(layerStoragePath(), 'predictions.gpkg')
+                QgsProcessing.TypeVectorPoint,
+                os.path.join(layerStoragePath(), 'predictions.gpkg')
                 )
         )
         self.feedback = QgsProcessingFeedback()
