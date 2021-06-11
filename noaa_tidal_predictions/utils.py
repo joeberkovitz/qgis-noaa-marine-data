@@ -26,6 +26,7 @@ class PredictionFlags:
     Falling = 1 << 5     # value trend is decreasing (for Zero, indicates SBE)
     Trend = Rising | Falling
     Current = 1 << 6
+    Surface = 1 << 7
 
     currentTypeNames = {
         Time: tr('current'),

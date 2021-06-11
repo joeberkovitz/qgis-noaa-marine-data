@@ -407,8 +407,7 @@ class CurrentDataPromise(PredictionDataPromise):
                 f['value'] = float(refValues[i])
                 f['dir'] = ebbDir if refValues[i] < 0 else floodDir
                 f['magnitude'] = abs(f['value'])
-                f['flags'] = PredictionFlags.Time | PredictionFlags.Current
-                f['surface'] = 1
+                f['flags'] = PredictionFlags.Time | PredictionFlags.Current | PredictionFlags.Surface
                 self.predictions.append(f)
 
             # Now mix in the event data from the central day in the 3-day window and sort everything
@@ -487,8 +486,7 @@ class TideDataPromise(PredictionDataPromise):
                 f['station'] = self.stationFeature['station']
                 f['time'] = self.datetime.addSecs(int(subTimes[i]))
                 f['value'] = float(refValues[i])
-                f['flags'] = PredictionFlags.Time
-                f['surface'] = 1
+                f['flags'] = PredictionFlags.Time | PredictionFlags.Surface
                 self.predictions.append(f)
 
             # Now mix in the event data from the central day in the 3-day window and sort everything
@@ -728,6 +726,8 @@ class CurrentPredictionRequest(PredictionRequest):
             #  - timed measurement, varying angle, unsigned velocity
             directionElement = prediction.find('Direction')
             valflags = PredictionFlags.Current
+            if self.stationFeature['flags'] & StationFlags.Surface:
+                valflags |= PredictionFlags.Surface
             if directionElement != None:
                 direction = parseFloatNullable(directionElement.text)
 
@@ -771,11 +771,6 @@ class CurrentPredictionRequest(PredictionRequest):
             f['dir'] = direction
             f['magnitude'] = magnitude
             f['flags'] = valflags
-            if not (self.stationFeature['flags'] & StationFlags.Surface):
-                f['surface'] = 0
-            else:
-                f['surface'] = 1
-
             features.append(f)
 
         print('{}: Response had {} features'.format(self.stationFeature['station'],len(features)))
@@ -825,7 +820,7 @@ class TidePredictionRequest(PredictionRequest):
             f['station'] = self.stationFeature['station']
             f['time'] = dt
             
-            valflags = 0
+            valflags = PredictionFlags.Surface
             value = float(prediction.get('v'))
             valtype = prediction.get('type')
             if valtype == 'H':
@@ -833,11 +828,10 @@ class TidePredictionRequest(PredictionRequest):
             elif valtype == 'L':
                 valflags |= PredictionFlags.Min
             else:
-                valflags = PredictionFlags.Time
+                valflags |= PredictionFlags.Time
 
             f['value'] = value
             f['flags'] = valflags
-            f['surface'] = 1
 
             features.append(f)
 

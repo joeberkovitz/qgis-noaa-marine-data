@@ -293,18 +293,18 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 7, 49, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 0.57)
         self.assertTrue(feature['flags'] & PredictionFlags.Max)
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
         self.assertEqual(feature['dir'], 259.0)
         self.assertEqual(feature['magnitude'], 0.57)
-        self.assertTrue(feature['surface'])
 
         feature = currents[4]
         self.assertEqual(feature['station'], 'ACT0926_1')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 7, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 0.6826690037)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
         self.assertEqual(feature['dir'], 259.0)
         self.assertAlmostEqual(feature['magnitude'], 0.6826690037)
-        self.assertTrue(feature['surface'])
 
     """ Test a TideDataPromise for a harmonic tide station
     """
@@ -327,6 +327,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertAlmostEqual(feature['magnitude'], 0.45767254)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertFalse(feature['flags'] & PredictionFlags.Current)
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
 
         feature = features[7]
         self.assertEqual(feature['station'], '8443970')
@@ -334,6 +335,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertAlmostEqual(feature['value'], 8.606)
         self.assertAlmostEqual(feature['magnitude'], 0.96113468)
         self.assertTrue(feature['flags'] & PredictionFlags.Max)
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
 
         feature = features[20]
         self.assertEqual(feature['station'], '8443970')
@@ -341,7 +343,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['value'], 1.578)
         self.assertAlmostEqual(feature['magnitude'], 0.17623408)
         self.assertTrue(feature['flags'] & PredictionFlags.Min)
-        self.assertTrue(feature['surface'])
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
 
     """ Test a TideDataPromise for a subordinate tide station using ratio adjustment
     """
@@ -595,22 +597,22 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 6, 49, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 0.62)
         self.assertTrue(feature['flags'] & PredictionFlags.Max)
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
         self.assertEqual(feature['dir'], 259.0)
         self.assertEqual(feature['magnitude'], 0.62)
-        self.assertTrue(feature['surface'])
 
         feature = features[2]
         self.assertTrue(feature['flags'] & PredictionFlags.Zero)
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 59, 0, 0, Qt.TimeSpec.UTC))
-        self.assertTrue(feature['surface'])
 
         feature = features[3]
         self.assertTrue(feature['flags'] & PredictionFlags.Min)
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 11, 46, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], -0.58)
         self.assertEqual(feature['dir'], 66.0)
         self.assertEqual(feature['magnitude'], 0.58)
-        self.assertTrue(feature['surface'])
 
     def test_tide_event_requests(self):
         url = QUrl('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
@@ -629,14 +631,14 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 21, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 8.606)
         self.assertTrue(feature['flags'] & PredictionFlags.Max)
-        self.assertTrue(feature['surface'])
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
 
         feature = features[1]
         self.assertEqual(feature['station'], '8443970')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 14, 21, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 1.578)
         self.assertTrue(feature['flags'] & PredictionFlags.Min)
-        self.assertTrue(feature['surface'])
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
 
     def test_current_speed_dir_requests(self):
         url = QUrl('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?'

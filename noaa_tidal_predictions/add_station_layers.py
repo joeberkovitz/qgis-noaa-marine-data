@@ -135,7 +135,6 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
         fields.append(QgsField("flags", QVariant.Int))
         fields.append(QgsField("dir", QVariant.Double))
         fields.append(QgsField("magnitude", QVariant.Double))  # value along direction if known
-        fields.append(QgsField("surface", QVariant.Int))
         return fields
 
     def getPredictions(self):
@@ -388,10 +387,13 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
                 QgsField('display_time', QVariant.String)
             )
             predictionsLayer.addExpressionField(
+                "floor(flags/128) % 2",
+                QgsField('surface', QVariant.Int)
+            )
+            predictionsLayer.addExpressionField(
                 "floor(flags/64) % 2",
                 QgsField('current', QVariant.Int)
             )
-
             predictionsLayer.updateFields()
 
             stationsLayer.addExpressionField(
