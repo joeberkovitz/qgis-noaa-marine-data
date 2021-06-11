@@ -394,6 +394,10 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
                 "floor(flags/64) % 2",
                 QgsField('current', QVariant.Int)
             )
+            predictionsLayer.addExpressionField(
+                "floor(flags/16) % 2",
+                QgsField('rising', QVariant.Int)
+            )
             predictionsLayer.updateFields()
 
             stationsLayer.addExpressionField(

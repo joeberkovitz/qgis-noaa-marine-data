@@ -464,8 +464,6 @@ class TideDataPromise(PredictionDataPromise):
         if self.stationFeature['flags'] & StationFlags.Reference:
             self.predictions = self.waterLevelRequest.predictions
             self.predictions.extend(self.eventRequest.predictions)
-            self.predictions.sort(key=(lambda p: p['time']))
-            self.setTideMagnitudes(self.eventRequest.predictions)
         else:
             # subordinate-station case: we need to cook up interpolations based on 
             # the 3-day windows of a) subordinate events and b) reference currents.
@@ -491,14 +489,27 @@ class TideDataPromise(PredictionDataPromise):
 
             # Now mix in the event data from the central day in the 3-day window and sort everything
             self.predictions.extend(self.eventPromises[1].predictions)
-            self.predictions.sort(key=(lambda p: p['time']))
-            self.setTideMagnitudes(self.eventPromises[1].predictions)
 
-    def setTideMagnitudes(self, eventPredictions):
-        # determine HHW from the available event predictions
-        hhw = max([e['value'] for e in eventPredictions])
+        # sort everything by time
+        self.predictions.sort(key=(lambda p: p['time']))
+
+        # determine 24-hour LLW and HHW from the available predictions
+        values = [p['value'] for p in self.predictions]
+        hhw = max(values)
+        llw = min(values)
+        lastMagnitude = None
         for p in self.predictions:
-            p['magnitude'] = p['value'] / hhw
+            magnitude = (p['value'] - llw) / (hhw - llw)
+            if lastMagnitude is not None:
+                if magnitude > lastMagnitude:
+                    p['flags'] |= PredictionFlags.Rising
+                else:
+                    p['flags'] |= PredictionFlags.Falling
+
+            p['magnitude'] = magnitude
+            lastMagnitude = magnitude
+
+        self.predictions[0]['flags'] |= self.predictions[1]['flags'] & PredictionFlags.Trend
 
 class PredictionInterpolator:
     def __init__(self, stationFeature, datetime, subPromises, refPromises):

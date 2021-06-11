@@ -11,7 +11,11 @@
       <end></end>
     </fixedRange>
   </temporal>
-  <renderer-v2 enableorderby="1" forceraster="0" type="singleSymbol" symbollevels="0">
+  <renderer-v2 enableorderby="1" forceraster="0" type="RuleRenderer" symbollevels="0">
+    <rules key="{a10c8870-8dbb-4efa-9ae4-8359bf04489f}">
+      <rule symbol="0" label="surface current" filter="surface and current" key="{6b7a1858-c8f1-421f-b869-3ce65cd0ac9b}"/>
+      <rule symbol="1" label="tide" filter="not current" key="{7c3667fa-ee77-4dbb-b32f-719e5c358e67}"/>
+    </rules>
     <symbols>
       <symbol force_rhr="0" name="0" alpha="0.97" type="marker" clip_to_extent="1">
         <layer class="VectorField" enabled="1" pass="0" locked="0">
@@ -48,7 +52,7 @@
               <prop v="MM" k="dash_pattern_offset_unit"/>
               <prop v="0" k="draw_inside_polygon"/>
               <prop v="bevel" k="joinstyle"/>
-              <prop v="35,35,35,255" k="line_color"/>
+              <prop v="50,87,128,255" k="line_color"/>
               <prop v="solid" k="line_style"/>
               <prop v="1" k="line_width"/>
               <prop v="MM" k="line_width_unit"/>
@@ -64,9 +68,9 @@
                   <Option value="" name="name" type="QString"/>
                   <Option name="properties" type="Map">
                     <Option name="enabled" type="Map">
-                      <Option value="true" name="active" type="bool"/>
-                      <Option value="surface" name="expression" type="QString"/>
-                      <Option value="3" name="type" type="int"/>
+                      <Option value="false" name="active" type="bool"/>
+                      <Option value="1" name="type" type="int"/>
+                      <Option value="" name="val" type="QString"/>
                     </Option>
                     <Option name="outlineWidth" type="Map">
                       <Option value="true" name="active" type="bool"/>
@@ -103,9 +107,9 @@
                   <Option value="" name="name" type="QString"/>
                   <Option name="properties" type="Map">
                     <Option name="enabled" type="Map">
-                      <Option value="true" name="active" type="bool"/>
-                      <Option value="surface" name="expression" type="QString"/>
-                      <Option value="3" name="type" type="int"/>
+                      <Option value="false" name="active" type="bool"/>
+                      <Option value="1" name="type" type="int"/>
+                      <Option value="" name="val" type="QString"/>
                     </Option>
                   </Option>
                   <Option value="collection" name="type" type="QString"/>
@@ -169,9 +173,9 @@
                   <Option value="" name="name" type="QString"/>
                   <Option name="properties" type="Map">
                     <Option name="enabled" type="Map">
-                      <Option value="true" name="active" type="bool"/>
-                      <Option value="surface" name="expression" type="QString"/>
-                      <Option value="3" name="type" type="int"/>
+                      <Option value="false" name="active" type="bool"/>
+                      <Option value="1" name="type" type="int"/>
+                      <Option value="" name="val" type="QString"/>
                     </Option>
                   </Option>
                   <Option value="collection" name="type" type="QString"/>
@@ -231,9 +235,9 @@
                   <Option value="" name="name" type="QString"/>
                   <Option name="properties" type="Map">
                     <Option name="enabled" type="Map">
-                      <Option value="true" name="active" type="bool"/>
-                      <Option value="surface" name="expression" type="QString"/>
-                      <Option value="3" name="type" type="int"/>
+                      <Option value="false" name="active" type="bool"/>
+                      <Option value="1" name="type" type="int"/>
+                      <Option value="" name="val" type="QString"/>
                     </Option>
                   </Option>
                   <Option value="collection" name="type" type="QString"/>
@@ -249,7 +253,7 @@
                   <prop v="1,0" k="offset"/>
                   <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
                   <prop v="MM" k="offset_unit"/>
-                  <prop v="35,35,35,255" k="outline_color"/>
+                  <prop v="50,87,128,255" k="outline_color"/>
                   <prop v="solid" k="outline_style"/>
                   <prop v="1" k="outline_width"/>
                   <prop v="3x:0,0,0,0,0,0" k="outline_width_map_unit_scale"/>
@@ -272,9 +276,162 @@
           </symbol>
         </layer>
       </symbol>
+      <symbol force_rhr="0" name="1" alpha="1" type="marker" clip_to_extent="1">
+        <layer class="FilledMarker" enabled="1" pass="0" locked="0">
+          <prop v="180" k="angle"/>
+          <prop v="255,255,255,255" k="color"/>
+          <prop v="1" k="horizontal_anchor_point"/>
+          <prop v="arrow" k="name"/>
+          <prop v="-5.09999999999999964,-3.60000000000000098" k="offset"/>
+          <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+          <prop v="MM" k="offset_unit"/>
+          <prop v="diameter" k="scale_method"/>
+          <prop v="13.8" k="size"/>
+          <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
+          <prop v="MM" k="size_unit"/>
+          <prop v="0" k="vertical_anchor_point"/>
+          <data_defined_properties>
+            <Option type="Map">
+              <Option value="" name="name" type="QString"/>
+              <Option name="properties" type="Map">
+                <Option name="enabled" type="Map">
+                  <Option value="true" name="active" type="bool"/>
+                  <Option value="not rising" name="expression" type="QString"/>
+                  <Option value="3" name="type" type="int"/>
+                </Option>
+              </Option>
+              <Option value="collection" name="type" type="QString"/>
+            </Option>
+          </data_defined_properties>
+          <symbol force_rhr="0" name="@1@0" alpha="1" type="fill" clip_to_extent="1">
+            <layer class="SimpleFill" enabled="1" pass="0" locked="0">
+              <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
+              <prop v="255,255,255,255" k="color"/>
+              <prop v="bevel" k="joinstyle"/>
+              <prop v="0,0" k="offset"/>
+              <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+              <prop v="MM" k="offset_unit"/>
+              <prop v="50,87,128,255" k="outline_color"/>
+              <prop v="solid" k="outline_style"/>
+              <prop v="0.2" k="outline_width"/>
+              <prop v="MM" k="outline_width_unit"/>
+              <prop v="solid" k="style"/>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" name="name" type="QString"/>
+                  <Option name="properties"/>
+                  <Option value="collection" name="type" type="QString"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </layer>
+        <layer class="FilledMarker" enabled="1" pass="0" locked="0">
+          <prop v="0" k="angle"/>
+          <prop v="255,255,255,255" k="color"/>
+          <prop v="1" k="horizontal_anchor_point"/>
+          <prop v="arrow" k="name"/>
+          <prop v="5.09999999999999964,0.20000000000000007" k="offset"/>
+          <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+          <prop v="MM" k="offset_unit"/>
+          <prop v="diameter" k="scale_method"/>
+          <prop v="13.8" k="size"/>
+          <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
+          <prop v="MM" k="size_unit"/>
+          <prop v="2" k="vertical_anchor_point"/>
+          <data_defined_properties>
+            <Option type="Map">
+              <Option value="" name="name" type="QString"/>
+              <Option name="properties" type="Map">
+                <Option name="enabled" type="Map">
+                  <Option value="true" name="active" type="bool"/>
+                  <Option value="rising" name="field" type="QString"/>
+                  <Option value="2" name="type" type="int"/>
+                </Option>
+              </Option>
+              <Option value="collection" name="type" type="QString"/>
+            </Option>
+          </data_defined_properties>
+          <symbol force_rhr="0" name="@1@1" alpha="1" type="fill" clip_to_extent="1">
+            <layer class="SimpleFill" enabled="1" pass="0" locked="0">
+              <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
+              <prop v="255,255,255,255" k="color"/>
+              <prop v="bevel" k="joinstyle"/>
+              <prop v="0,0" k="offset"/>
+              <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+              <prop v="MM" k="offset_unit"/>
+              <prop v="50,87,128,255" k="outline_color"/>
+              <prop v="solid" k="outline_style"/>
+              <prop v="0.2" k="outline_width"/>
+              <prop v="MM" k="outline_width_unit"/>
+              <prop v="solid" k="style"/>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" name="name" type="QString"/>
+                  <Option name="properties"/>
+                  <Option value="collection" name="type" type="QString"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </layer>
+        <layer class="VectorField" enabled="1" pass="0" locked="0">
+          <prop v="0" k="angle_orientation"/>
+          <prop v="0" k="angle_units"/>
+          <prop v="3x:0,0,0,0,0,0" k="distance_map_unit_scale"/>
+          <prop v="MM" k="distance_unit"/>
+          <prop v="4,0" k="offset"/>
+          <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+          <prop v="MM" k="offset_unit"/>
+          <prop v="10" k="scale"/>
+          <prop v="10" k="size"/>
+          <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
+          <prop v="MM" k="size_unit"/>
+          <prop v="1" k="vector_field_type"/>
+          <prop v="magnitude" k="x_attribute"/>
+          <prop v="magnitude" k="y_attribute"/>
+          <data_defined_properties>
+            <Option type="Map">
+              <Option value="" name="name" type="QString"/>
+              <Option name="properties"/>
+              <Option value="collection" name="type" type="QString"/>
+            </Option>
+          </data_defined_properties>
+          <symbol force_rhr="0" name="@1@2" alpha="1" type="line" clip_to_extent="1">
+            <layer class="SimpleLine" enabled="1" pass="0" locked="0">
+              <prop v="0" k="align_dash_pattern"/>
+              <prop v="flat" k="capstyle"/>
+              <prop v="5;2" k="customdash"/>
+              <prop v="3x:0,0,0,0,0,0" k="customdash_map_unit_scale"/>
+              <prop v="MM" k="customdash_unit"/>
+              <prop v="0" k="dash_pattern_offset"/>
+              <prop v="3x:0,0,0,0,0,0" k="dash_pattern_offset_map_unit_scale"/>
+              <prop v="MM" k="dash_pattern_offset_unit"/>
+              <prop v="0" k="draw_inside_polygon"/>
+              <prop v="bevel" k="joinstyle"/>
+              <prop v="0,120,185,255" k="line_color"/>
+              <prop v="solid" k="line_style"/>
+              <prop v="2.5" k="line_width"/>
+              <prop v="MM" k="line_width_unit"/>
+              <prop v="5" k="offset"/>
+              <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+              <prop v="MM" k="offset_unit"/>
+              <prop v="0" k="ring_filter"/>
+              <prop v="0" k="tweak_dash_pattern_on_corners"/>
+              <prop v="0" k="use_custom_dash"/>
+              <prop v="3x:0,0,0,0,0,0" k="width_map_unit_scale"/>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" name="name" type="QString"/>
+                  <Option name="properties"/>
+                  <Option value="collection" name="type" type="QString"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </layer>
+      </symbol>
     </symbols>
-    <rotation/>
-    <sizescale/>
     <orderby>
       <orderByClause asc="1" nullsFirst="0">"magnitude"</orderByClause>
     </orderby>

@@ -1,5 +1,16 @@
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
-<qgis version="3.16.7-Hannover" labelsEnabled="0" styleCategories="Symbology|Labeling|MapTips">
+<qgis version="3.16.7-Hannover" labelsEnabled="0" styleCategories="LayerConfiguration|Symbology|Labeling|MapTips|Temporal" readOnly="0">
+  <flags>
+    <Identifiable>1</Identifiable>
+    <Removable>1</Removable>
+    <Searchable>1</Searchable>
+  </flags>
+  <temporal fixedDuration="0" accumulate="0" endField="" startField="" durationUnit="min" enabled="0" startExpression="" mode="0" durationField="" endExpression="">
+    <fixedRange>
+      <start></start>
+      <end></end>
+    </fixedRange>
+  </temporal>
   <renderer-v2 enableorderby="0" forceraster="0" type="RuleRenderer" symbollevels="0">
     <rules key="{74fd662f-04d6-4488-a01a-4aac240e1185}">
       <rule symbol="0" label="surface current" filter="surface and current" key="{2148beb3-e673-4c0c-85c8-687480a2605b}"/>
@@ -9,7 +20,7 @@
       <symbol force_rhr="0" name="0" alpha="1" type="marker" clip_to_extent="1">
         <layer class="SimpleMarker" enabled="1" pass="0" locked="0">
           <prop v="0" k="angle"/>
-          <prop v="56,163,185,255" k="color"/>
+          <prop v="0,120,185,255" k="color"/>
           <prop v="1" k="horizontal_anchor_point"/>
           <prop v="bevel" k="joinstyle"/>
           <prop v="triangle" k="name"/>
@@ -77,7 +88,7 @@
       <symbol force_rhr="0" name="1" alpha="1" type="marker" clip_to_extent="1">
         <layer class="SimpleMarker" enabled="1" pass="0" locked="0">
           <prop v="0" k="angle"/>
-          <prop v="56,163,185,255" k="color"/>
+          <prop v="0,120,185,255" k="color"/>
           <prop v="1" k="horizontal_anchor_point"/>
           <prop v="bevel" k="joinstyle"/>
           <prop v="diamond" k="name"/>
@@ -146,6 +157,7 @@
   </renderer-v2>
   <blendMode>0</blendMode>
   <featureBlendMode>0</featureBlendMode>
+  <previewExpression>"name"</previewExpression>
   <mapTip>&lt;style>
 .tip {
 	width: 180px;

@@ -324,24 +324,34 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['station'], '8443970')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 5, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 4.098)
-        self.assertAlmostEqual(feature['magnitude'], 0.45767254)
+        self.assertAlmostEqual(feature['magnitude'], 0.39094443)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertFalse(feature['flags'] & PredictionFlags.Current)
         self.assertTrue(feature['flags'] & PredictionFlags.Surface)
+        self.assertTrue(feature['flags'] & PredictionFlags.Rising)
+        self.assertFalse(feature['flags'] & PredictionFlags.Falling)
+
+        feature = features[3]
+        self.assertTrue(feature['flags'] & PredictionFlags.Rising)
+        self.assertFalse(feature['flags'] & PredictionFlags.Falling)
 
         feature = features[7]
         self.assertEqual(feature['station'], '8443970')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 8, 21, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 8.606)
-        self.assertAlmostEqual(feature['magnitude'], 0.96113468)
+        self.assertAlmostEqual(feature['magnitude'], 0.95635269)
         self.assertTrue(feature['flags'] & PredictionFlags.Max)
         self.assertTrue(feature['flags'] & PredictionFlags.Surface)
+
+        feature = features[10]
+        self.assertTrue(feature['flags'] & PredictionFlags.Falling)
+        self.assertFalse(feature['flags'] & PredictionFlags.Rising)
 
         feature = features[20]
         self.assertEqual(feature['station'], '8443970')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 1, 14, 21, 0, 0, Qt.TimeSpec.UTC))
         self.assertEqual(feature['value'], 1.578)
-        self.assertAlmostEqual(feature['magnitude'], 0.17623408)
+        self.assertAlmostEqual(feature['magnitude'], 0.074877712)
         self.assertTrue(feature['flags'] & PredictionFlags.Min)
         self.assertTrue(feature['flags'] & PredictionFlags.Surface)
 
@@ -363,14 +373,14 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertEqual(feature['station'], '8447291')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 5, 0, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 0.5804967373)
-        self.assertAlmostEqual(feature['magnitude'], 0.198800252)
+        self.assertAlmostEqual(feature['magnitude'], 0.095319697)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
 
         feature = features[3]
         self.assertEqual(feature['station'], '8447291')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 6, 17, 0, 0, Qt.TimeSpec.UTC))
         self.assertAlmostEqual(feature['value'], 0.334)
-        self.assertAlmostEqual(feature['magnitude'], 0.114383561)
+        self.assertAlmostEqual(feature['magnitude'], 0.0)
         self.assertTrue(feature['flags'] & PredictionFlags.Min)
 
     """ Test a TideDataPromise for a subordinate tide station using fixed (offset) adjustment
