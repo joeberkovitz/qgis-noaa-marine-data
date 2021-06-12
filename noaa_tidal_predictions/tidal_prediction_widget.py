@@ -48,7 +48,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.tableWidget.setColumnCount(4)
         self.tableWidget.setSortingEnabled(False)
-        self.tableWidget.setHorizontalHeaderLabels([tr('Time'), tr('Type'), tr('Dir.'), tr('Speed')])
+        self.tableWidget.setHorizontalHeaderLabels([tr('Time'), tr('Type'), tr('Dir.'), tr('Value')])
 
         self.dateEdit.dateChanged.connect(self.updateDate)
         self.dateEdit.dateChanged.connect(self.loadStationPredictions)
