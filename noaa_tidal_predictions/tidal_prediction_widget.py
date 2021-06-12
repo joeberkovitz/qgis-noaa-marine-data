@@ -371,7 +371,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 t.setTimeSpec(Qt.TimeSpec.UTC)
                 if t == self.datetime:
                     localtz = self.localTime.timeZone().displayName(self.localTime, 2)
-                    details  = '{} ({}): '.format(p['display_time'], localtz)
+                    details  = '{} ({}): '.format(self.localTime.time().toString('h:mm ap'), localtz)
                     if p['flags'] & PredictionFlags.Current:
                         details += 'Direction: {}º, Speed: {:.2f} knots'.format(int(p['dir']), p['magnitude'])
                     else:
