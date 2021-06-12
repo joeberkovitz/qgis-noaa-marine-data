@@ -46,9 +46,9 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.temporal = canvas.temporalController()
         self.setupUi(self)
 
-        self.tableWidget.setColumnCount(3)
+        self.tableWidget.setColumnCount(4)
         self.tableWidget.setSortingEnabled(False)
-        self.tableWidget.setHorizontalHeaderLabels([tr('Time'), tr('Direction'), tr('Speed')])
+        self.tableWidget.setHorizontalHeaderLabels([tr('Time'), tr('Type'), tr('Dir.'), tr('Speed')])
 
         self.dateEdit.dateChanged.connect(self.updateDate)
         self.dateEdit.dateChanged.connect(self.loadStationPredictions)
@@ -323,7 +323,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.tableWidget.setRowCount(len(self.stationData.predictions))
         i = 0
 
-        if self.stationFeature['flags'] & StationFlags.Current:
+        currentStation = self.stationFeature['flags'] & StationFlags.Current
+        if currentStation:
             typeNames = PredictionFlags.currentTypeNames
         else:
             typeNames = PredictionFlags.tideTypeNames
@@ -331,15 +332,25 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         for p in self.stationData.predictions:
             dt = p['time']
             dt.setTimeSpec(Qt.TimeSpec.UTC)
+            if currentStation and not p['flags'] & PredictionFlags.Zero:
+                dirText = str(round(p['dir'])) + 'º'
+            else:
+                dirText = ''
+
             if self.includeAllPredictions and p['flags'] & PredictionFlags.Time and p['dir'] != NULL:
                 self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
-                self.tableWidget.setItem(i, 1, QTableWidgetItem(str(round(p['dir'])) + 'º'))
-                self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['magnitude'])))
+                self.tableWidget.setItem(i, 1, QTableWidgetItem(''))
+                self.tableWidget.setItem(i, 2, QTableWidgetItem(dirText))
+                if currentStation:
+                    self.tableWidget.setItem(i, 3, QTableWidgetItem("{:.2f}".format(p['magnitude'])))
+                else:
+                    self.tableWidget.setItem(i, 3, QTableWidgetItem("{:.2f}".format(p['value'])))
                 i += 1
             elif not p['flags'] & PredictionFlags.Time:
                 self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
                 self.tableWidget.setItem(i, 1, QTableWidgetItem(typeNames[p['flags'] & PredictionFlags.Type]))
-                self.tableWidget.setItem(i, 2, QTableWidgetItem("{:.2f}".format(p['value'])))
+                self.tableWidget.setItem(i, 2, QTableWidgetItem(dirText))
+                self.tableWidget.setItem(i, 3, QTableWidgetItem("{:.2f}".format(p['value'])))
                 self.tableWidget.setRowHeight(i, 20)
                 i += 1
         self.tableWidget.setRowCount(i)
@@ -353,8 +364,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         document = a.document()
 
-        columnWidth = [80,100,60]
-        columnAlign = ['left','left','right']
+        columnWidth = [80,100,60,60]
+        columnAlign = ['left','left','left','right']
 
         html = '<font size="+2"><b>'
         html += self.stationFeature['name'] + '<br>' + self.dateEdit.date().toString() + '<br>'
@@ -380,8 +391,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         document.setHtml(html)
 
         # TODO: this size and offset are wack. Can we dynamically calculate from the content somehow?
-        a.setFrameSize(QSizeF(270, 300))
-        a.setFrameOffsetFromReferencePoint(QPointF(-300,-200))
+        a.setFrameSize(QSizeF(330, 300))
+        a.setFrameOffsetFromReferencePoint(QPointF(-360,-200))
         a.setMapPosition(self.stationFeature.geometry().asPoint())
         a.setMapPositionCrs(QgsCoordinateReferenceSystem(self.predictionManager.stationsLayer.crs()))
 
