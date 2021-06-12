@@ -65,6 +65,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.stationFeature = None
         self.stationZone = None
         self.stationHighlight = None
+        self.stationData = None
 
         self.active = False
 
@@ -116,6 +117,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.predictionManager = None
 
             self.stationFeature = None
+            self.stationData = None
             self.active = False
 
     def predictionProgress(self, progress):
@@ -238,9 +240,11 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.temporal.setNavigationMode(QgsTemporalNavigationObject.NavigationMode.FixedRange)
 
         if self.stationZone is not None:
-            self.datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time(), self.stationZone).toUTC()
+            self.localTime = QDateTime(self.dateEdit.date(), self.timeEdit.time(), self.stationZone)
         else:
-            self.datetime = QDateTime(self.dateEdit.date(), self.timeEdit.time()).toUTC()
+            self.localTime = QDateTime(self.dateEdit.date(), self.timeEdit.time())
+        self.datetime = self.localTime.toUTC()
+
         # Note: we hack around a memory provider range bug here by offsetting the window by 1 minute
         self.temporal.setTemporalExtents(
             QgsDateTimeRange(self.datetime.addSecs(-self.TEMPORAL_HACK_SECS),
@@ -249,6 +253,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                              )
             )
         self.updatePlotXLine()
+        self.updatePredictionDetails()
 
     def updateStationLink(self):
         if self.stationFeature is not None:
@@ -301,6 +306,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 t.append(t0.secsTo(utcTime)/3600)
                 val.append(f['value'])
 
+        self.updatePredictionDetails()
+
         self.plotAxes.set_xlim(left=0, right=24)
         self.plotAxes.set_xticks([0, 3, 6, 9, 12, 15, 18, 21, 24])
         self.plotAxes.grid(linewidth=0.5)
@@ -315,6 +322,8 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.updatePlotXLine()
 
         self.plotAxes.plot(t, val)
+
+        self.predictionCanvas.figure.tight_layout()
 
         self.plotCallbackId = self.predictionCanvas.mpl_connect('button_release_event', self.handlePlotClick)
 
@@ -338,7 +347,7 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 dirText = ''
 
             if self.includeAllPredictions and p['flags'] & PredictionFlags.Time and p['dir'] != NULL:
-                self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
+                self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm ap')))
                 self.tableWidget.setItem(i, 1, QTableWidgetItem(''))
                 self.tableWidget.setItem(i, 2, QTableWidgetItem(dirText))
                 if currentStation:
@@ -347,13 +356,30 @@ class TidalPredictionWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     self.tableWidget.setItem(i, 3, QTableWidgetItem("{:.2f}".format(p['value'])))
                 i += 1
             elif not p['flags'] & PredictionFlags.Time:
-                self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm AP')))
+                self.tableWidget.setItem(i, 0, QTableWidgetItem(dt.toTimeZone(self.stationZone).toString('h:mm ap')))
                 self.tableWidget.setItem(i, 1, QTableWidgetItem(typeNames[p['flags'] & PredictionFlags.Type]))
                 self.tableWidget.setItem(i, 2, QTableWidgetItem(dirText))
                 self.tableWidget.setItem(i, 3, QTableWidgetItem("{:.2f}".format(p['value'])))
                 self.tableWidget.setRowHeight(i, 20)
                 i += 1
         self.tableWidget.setRowCount(i)
+
+    def updatePredictionDetails(self):
+        if self.stationData is not None and self.stationData.state == PredictionPromise.ResolvedState:
+            for p in self.stationData.predictions:
+                t = p['time']
+                t.setTimeSpec(Qt.TimeSpec.UTC)
+                if t == self.datetime:
+                    localtz = self.localTime.timeZone().displayName(self.localTime, 2)
+                    details  = '{} ({}): '.format(p['display_time'], localtz)
+                    if p['flags'] & PredictionFlags.Current:
+                        details += 'Direction: {}º, Speed: {:.2f} knots'.format(int(p['dir']), p['magnitude'])
+                    else:
+                        details += 'Height: {:.2f} feet MLLW'.format(p['value'])
+                    self.predictionLabel.setText(details)
+                    return
+
+        self.predictionLabel.setText(' ')
 
     def annotatePredictions(self):
         if self.stationFeature is None:

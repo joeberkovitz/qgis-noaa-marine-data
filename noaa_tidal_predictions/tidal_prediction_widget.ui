@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>459</width>
-    <height>504</height>
+    <height>533</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -119,6 +119,9 @@
         <property name="frame">
          <bool>true</bool>
         </property>
+        <property name="displayFormat">
+         <string>h:mm ap</string>
+        </property>
        </widget>
       </item>
       <item row="0" column="0">
@@ -132,6 +135,16 @@
     </item>
     <item>
      <layout class="QVBoxLayout" name="plotLayout"/>
+    </item>
+    <item>
+     <widget class="QLabel" name="predictionLabel">
+      <property name="text">
+       <string> </string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
     </item>
     <item>
      <widget class="QTableWidget" name="tableWidget">
