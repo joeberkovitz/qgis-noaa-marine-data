@@ -597,7 +597,7 @@ class PredictionInterpolator:
                 subTimes.append(time)
                 refFactors.append(self.stationFeature['minValueAdj'])
 
-        return interp1d(subTimes, refFactors, 'cubic')
+        return interp1d(subTimes, refFactors, 'quadratic')
 
     def valueInterpolation(self):
         """ return a function that takes an array of offsets from the start time in seconds, and returns an
