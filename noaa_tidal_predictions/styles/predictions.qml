@@ -277,103 +277,32 @@
         </layer>
       </symbol>
       <symbol force_rhr="0" name="1" alpha="1" type="marker" clip_to_extent="1">
-        <layer class="FilledMarker" enabled="1" pass="0" locked="0">
-          <prop v="180" k="angle"/>
-          <prop v="255,255,255,255" k="color"/>
-          <prop v="1" k="horizontal_anchor_point"/>
-          <prop v="arrow" k="name"/>
-          <prop v="-5.09999999999999964,-3.60000000000000098" k="offset"/>
-          <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-          <prop v="MM" k="offset_unit"/>
-          <prop v="diameter" k="scale_method"/>
-          <prop v="13.8" k="size"/>
-          <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
-          <prop v="MM" k="size_unit"/>
-          <prop v="0" k="vertical_anchor_point"/>
-          <data_defined_properties>
-            <Option type="Map">
-              <Option value="" name="name" type="QString"/>
-              <Option name="properties" type="Map">
-                <Option name="enabled" type="Map">
-                  <Option value="true" name="active" type="bool"/>
-                  <Option value="not rising" name="expression" type="QString"/>
-                  <Option value="3" name="type" type="int"/>
-                </Option>
-              </Option>
-              <Option value="collection" name="type" type="QString"/>
-            </Option>
-          </data_defined_properties>
-          <symbol force_rhr="0" name="@1@0" alpha="1" type="fill" clip_to_extent="1">
-            <layer class="SimpleFill" enabled="1" pass="0" locked="0">
-              <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
-              <prop v="255,255,255,255" k="color"/>
-              <prop v="bevel" k="joinstyle"/>
-              <prop v="0,0" k="offset"/>
-              <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-              <prop v="MM" k="offset_unit"/>
-              <prop v="50,87,128,255" k="outline_color"/>
-              <prop v="solid" k="outline_style"/>
-              <prop v="0.2" k="outline_width"/>
-              <prop v="MM" k="outline_width_unit"/>
-              <prop v="solid" k="style"/>
-              <data_defined_properties>
-                <Option type="Map">
-                  <Option value="" name="name" type="QString"/>
-                  <Option name="properties"/>
-                  <Option value="collection" name="type" type="QString"/>
-                </Option>
-              </data_defined_properties>
-            </layer>
-          </symbol>
-        </layer>
-        <layer class="FilledMarker" enabled="1" pass="0" locked="0">
+        <layer class="SimpleMarker" enabled="1" pass="0" locked="0">
           <prop v="0" k="angle"/>
-          <prop v="255,255,255,255" k="color"/>
+          <prop v="222,244,255,255" k="color"/>
           <prop v="1" k="horizontal_anchor_point"/>
-          <prop v="arrow" k="name"/>
-          <prop v="5.09999999999999964,0.20000000000000007" k="offset"/>
+          <prop v="bevel" k="joinstyle"/>
+          <prop v="half_square" k="name"/>
+          <prop v="8.00000000000000711,-0.39999999999999697" k="offset"/>
           <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
           <prop v="MM" k="offset_unit"/>
+          <prop v="50,87,128,255" k="outline_color"/>
+          <prop v="solid" k="outline_style"/>
+          <prop v="0.4" k="outline_width"/>
+          <prop v="3x:0,0,0,0,0,0" k="outline_width_map_unit_scale"/>
+          <prop v="MM" k="outline_width_unit"/>
           <prop v="diameter" k="scale_method"/>
-          <prop v="13.8" k="size"/>
+          <prop v="8" k="size"/>
           <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
           <prop v="MM" k="size_unit"/>
-          <prop v="2" k="vertical_anchor_point"/>
+          <prop v="1" k="vertical_anchor_point"/>
           <data_defined_properties>
             <Option type="Map">
               <Option value="" name="name" type="QString"/>
-              <Option name="properties" type="Map">
-                <Option name="enabled" type="Map">
-                  <Option value="true" name="active" type="bool"/>
-                  <Option value="rising" name="field" type="QString"/>
-                  <Option value="2" name="type" type="int"/>
-                </Option>
-              </Option>
+              <Option name="properties"/>
               <Option value="collection" name="type" type="QString"/>
             </Option>
           </data_defined_properties>
-          <symbol force_rhr="0" name="@1@1" alpha="1" type="fill" clip_to_extent="1">
-            <layer class="SimpleFill" enabled="1" pass="0" locked="0">
-              <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
-              <prop v="255,255,255,255" k="color"/>
-              <prop v="bevel" k="joinstyle"/>
-              <prop v="0,0" k="offset"/>
-              <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
-              <prop v="MM" k="offset_unit"/>
-              <prop v="50,87,128,255" k="outline_color"/>
-              <prop v="solid" k="outline_style"/>
-              <prop v="0.2" k="outline_width"/>
-              <prop v="MM" k="outline_width_unit"/>
-              <prop v="solid" k="style"/>
-              <data_defined_properties>
-                <Option type="Map">
-                  <Option value="" name="name" type="QString"/>
-                  <Option name="properties"/>
-                  <Option value="collection" name="type" type="QString"/>
-                </Option>
-              </data_defined_properties>
-            </layer>
-          </symbol>
         </layer>
         <layer class="VectorField" enabled="1" pass="0" locked="0">
           <prop v="0" k="angle_orientation"/>
@@ -383,12 +312,12 @@
           <prop v="4,0" k="offset"/>
           <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
           <prop v="MM" k="offset_unit"/>
-          <prop v="10" k="scale"/>
+          <prop v="8" k="scale"/>
           <prop v="10" k="size"/>
           <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
           <prop v="MM" k="size_unit"/>
-          <prop v="1" k="vector_field_type"/>
-          <prop v="magnitude" k="x_attribute"/>
+          <prop v="0" k="vector_field_type"/>
+          <prop v="dir" k="x_attribute"/>
           <prop v="magnitude" k="y_attribute"/>
           <data_defined_properties>
             <Option type="Map">
@@ -397,36 +326,63 @@
               <Option value="collection" name="type" type="QString"/>
             </Option>
           </data_defined_properties>
-          <symbol force_rhr="0" name="@1@2" alpha="1" type="line" clip_to_extent="1">
-            <layer class="SimpleLine" enabled="1" pass="0" locked="0">
-              <prop v="0" k="align_dash_pattern"/>
-              <prop v="flat" k="capstyle"/>
-              <prop v="5;2" k="customdash"/>
-              <prop v="3x:0,0,0,0,0,0" k="customdash_map_unit_scale"/>
-              <prop v="MM" k="customdash_unit"/>
-              <prop v="0" k="dash_pattern_offset"/>
-              <prop v="3x:0,0,0,0,0,0" k="dash_pattern_offset_map_unit_scale"/>
-              <prop v="MM" k="dash_pattern_offset_unit"/>
-              <prop v="0" k="draw_inside_polygon"/>
-              <prop v="bevel" k="joinstyle"/>
-              <prop v="0,120,185,255" k="line_color"/>
-              <prop v="solid" k="line_style"/>
-              <prop v="2.5" k="line_width"/>
-              <prop v="MM" k="line_width_unit"/>
-              <prop v="5" k="offset"/>
-              <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+          <symbol force_rhr="0" name="@1@1" alpha="1" type="line" clip_to_extent="1">
+            <layer class="ArrowLine" enabled="1" pass="0" locked="0">
+              <prop v="3" k="arrow_start_width"/>
+              <prop v="MM" k="arrow_start_width_unit"/>
+              <prop v="3x:0,0,0,0,0,0" k="arrow_start_width_unit_scale"/>
+              <prop v="0" k="arrow_type"/>
+              <prop v="3" k="arrow_width"/>
+              <prop v="MM" k="arrow_width_unit"/>
+              <prop v="3x:0,0,0,0,0,0" k="arrow_width_unit_scale"/>
+              <prop v="1.5" k="head_length"/>
+              <prop v="MM" k="head_length_unit"/>
+              <prop v="3x:0,0,0,0,0,0" k="head_length_unit_scale"/>
+              <prop v="1.5" k="head_thickness"/>
+              <prop v="MM" k="head_thickness_unit"/>
+              <prop v="3x:0,0,0,0,0,0" k="head_thickness_unit_scale"/>
+              <prop v="0" k="head_type"/>
+              <prop v="1" k="is_curved"/>
+              <prop v="1" k="is_repeated"/>
+              <prop v="6" k="offset"/>
               <prop v="MM" k="offset_unit"/>
+              <prop v="3x:0,0,0,0,0,0" k="offset_unit_scale"/>
               <prop v="0" k="ring_filter"/>
-              <prop v="0" k="tweak_dash_pattern_on_corners"/>
-              <prop v="0" k="use_custom_dash"/>
-              <prop v="3x:0,0,0,0,0,0" k="width_map_unit_scale"/>
               <data_defined_properties>
                 <Option type="Map">
                   <Option value="" name="name" type="QString"/>
-                  <Option name="properties"/>
+                  <Option name="properties" type="Map">
+                    <Option name="arrowHeadType" type="Map">
+                      <Option value="true" name="active" type="bool"/>
+                      <Option value="if(rising,'single','reversed')" name="expression" type="QString"/>
+                      <Option value="3" name="type" type="int"/>
+                    </Option>
+                  </Option>
                   <Option value="collection" name="type" type="QString"/>
                 </Option>
               </data_defined_properties>
+              <symbol force_rhr="0" name="@@1@1@0" alpha="1" type="fill" clip_to_extent="1">
+                <layer class="SimpleFill" enabled="1" pass="0" locked="0">
+                  <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
+                  <prop v="50,87,128,255" k="color"/>
+                  <prop v="bevel" k="joinstyle"/>
+                  <prop v="0,3.5" k="offset"/>
+                  <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+                  <prop v="MM" k="offset_unit"/>
+                  <prop v="50,87,128,0" k="outline_color"/>
+                  <prop v="solid" k="outline_style"/>
+                  <prop v="0.26" k="outline_width"/>
+                  <prop v="MM" k="outline_width_unit"/>
+                  <prop v="solid" k="style"/>
+                  <data_defined_properties>
+                    <Option type="Map">
+                      <Option value="" name="name" type="QString"/>
+                      <Option name="properties"/>
+                      <Option value="collection" name="type" type="QString"/>
+                    </Option>
+                  </data_defined_properties>
+                </layer>
+              </symbol>
             </layer>
           </symbol>
         </layer>
@@ -544,44 +500,18 @@
 }
 .date {
 	padding-top: 5px;
-	font-weight: bold;
 }
 .predict {
     padding-top: 5px;
 }
-table {
-    border-collapse:collapse;
-}
-td {
-    font-size: 12px;
-	padding: 1px 5px 1px 5px;
-}
-tr.date_break {
-  border-top: 2px solid #999;
-}
-td.vel {
-	text-align: right;
-}
-}
 &lt;/style>
 &lt;div class="tip">
 	&lt;div class="name">[% station_name %] ([% station %])&lt;/div>
-	&lt;div class="date">[% display_date %] [% display_time %]&lt;/div>
+	&lt;div class="date">[% display_date %] [% display_time %] ([% format_time_zone(local_time, 2) %])&lt;/div>
 	&lt;div class="predict">
-		&lt;table>
-		&lt;tbody>
-		[%
-		  format('
-		  &lt;tr>
-			&lt;td>%1&lt;/td>
-			&lt;td class="vel">%2 kt&lt;/td>
-		  &lt;/tr>',
-			   dir||'º',
-			   format_number(if(type='current',magnitude,value),2)
-		   )
-		%]
-		&lt;/tbody>
-		&lt;/table>
+		[% if(current,dir||'º','') %]
+		[% format_number(value,2) %]
+		[% if(current, 'kt', 'ft') %]
 	&lt;/div>
 &lt;/div></mapTip>
   <layerGeometryType>0</layerGeometryType>
