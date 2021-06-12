@@ -53,20 +53,20 @@
         </layer>
         <layer class="SimpleMarker" enabled="1" pass="0" locked="0">
           <prop v="0" k="angle"/>
-          <prop v="255,255,255,0" k="color"/>
+          <prop v="0,120,185,0" k="color"/>
           <prop v="1" k="horizontal_anchor_point"/>
-          <prop v="bevel" k="joinstyle"/>
+          <prop v="miter" k="joinstyle"/>
           <prop v="triangle" k="name"/>
           <prop v="0,0" k="offset"/>
           <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
           <prop v="MM" k="offset_unit"/>
-          <prop v="255,255,255,255" k="outline_color"/>
+          <prop v="35,35,35,255" k="outline_color"/>
           <prop v="solid" k="outline_style"/>
-          <prop v="0" k="outline_width"/>
+          <prop v="0.75" k="outline_width"/>
           <prop v="3x:0,0,0,0,0,0" k="outline_width_map_unit_scale"/>
           <prop v="MM" k="outline_width_unit"/>
           <prop v="diameter" k="scale_method"/>
-          <prop v="3.8" k="size"/>
+          <prop v="5" k="size"/>
           <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
           <prop v="MM" k="size_unit"/>
           <prop v="1" k="vertical_anchor_point"/>
@@ -78,6 +78,11 @@
                   <Option value="true" name="active" type="bool"/>
                   <Option value="reference" name="field" type="QString"/>
                   <Option value="2" name="type" type="int"/>
+                </Option>
+                <Option name="fillColor" type="Map">
+                  <Option value="false" name="active" type="bool"/>
+                  <Option value="" name="expression" type="QString"/>
+                  <Option value="3" name="type" type="int"/>
                 </Option>
               </Option>
               <Option value="collection" name="type" type="QString"/>
@@ -128,13 +133,13 @@
           <prop v="0,0" k="offset"/>
           <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
           <prop v="MM" k="offset_unit"/>
-          <prop v="255,255,255,255" k="outline_color"/>
+          <prop v="35,35,35,255" k="outline_color"/>
           <prop v="solid" k="outline_style"/>
-          <prop v="0" k="outline_width"/>
+          <prop v="0.75" k="outline_width"/>
           <prop v="3x:0,0,0,0,0,0" k="outline_width_map_unit_scale"/>
           <prop v="MM" k="outline_width_unit"/>
           <prop v="diameter" k="scale_method"/>
-          <prop v="3.4" k="size"/>
+          <prop v="5" k="size"/>
           <prop v="3x:0,0,0,0,0,0" k="size_map_unit_scale"/>
           <prop v="MM" k="size_unit"/>
           <prop v="1" k="vertical_anchor_point"/>

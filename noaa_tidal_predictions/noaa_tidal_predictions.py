@@ -142,7 +142,7 @@ class NoaaTidalPredictions:
 
         self.add_action(
             os.path.join(self.plugin_dir, 'svg/add_current_stations_layer.svg'),
-            text=tr(u'Add Tidal Stations Layers'),
+            text=tr(u'Add Tidal Data Layers'),
             callback=self.addStationsLayer,
             parent=self.iface.mainWindow())
 

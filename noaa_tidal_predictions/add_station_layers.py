@@ -46,7 +46,7 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
         return 'addtidalstationslayer'
 
     def displayName(self):
-        return tr('Add Tidal Stations Layer')
+        return tr('Add Tidal Data Layers')
 
     def helpUrl(self):
         return ''
@@ -365,55 +365,68 @@ class StylePostProcessor(QgsProcessingLayerPostProcessorInterface):
         stationsLayer = getStationsLayer()
         predictionsLayer = getPredictionsLayer()
         if stationsLayer is not None and predictionsLayer is not None:
-            joinInfo = QgsVectorLayerJoinInfo()
-            joinInfo.setJoinLayer(stationsLayer)
-            joinInfo.setTargetFieldName('station')
-            joinInfo.setJoinFieldName('station')
-            joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC'])
-            joinInfo.setUsingMemoryCache(True)
-            joinInfo.setPrefix('station_')
-            predictionsLayer.addJoin(joinInfo)
+            self.configureJoinsAndVirtuals(stationsLayer, predictionsLayer)
+            self.configureLayerTree(stationsLayer, predictionsLayer)
 
-            predictionsLayer.addExpressionField(
-                'convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId)',
-                QgsField('local_time', QVariant.DateTime)
-            )
-            predictionsLayer.addExpressionField(
-                "format_date(convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId), 'MM/dd')",
-                QgsField('display_date', QVariant.String)
-            )
-            predictionsLayer.addExpressionField(
-                "format_date(convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId), 'hh:mm a')",
-                QgsField('display_time', QVariant.String)
-            )
-            predictionsLayer.addExpressionField(
-                "floor(flags/128) % 2",
-                QgsField('surface', QVariant.Int)
-            )
-            predictionsLayer.addExpressionField(
-                "floor(flags/64) % 2",
-                QgsField('current', QVariant.Int)
-            )
-            predictionsLayer.addExpressionField(
-                "floor(flags/16) % 2",
-                QgsField('rising', QVariant.Int)
-            )
-            predictionsLayer.updateFields()
+    def configureJoinsAndVirtuals(self, stationsLayer, predictionsLayer):
+        joinInfo = QgsVectorLayerJoinInfo()
+        joinInfo.setJoinLayer(stationsLayer)
+        joinInfo.setTargetFieldName('station')
+        joinInfo.setJoinFieldName('station')
+        joinInfo.setJoinFieldNamesSubset(['name','timeZoneId','timeZoneUTC'])
+        joinInfo.setUsingMemoryCache(True)
+        joinInfo.setPrefix('station_')
+        predictionsLayer.addJoin(joinInfo)
 
-            stationsLayer.addExpressionField(
-                "floor(flags/2) % 2",
-                QgsField('current', QVariant.Int)
-            )
-            stationsLayer.addExpressionField(
-                "floor(flags/4) % 2",
-                QgsField('surface', QVariant.Int)
-            )
-            stationsLayer.addExpressionField(
-                "floor(flags/8) % 2",
-                QgsField('reference', QVariant.Int)
-            )
-            stationsLayer.updateFields()
+        predictionsLayer.addExpressionField(
+            'convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId)',
+            QgsField('local_time', QVariant.DateTime)
+        )
+        predictionsLayer.addExpressionField(
+            "format_date(convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId), 'MM/dd')",
+            QgsField('display_date', QVariant.String)
+        )
+        predictionsLayer.addExpressionField(
+            "format_date(convert_to_time_zone(time, station_timeZoneUTC, station_timeZoneId), 'hh:mm a')",
+            QgsField('display_time', QVariant.String)
+        )
+        predictionsLayer.addExpressionField(
+            "floor(flags/128) % 2",
+            QgsField('surface', QVariant.Int)
+        )
+        predictionsLayer.addExpressionField(
+            "floor(flags/64) % 2",
+            QgsField('current', QVariant.Int)
+        )
+        predictionsLayer.addExpressionField(
+            "floor(flags/16) % 2",
+            QgsField('rising', QVariant.Int)
+        )
+        predictionsLayer.updateFields()
 
+        stationsLayer.addExpressionField(
+            "floor(flags/2) % 2",
+            QgsField('current', QVariant.Int)
+        )
+        stationsLayer.addExpressionField(
+            "floor(flags/4) % 2",
+            QgsField('surface', QVariant.Int)
+        )
+        stationsLayer.addExpressionField(
+            "floor(flags/8) % 2",
+            QgsField('reference', QVariant.Int)
+        )
+        stationsLayer.updateFields()
+
+    def configureLayerTree(self, stationsLayer, predictionsLayer):
+        root = QgsProject.instance().layerTreeRoot()
+        slnode = root.findLayer(stationsLayer)
+        plnode = root.findLayer(predictionsLayer)
+        group = root.insertGroup(0, "Tides and Currents")
+        group.insertChildNode(0, slnode.clone())
+        group.insertChildNode(0, plnode.clone())
+        slnode.parent().removeChildNode(slnode)
+        plnode.parent().removeChildNode(plnode)
 
 class StationsStylePostProcessor(StylePostProcessor):
     instance = None
