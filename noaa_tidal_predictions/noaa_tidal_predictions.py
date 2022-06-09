@@ -146,6 +146,12 @@ class NoaaTidalPredictions:
             callback=self.addStationsLayer,
             parent=self.iface.mainWindow())
 
+        self.add_action(
+            os.path.join(self.plugin_dir, 'svg/add_current_stations_layer.svg'),
+            text=tr(u'Export Clustered Predictions'),
+            callback=self.exportClusteredPredictions,
+            parent=self.iface.mainWindow())
+
         self.predictionAction = self.add_action(
             os.path.join(self.plugin_dir, 'svg/get_tidal_predictions.svg'),
             text=tr(u'Get Tidal Predictions'),
@@ -188,6 +194,10 @@ class NoaaTidalPredictions:
     def addStationsLayer(self):
         self.deactivatePredictionTool()
         processing.execAlgorithmDialog('NoaaTidalPredictions:addtidalstationslayer', {})
+
+    def exportClusteredPredictions(self):
+        self.deactivatePredictionTool()
+        processing.execAlgorithmDialog('NoaaTidalPredictions:exportclusteredpredictions', {})
 
     def getTidalPredictions(self):
         self.predictionAction.setChecked(True)

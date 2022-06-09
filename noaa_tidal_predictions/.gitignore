@@ -1,4 +1,5 @@
 test/lib
+test/export
 *.gpkg-shm
 *.gpkg-wal
 __pycache__
