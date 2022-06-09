@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from qgis.core import (
     QgsApplication, QgsPointXY, QgsPoint, QgsRectangle, QgsFeature, QgsGeometry, QgsField, QgsFields,
     QgsProject, QgsUnitTypes, QgsWkbTypes, QgsCoordinateTransform,
-    QgsFeatureRequest, QgsNetworkContentFetcherTask,
+    QgsFeatureRequest, QgsNetworkContentFetcherTask, QgsBlockingNetworkRequest,
     QgsExpressionContextScope, QgsExpressionContext, QgsFeatureSink,
     NULL
 )
@@ -16,7 +16,7 @@ from qgis.PyQt.QtCore import (
     QObject, QDate, QDateTime, QTime, QTimeZone, QUrl, QUrlQuery,
 )
 from qgis.PyQt.QtNetwork import (
-    QNetworkReply
+    QNetworkReply, QNetworkRequest
 )
 
 from .utils import *
@@ -45,6 +45,7 @@ class PredictionManager(QObject):
         self.predictionsLayer = predictionsLayer
         self.activeCount = 0
         self.activeHighWater = 0
+        self.blocking = False
 
     def getPromise(self, stationFeature, date, promiseClass, cache):
         key = self.promiseKey(stationFeature, date)
@@ -631,12 +632,19 @@ class PredictionRequest(PredictionPromise):
         self.endTime = endTime
 
     def doStart(self):
-        self.fetcher = QgsNetworkContentFetcherTask(QUrl(self.url()))
-        self.fetcher.fetched.connect(self.processFetch)
-        self.fetcher.taskCompleted.connect(self.processFinish)
-        self.fetcher.taskTerminated.connect(self.processFinish)
-        self.content = None
-        QgsApplication.taskManager().addTask(self.fetcher)
+        if self.manager.blocking:
+            req = QgsBlockingNetworkRequest()
+            errCode = req.get(QNetworkRequest(QUrl(self.url())))
+            if errCode == QgsBlockingNetworkRequest.NoError:
+                self.content = req.reply().content()
+            self.processFinish()
+        else:
+            self.fetcher = QgsNetworkContentFetcherTask(QUrl(self.url()))
+            self.fetcher.fetched.connect(self.processFetch)
+            self.fetcher.taskCompleted.connect(self.processFinish)
+            self.fetcher.taskTerminated.connect(self.processFinish)
+            self.content = None
+            QgsApplication.taskManager().addTask(self.fetcher)
 
     def url(self):
         query = QUrlQuery()

@@ -15,6 +15,8 @@ from qgis.core import (
     QgsWkbTypes,
     QgsMemoryProviderUtils,
     QgsNetworkContentFetcherTask,
+    QgsBlockingNetworkRequest,
+    QgsNetworkReplyContent,
     NULL
     )
 
@@ -65,7 +67,12 @@ class PredictionManagerTest(unittest.TestCase):
         for feature in predictions:
             print('{} {} {} {} {} {}'.format(feature['station'],feature['time'].toString('yyyyMMdd hh:mm'),feature['flags'],feature['dir'],feature['value'], feature['magnitude']))
 
-    def getPredictions(self, filename, station, datetime, type, url=None, parseError=False):
+    # def mock_netGet(self, url):
+    #     return QgsBlockingNetworkRequest.NoError;
+
+    # @patch.object(QgsBlockingNetworkRequest,'get',mock_netGet)
+    def getPredictions(self, filename, station, datetime, type, url=None, parseError=False, blocking=False):
+        self.pm.blocking = blocking
         if station['flags'] & StationFlags.Current:
             pr = CurrentPredictionRequest(
                 self.pm,
@@ -78,20 +85,25 @@ class PredictionManagerTest(unittest.TestCase):
                 station,
                 datetime, datetime.addDays(1),
                 type)
+
         resolved = Mock()
         pr.resolved(resolved)
         rejected = Mock()
         pr.rejected(rejected)
 
-        pr.start()
-
-        if url:
-            self.assertIsNotNone(pr.fetcher)
-                
-        pr.fetcher = Mock(QgsNetworkContentFetcherTask)
-        with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
-            pr.content = dataFile.read()
-        pr.processFinish()
+        if blocking:
+            with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
+                content = dataFile.read()
+                with patch.object(QgsNetworkReplyContent,'content',return_value=content):
+                    pr.start()
+        else:
+            pr.start()
+            if url:
+                self.assertIsNotNone(pr.fetcher)
+            pr.fetcher = Mock(QgsNetworkContentFetcherTask)
+            with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
+                pr.content = dataFile.read()
+            pr.processFinish()
 
         if parseError:
             rejected.assert_called_once()
@@ -588,6 +600,19 @@ class PredictionManagerTest(unittest.TestCase):
             QNetworkReply.ContentNotFoundError)
 
         self.assertEqual(features, None)
+
+    def test_current_event_requests_blocking(self):
+        url = QUrl('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
+             '?application=qgis-noaa-tidal-predictions&begin_date=20200101 05:00&end_date=20200102 04:59'
+             '&units=english&time_zone=gmt&product=currents_predictions&format=xml'
+             '&station=ACT0926&bin=1&interval=MAX_SLACK')
+        features = self.getPredictions(
+            'ACT0926_1-20200101T05:00--MAX_SLACK.xml',
+            self.subCurrentStation,
+            QDateTime(2020,1,1,5,0),
+            CurrentPredictionRequest.EventType,
+            url, False, True)
+        self.assertEqual(len(features), 9)
 
     def test_current_event_requests(self):
         url = QUrl('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
