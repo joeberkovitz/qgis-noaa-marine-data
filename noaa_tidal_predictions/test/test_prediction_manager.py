@@ -300,11 +300,11 @@ class PredictionManagerTest(unittest.TestCase):
         feature = currents[4]
         self.assertEqual(feature['station'], 'ACT0926_1')
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 7, 0, 0, 0, Qt.TimeSpec.UTC))
-        self.assertAlmostEqual(feature['value'], 0.6826690037)
+        self.assertAlmostEqual(feature['value'], 0.68362537985)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
         self.assertTrue(feature['flags'] & PredictionFlags.Surface)
         self.assertEqual(feature['dir'], 259.0)
-        self.assertAlmostEqual(feature['magnitude'], 0.6826690037)
+        self.assertAlmostEqual(feature['magnitude'], 0.683625379859)
 
     """ Test a TideDataPromise for a harmonic tide station
     """
@@ -399,7 +399,7 @@ class PredictionManagerTest(unittest.TestCase):
         # verify that the data is present and sorted in the way we would expect
         feature = features[11]
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 13, 30, 0, 0, Qt.TimeSpec.UTC))
-        self.assertAlmostEqual(feature['value'], 6.84221308)
+        self.assertAlmostEqual(feature['value'], 6.842505474261184)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
 
         feature = features[12]
@@ -409,7 +409,7 @@ class PredictionManagerTest(unittest.TestCase):
 
         feature = features[24]
         self.assertEqual(feature['time'], QDateTime(2020, 1, 2, 19, 30, 0, 0, Qt.TimeSpec.UTC))
-        self.assertAlmostEqual(feature['value'], 3.34045046)
+        self.assertAlmostEqual(feature['value'], 3.340561453)
         self.assertTrue(feature['flags'] & PredictionFlags.Time)
 
         feature = features[25]
@@ -502,7 +502,7 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertAlmostEqual(factorInterp(self.timeToSecs('07:16')), 0.6)
 
         # interpolated results
-        self.assertAlmostEqual(factorInterp(self.timeToSecs('04:47')), 0.6567736)
+        self.assertAlmostEqual(factorInterp(self.timeToSecs('04:47')), 0.65846953)
 
         """ ref station predictions include:
                 0.877, 05:00
