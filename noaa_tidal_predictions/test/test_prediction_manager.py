@@ -92,7 +92,7 @@ class PredictionManagerTest(unittest.TestCase):
         pr.rejected(rejected)
 
         if blocking:
-            with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
+            with open(os.path.join(os.path.dirname(__file__), 'data', 'requests', filename), 'r') as dataFile:
                 content = dataFile.read()
                 with patch.object(QgsNetworkReplyContent,'content',return_value=content):
                     pr.start()
@@ -101,7 +101,7 @@ class PredictionManagerTest(unittest.TestCase):
             if url:
                 self.assertIsNotNone(pr.fetcher)
             pr.fetcher = Mock(QgsNetworkContentFetcherTask)
-            with open(os.path.join(os.path.dirname(__file__), 'data', filename), 'r') as dataFile:
+            with open(os.path.join(os.path.dirname(__file__), 'data', 'requests', filename), 'r') as dataFile:
                 pr.content = dataFile.read()
             pr.processFinish()
 
@@ -128,7 +128,7 @@ class PredictionManagerTest(unittest.TestCase):
         else:
             filename = '{}-{}-{}-{}.xml'.format(query_station,query_date,query_vel_type,query_interval)
         self.fetcher = Mock(QgsNetworkContentFetcherTask)
-        path = os.path.join(os.path.dirname(__file__), 'data', filename)
+        path = os.path.join(os.path.dirname(__file__), 'data', 'requests', filename)
 
         if PredictionManagerTest.download_data_files and not os.path.exists(path):
             print('downloading ', filename)

@@ -81,7 +81,13 @@ class ExportTest(unittest.TestCase):
     @patch.object(PredictionRequest, 'doStart', PredictionManagerTest.mock_doStart)
     def test_export_clusters(self):
         self.fixtures.alg.exportClusters()
-        assert(False)
+
+        exportFixturesDir = self.fixtures.dataFilename('export')
+        for dir in os.listdir(exportFixturesDir):
+            for file in os.listdir(os.path.join(exportFixturesDir, dir)):
+                with open(os.path.join(exportFixturesDir, dir, file), 'r') as refFile:
+                    with open(os.path.join(self.fixtures.exportFilename(dir), file), 'r') as testFile:
+                        self.assertEqual(refFile.read(), testFile.read()) 
 
 
 

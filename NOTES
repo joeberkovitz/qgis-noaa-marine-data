@@ -1,0 +1,191 @@
+NOTES
+
+- Sometimes ACT0111 (Pond Point) on 5/27/2021 interpolates below range. also Moosabec Reach E. on 6/9/21
+    hard to duplicate...
+
+BETTER LOADING:
+    - 
+
+TODO NEXT:
+- add toggle for showing all predictions in widget, not just events
+- auto-append predictions to existing annotation when there is one
+- only append selected table rows to annotation if there is a selection
+- selecting a table row should change widget time
+- add "clear saved predictions" action
+- can we make temporal filtering in layouts easier to use the right range? maybe change map time project vars?
+- autoloading should respect visibility of layers
+- add mode where only clicked stations are loaded (disable autoload)
+- data color in graph should match highlight of station on map
+- permit shift-clicking to combine multiple stations in widget graph and table (diff colors?)
+- layouts????
+
+- Verona Island, ACT0346 6/2/21 had an ugly slope discontinuity at slack. This station has extreme variation in time adjustment at slack periods so this reflects a smoothing problem of some kind.
+- St Pauls Island PCT5681 (57.1508 N,170.4578 W) has almost an 8-hour time difference with ref station so its mixed semidiurnal tides are reversed in magnitude which makes for a great test
+- Kings Point , Lopez Island PCT2191 (48.483194 N, 122.955718 W) on 5/31 and 6/1/21 is excellent because it has screwy events with two consecutive slacks
+- add semantic versioning to layer properties to be checked on load
+- Bug: advancing past 8:30PM with map canvas on Boston Harbor in fresh layer when a West Coast station is selected, causes current arrows to disappear in display.  Vice versa, going before 3:00AM on the West Coast when Boston is selected has same problem. This is probably because stations on the canvas are being loaded relative to the station date selected in the widget, which may pertain to a different time zone, causing the display date/time to lie outside the central day in the 3-day window.
+- Fix bug with duplicated time value in valueInterpolation() on March 14, 2021 (start of DST), caused by the end of 3/14 time window overlapping the beginning of the 3/15 window (now 1 hour earlier in GMT).
+
+- non-surface stations predictions are showing up on the map; should exclude using station_surface
+- always grab 3 day window for all requests, add a composite promise for that
+- for context, prediction tips and annotations should show all info for the local date in temporal scope, i.e. not fully filtered by the time range
+- add option to interpret pred. datetimes relative to each station requested
+- label offset for slack is too large
+- add tides and refactor properly
+
+- in annotation, show something graceful when there is no data
+- if we can't get speed/dir or interval reports, then don't add predictions eg for subordinates
+- constrain the max/slack and interval options to valid combinations
+
+- disallow future timeframes for nonpredictive products
+
+- experiment with white-filled arrow for current predictions
+- get a better slack symbol than the black dot
+
+- weather map-click tool
+
+- unit test
+- rename repo?
+
+FOR qgis-nautical:
+- try to come up with UI customization .ini file
+- recheck all docs
+- update styling from test project, including wind turbines
+- can we add DEM elevation data to wind turbine tower heights?
+- document increase in QGIS network cache size and how to clear it
+
+
+Evaluating a maptip in the proper scope:
+    ctx = QgsExpressionContext(QgsExpressionContextUtils.globalProjectLayerScopes(iface.activeLayer()))
+    ctx.appendScope(QgsExpressionContextUtils.mapSettingsScope(iface.mapCanvas().mapSettings()))
+    ctx.setFeature(iface.activeLayer().selectedFeatures()[0])
+    mapTip = QgsExpression.replaceExpressionText(iface.activeLayer().mapTipTemplate(), ctx)
+
+API docs:  https://api.tidesandcurrents.noaa.gov/mdapi/prod/
+
+Tide stations:
+8443970: Boston
+8444162: Boston Light (subordinate)
+8443725: Chelsea
+
+This form works for both subordinate and reference stations:
+
+https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?date=today&station=8443725&product=predictions&datum=STND&time_zone=gmt&interval=hilo&units=english&format=xml
+
+https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?date=recent&station=8444162&product=predictions&datum=MLLW&time_zone=gmt&interval=hilo&units=english&format=xml
+
+https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?date=recent&station=8444162&product=predictions&datum=MLLW&time_zone=gmt&interval=30&units=english&format=xml
+
+Current stations:
+
+Works for both subordinate and ref stations:
+
+https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?date=today&station=BOS1115&product=currents_predictions&time_zone=gmt&interval=MAX_SLACK&units=english&format=xml
+
+for harmonic stations to retrieve signed currents along slack or flood axis:
+
+https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?date=today&station=BOS1115&product=currents_predictions&time_zone=gmt&interval=30&units=english&format=xml
+
+to get speed/dir pairs for harmonic stations only:
+
+https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?date=today&station=KOD0920&product=currents_predictions&time_zone=gmt&interval=1&units=english&format=xml&vel_type=speed_dir
+
+    There are tgwo forms of results though. For reference stations, you get Speed/Direction tuples whereas for other stations you get Velocity_Max/maxFloodDir/maxEbbDir/Type tuples. Very confusing.
+
+    Also the time intervals only seem to yield reliable results for stations in the Currents_Historic_Stations layer...
+
+Current features extraction:
+ncf=QgsNetworkContentFetcher()
+def done():
+    print(ncf.contentAsString())
+    
+xform = QgsCoordinateTransform(iface.mapCanvas().mapSettings().destinationCrs(),
+            QgsCoordinateReferenceSystem('EPSG:4326'),
+            QgsProject.instance())
+iter=iface.activeLayer().getFeatures(xform.transform(iface.mapCanvas().extent()))
+f=QgsFeature()
+iter.nextFeature(f)
+query=QUrlQuery()
+query.addQueryItem('station',f['id'])
+query.addQueryItem('date','today')
+query.addQueryItem('product','currents_predictions')
+query.addQueryItem('units','metric')
+query.addQueryItem('time_zone','gmt')
+query.addQueryItem('interval','MAX_SLACK')
+query.addQueryItem('format','json')
+url=QUrl('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?' + query.query())
+print(url)
+req=QNetworkRequest(url)
+ncf.finished.connect(done)
+ncf.fetchContent(url)
+
+
+Ways of displaying current vectors:
+    callouts to labels with x/y determined by flood/ebb angles (most appropriate for single vectors in temporal display)
+    rotated simple markers anchored at bottom with data driven size, rotation, color
+    map tips showing formatted HTML based on a table of max/slack events
+    map tips showing links to predictions for today, or for dates joined from a separate geometry-less table
+
+PROBLEM: how to extract HTML in a nice way to include in a layout (tips don't work for this, but a joined table would)
+
+PROBLEM: want to create depth-filtered current station list with additional metadata information:
+    - reference station/bin if known
+    - full station_bin format for predictions lookup
+    - flood/ebb directions and relative magnitudes on some reference date
+    - only include the minimum-depth bin for each station
+    - exclude weak/variable stations (type=W)
+
+    Use metadata API (https://api.tidesandcurrents.noaa.gov/mdapi/prod/)
+
+    REQUEST to get all stations:
+
+https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=currentpredictions&expand=currentpredictionoffsets
+
+    RESPONSE:
+    <Stations>
+    <count>1</count>
+    <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="currPredStation" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT1081.xml">
+    <id>ACT1081</id>
+    <name>Black Rock Channel</name>
+    <lat>42.32883</lat>
+    <lng>-70.9155</lng>
+    <affiliations/>
+    <portscode/>
+    <expand>currentpredictionoffsets,harcon</expand>
+    <tideType/>
+    <currentpredictionoffsets xsi:type="currentPredictionOffsets" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT1081_1/currentpredictionoffsets.xml">
+    <refStationId>BOS1111</refStationId>
+    <refStationBin>14</refStationBin>
+    <meanFloodDir>247.0</meanFloodDir>
+    <meanEbbDir>46.0</meanEbbDir>
+    <mfcTimeAdjMin>-6</mfcTimeAdjMin>
+    <sbeTimeAdjMin>19</sbeTimeAdjMin>
+    <mecTimeAdjMin>-13</mecTimeAdjMin>
+    <sbfTimeAdjMin>-17</sbfTimeAdjMin>
+    <mfcAmpAdj>0.5</mfcAmpAdj>
+    <mecAmpAdj>0.8</mecAmpAdj>
+    </currentpredictionoffsets>
+    <currbin>1</currbin>
+    <type>S</type>
+    <depth>3.05</depth>
+    <depthType>S</depthType>
+    <timezone_offset/>
+    <harmonicConstituents self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT1081/harcon.xml"/>
+    </Station>
+    </Stations>
+
+
+TODO:
+# convert to plugin
+# solicit date range
+# remove existing records in current predictions layer for date range
+# load .qml file to establish styling
+# add service URL endpoints into Browser
+# links in aggregated current prediction maptips should use date in query
+# add web application query arg for NOAA API retrieval
+
+PROBLEM: figure out problem with getting data for SF Bay: something is blowing up
+
+
+EXPORT TODO:
+- need to establish effective time zones of a cluster 
