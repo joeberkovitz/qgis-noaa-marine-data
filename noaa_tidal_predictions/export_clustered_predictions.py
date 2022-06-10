@@ -131,6 +131,9 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
         self.predictionManager = PredictionManager(self.stationsLayer, self.predictionsLayer)
         self.predictionManager.blocking = True
 
+        exportFieldNames = ['station','depth','time','value','flags','dir','magnitude']
+        exportFieldIndices = [self.predictionsLayer.fields().lookupField(name) for name in exportFieldNames]
+
         outputFile = self.parameters[self.PrmOutputFile]
         self.report = codecs.open(outputFile, 'w', encoding='utf-8')
         self.report.write('<html><head>')
@@ -141,24 +144,18 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
             stations = self.getClusterStations(cluster_id)
             self.reportInfo('Processing cluster {}; {} stations found.'.format(cluster_id, len(stations)))
 
+            exportDir = os.path.join(self.parameters[self.PrmExportDirectory], str(cluster_id))
+            if not os.path.exists(exportDir):
+                os.makedirs(exportDir)
+
             dt = self.parameters[self.PrmStartDate]
             while dt < self.parameters[self.PrmEndDate]:
                 self.reportInfo('Date: {}'.format(dt.date().toString()))
 
-                exportDir = os.path.join(self.parameters[self.PrmExportDirectory], str(cluster_id))
-                if not os.path.exists(exportDir):
-                    os.makedirs(exportDir)
                 exportFile =  os.path.join(exportDir, dt.toString('yyyyMMdd') + '.geojson')
-                # exporter = QgsVectorLayerExporter(
-                #     exportFile,
-                #     'geojson',
-                #     self.predictionsLayer.fields(),
-                #     QgsWkbTypes.Point,
-                #     # self.predictionsLayer.geometryType(),
-                #     self.predictionsLayer.crs(),
-                #     True)
                 exporter = QgsJsonExporter()
                 exporter.setVectorLayer(self.predictionsLayer)
+                exporter.setAttributes(exportFieldIndices)
 
                 with codecs.open(exportFile, 'w', encoding='utf-8') as f:
                     f.write('''{
