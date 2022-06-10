@@ -1,5 +1,3 @@
-from .utilities import get_qgis_app
-
 import unittest
 from unittest.mock import *
 
@@ -21,6 +19,8 @@ from noaa_tidal_predictions.add_station_layers import AddStationsLayerAlgorithm
 from noaa_tidal_predictions.prediction_expressions import PredictionExpressions
 from noaa_tidal_predictions.utils import *
 
+from .utilities import *
+
 QGIS_APP = get_qgis_app()
 
 class StationsFixtures:
@@ -28,7 +28,7 @@ class StationsFixtures:
         self.alg = AddStationsLayerAlgorithm()
         self.alg.initAlgorithm({})
         self.alg.context = QgsProcessingContext()
-        self.alg.feedback = Mock(spec=QgsProcessingFeedback)
+        self.alg.feedback = get_feedback()
         self.alg.parameters = {
             'StationsLayer': QgsProcessingUtils.generateTempFilename('stations.gpkg'),
             'PredictionsLayer': QgsProcessingUtils.generateTempFilename('predictions.gpkg'),

@@ -6,13 +6,16 @@ import logging
 import os
 import atexit
 
-from qgis.core import QgsApplication
+from qgis.core import QgsApplication, QgsProcessingFeedback
 from qgis.utils import iface
 from qgis.gui import QgsMapCanvas
 from qgis.PyQt.QtCore import QSize
 from qgis.PyQt.QtWidgets import QWidget
 
 from .qgis_interface import QgisInterface
+
+import unittest
+from unittest.mock import *
 
 LOGGER = logging.getLogger('QGIS')
 QGIS_APP = None  # Static variable used to hold hand to running QGIS app
@@ -102,3 +105,9 @@ def get_qgis_app(cleanup=True):
         IFACE = QgisInterface(CANVAS)
 
     return QGISAPP, CANVAS, IFACE, PARENT
+
+def get_feedback():
+    feedback = Mock(spec=QgsProcessingFeedback)
+    feedback.pushInfo = print
+    feedback.reportError = print
+    return feedback

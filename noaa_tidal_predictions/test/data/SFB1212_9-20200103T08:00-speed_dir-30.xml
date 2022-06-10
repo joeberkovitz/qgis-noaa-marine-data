@@ -1,0 +1,339 @@
+<current_predictions>
+<units>feet, knots</units>
+<cp>
+<Speed>0.423</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 08:00</Time>
+<Direction>299</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.331</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 08:30</Time>
+<Direction>325</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.363</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 09:00</Time>
+<Direction>11</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.599</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 09:30</Time>
+<Direction>36</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.873</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 10:00</Time>
+<Direction>42</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.063</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 10:30</Time>
+<Direction>43</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.117</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 11:00</Time>
+<Direction>42</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.052</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 11:30</Time>
+<Direction>42</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.935</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 12:00</Time>
+<Direction>44</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.834</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 12:30</Time>
+<Direction>47</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.768</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 13:00</Time>
+<Direction>48</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.696</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 13:30</Time>
+<Direction>48</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.565</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 14:00</Time>
+<Direction>45</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.345</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 14:30</Time>
+<Direction>41</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.06</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 15:00</Time>
+<Direction>8</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.282</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 15:30</Time>
+<Direction>236</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.591</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 16:00</Time>
+<Direction>235</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.859</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 16:30</Time>
+<Direction>237</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.069</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 17:00</Time>
+<Direction>240</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.207</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 17:30</Time>
+<Direction>241</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.26</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 18:00</Time>
+<Direction>242</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.234</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 18:30</Time>
+<Direction>242</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.158</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 19:00</Time>
+<Direction>244</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>1.069</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 19:30</Time>
+<Direction>249</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.978</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 20:00</Time>
+<Direction>254</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.852</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 20:30</Time>
+<Direction>258</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.65</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 21:00</Time>
+<Direction>263</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.382</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 21:30</Time>
+<Direction>277</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.24</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 22:00</Time>
+<Direction>339</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.456</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 22:30</Time>
+<Direction>20</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.662</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 23:00</Time>
+<Direction>26</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.737</Speed>
+<Bin>9</Bin>
+<Time>2020-01-03 23:30</Time>
+<Direction>26</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.694</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 00:00</Time>
+<Direction>26</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.599</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 00:30</Time>
+<Direction>29</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.527</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 01:00</Time>
+<Direction>34</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.497</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 01:30</Time>
+<Direction>38</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.468</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 02:00</Time>
+<Direction>38</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.378</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 02:30</Time>
+<Direction>33</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.212</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 03:00</Time>
+<Direction>20</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.108</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 03:30</Time>
+<Direction>288</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.32</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 04:00</Time>
+<Direction>245</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.537</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 04:30</Time>
+<Direction>242</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.703</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 05:00</Time>
+<Direction>244</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.804</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 05:30</Time>
+<Direction>247</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.829</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 06:00</Time>
+<Direction>249</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.776</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 06:30</Time>
+<Direction>251</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.666</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 07:00</Time>
+<Direction>254</Direction>
+<Depth>19</Depth>
+</cp>
+<cp>
+<Speed>0.544</Speed>
+<Bin>9</Bin>
+<Time>2020-01-04 07:30</Time>
+<Direction>262</Direction>
+<Depth>19</Depth>
+</cp>
+</current_predictions>

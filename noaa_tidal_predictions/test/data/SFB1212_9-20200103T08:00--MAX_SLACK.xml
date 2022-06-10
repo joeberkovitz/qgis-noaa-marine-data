@@ -1,0 +1,74 @@
+<current_predictions>
+<cp>
+<Type>slack</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-03 08:30</Time>
+<Depth>19</Depth>
+<Velocity_Major>-0.01</Velocity_Major>
+</cp>
+<cp>
+<Type>flood</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-03 10:54</Time>
+<Depth>19</Depth>
+<Velocity_Major>1.08</Velocity_Major>
+</cp>
+<cp>
+<Type>slack</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-03 15:06</Time>
+<Depth>19</Depth>
+<Velocity_Major>-0.02</Velocity_Major>
+</cp>
+<cp>
+<Type>ebb</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-03 18:06</Time>
+<Depth>19</Depth>
+<Velocity_Major>-1.26</Velocity_Major>
+</cp>
+<cp>
+<Type>slack</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-03 21:54</Time>
+<Depth>19</Depth>
+<Velocity_Major>-0.02</Velocity_Major>
+</cp>
+<cp>
+<Type>flood</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-03 23:30</Time>
+<Depth>19</Depth>
+<Velocity_Major>0.64</Velocity_Major>
+</cp>
+<cp>
+<Type>slack</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-04 03:24</Time>
+<Depth>19</Depth>
+<Velocity_Major>-0.02</Velocity_Major>
+</cp>
+<cp>
+<Type>ebb</Type>
+<meanFloodDir>null</meanFloodDir>
+<Bin>9</Bin>
+<meanEbbDir>null</meanEbbDir>
+<Time>2020-01-04 05:48</Time>
+<Depth>19</Depth>
+<Velocity_Major>-0.81</Velocity_Major>
+</cp>
+</current_predictions>

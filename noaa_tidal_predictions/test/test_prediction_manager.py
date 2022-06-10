@@ -114,7 +114,8 @@ class PredictionManagerTest(unittest.TestCase):
 
 
     def mock_doStartPrepare(self):
-        PredictionManagerTest.request_urls.append(self.url())
+        if not PredictionManagerTest.request_urls is None:
+            PredictionManagerTest.request_urls.append(self.url())
 
         query = QUrlQuery(QUrl(self.url()))
         query_date = query.queryItemValue('begin_date').replace(' ','T')
