@@ -38,6 +38,8 @@ class ExportFixtures:
         self.alg.parameters = {
             'StationsLayer': self.dataFilename('testClusters.gpkg'),
             'ExportDirectory': self.exportFilename('.'),
+            'ExportNewOnly': False,
+            'ExportClusterStations': True,
             'StartDate': QDateTime(2020,1,2,0,0),
             'EndDate': QDateTime(2020,1,3,0,0),
             'ExportReport': self.exportFilename('report.html')
@@ -88,7 +90,6 @@ class ExportTest(unittest.TestCase):
                 with open(os.path.join(exportFixturesDir, dir, file), 'r') as refFile:
                     with open(os.path.join(self.fixtures.exportFilename(dir), file), 'r') as testFile:
                         self.assertEqual(refFile.read(), testFile.read()) 
-
 
 
 if __name__ == "__main__":

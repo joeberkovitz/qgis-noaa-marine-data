@@ -46,6 +46,7 @@ class PredictionManager(QObject):
         self.activeCount = 0
         self.activeHighWater = 0
         self.blocking = False
+        self.savePredictions = True
 
     def getPromise(self, stationFeature, date, promiseClass, cache):
         key = self.promiseKey(stationFeature, date)
@@ -288,11 +289,12 @@ class PredictionDataPromise(PredictionPromise):
     def doProcessing(self):
         self.processRequest()
 
-        # add everything into the predictions layer
-        self.manager.predictionsLayer.startEditing()
-        self.manager.predictionsLayer.addFeatures(self.predictions, QgsFeatureSink.FastInsert)
-        self.manager.predictionsLayer.commitChanges()
-        self.manager.predictionsLayer.triggerRepaint()
+        # add everything into the predictions layer if enabled
+        if self.manager.savePredictions:
+            self.manager.predictionsLayer.startEditing()
+            self.manager.predictionsLayer.addFeatures(self.predictions, QgsFeatureSink.FastInsert)
+            self.manager.predictionsLayer.commitChanges()
+            self.manager.predictionsLayer.triggerRepaint()
 
     def requestData(self):
         return # overridden by subclasses
@@ -633,6 +635,7 @@ class PredictionRequest(PredictionPromise):
 
     def doStart(self):
         if self.manager.blocking:
+            self.content = None
             req = QgsBlockingNetworkRequest()
             errCode = req.get(QNetworkRequest(QUrl(self.url())))
             if errCode == QgsBlockingNetworkRequest.NoError:

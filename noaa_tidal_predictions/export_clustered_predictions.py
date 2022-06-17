@@ -32,11 +32,13 @@ from qgis.PyQt.QtCore import QVariant, QUrl, QDateTime, QDate, QTime
 
 from .utils import *
 from .time_zone_lookup import TimeZoneLookup
-from .prediction_manager import PredictionManager
+from .prediction_manager import PredictionManager, PredictionPromise
 
 class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
     PrmStationsLayer = 'StationsLayer'
     PrmExportDirectory = 'ExportDirectory'
+    PrmExportNewOnly = 'ExportNewOnly'
+    PrmExportClusterStations = 'ExportClusterStations'
     PrmStartDate = 'StartDate'
     PrmEndDate = 'EndDate'
     PrmOutputFile = 'ExportReport'
@@ -81,6 +83,20 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFolderDestination(
                 self.PrmExportDirectory,
                 tr('Export to directory')
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.PrmExportNewOnly,
+                tr('Only export new files'),
+                False
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.PrmExportClusterStations,
+                tr('Export cluster stations'),
+                True
             )
         )
         self.addParameter(
@@ -130,9 +146,13 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
         self.predictionsLayer = getPredictionsLayer()
         self.predictionManager = PredictionManager(self.stationsLayer, self.predictionsLayer)
         self.predictionManager.blocking = True
+        self.predictionManager.savePredictions = False
 
-        exportFieldNames = ['station','depth','time','value','flags','dir','magnitude']
-        exportFieldIndices = [self.predictionsLayer.fields().lookupField(name) for name in exportFieldNames]
+        predictionFieldNames = ['station','depth','time','value','flags','dir','magnitude']
+        predictionFieldIndices = [self.predictionsLayer.fields().lookupField(name) for name in predictionFieldNames]
+
+        stationFieldNames = ['station','id','name','flags','timeZoneId','refStation','meanFloodDir','meanEbbDir']
+        stationFieldIndices = [self.stationsLayer.fields().lookupField(name) for name in stationFieldNames]
 
         outputFile = self.parameters[self.PrmOutputFile]
         self.report = codecs.open(outputFile, 'w', encoding='utf-8')
@@ -140,44 +160,65 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
         self.report.write('<meta http-equiv="Content-Type" content="text/html; \
                  charset=utf-8" /></head><body>')
 
+        # Create map of clusters to station lists
+        clusterStations = {}
+        clusterDirs = {}
         for cluster_id in self.determineClusterIds():
-            stations = self.getClusterStations(cluster_id)
-            self.reportInfo('Processing cluster {}; {} stations found.'.format(cluster_id, len(stations)))
+            clusterStations[cluster_id] = self.getClusterStations(cluster_id)
 
             exportDir = os.path.join(self.parameters[self.PrmExportDirectory], str(cluster_id))
             if not os.path.exists(exportDir):
                 os.makedirs(exportDir)
+            clusterDirs[cluster_id] = exportDir
 
-            dt = self.parameters[self.PrmStartDate]
-            while dt < self.parameters[self.PrmEndDate]:
-                self.reportInfo('Date: {}'.format(dt.date().toString()))
+            if self.parameters[self.PrmExportClusterStations]:
+                clusterFile = os.path.join(exportDir, 'stations.geojson')
+                exporter = QgsJsonExporter()
+                exporter.setVectorLayer(self.stationsLayer)
+                exporter.setAttributes(stationFieldIndices)
 
+                with codecs.open(clusterFile, 'w', encoding='utf-8') as f:
+                    f.write(exporter.exportFeatures([s for s in clusterStations[cluster_id] if s['surface']]))
+
+
+        # now loop over dates, then clusters, then stations
+        dt = self.parameters[self.PrmStartDate]
+        while dt < self.parameters[self.PrmEndDate]:
+            self.reportInfo('Date: {}'.format(dt.date().toString()))
+
+            for cluster_id in clusterStations.keys():
+                stations = clusterStations[cluster_id]
+                self.reportInfo('Processing cluster {}; {} stations found.'.format(cluster_id, len(stations)))
+
+                exportDir = clusterDirs[cluster_id]
                 exportFile =  os.path.join(exportDir, dt.toString('yyyyMMdd') + '.geojson')
+                # If the path already exists, don't regenerate this data
+                if self.parameters[self.PrmExportNewOnly] and os.path.exists(exportFile):
+                    continue
                 exporter = QgsJsonExporter()
                 exporter.setVectorLayer(self.predictionsLayer)
-                exporter.setAttributes(exportFieldIndices)
+                exporter.setAttributes(predictionFieldIndices)
+
+                features = []
+
+                for stationFeature in stations:
+                    if stationFeature['surface'] == 0:
+                        continue
+                    self.reportInfo('Station {}:'.format(stationFeature['station']))
+                    stationData = self.predictionManager.getDataPromise(stationFeature, dt.date())
+                    stationData.start()
+
+                    if stationData.state != PredictionPromise.ResolvedState:
+                        # TODO: handle retries somehow
+                        self.reportInfo('Station {} failed with state {}'.format(stationFeature['station'], stationData.state))
+                        continue
+
+                    features += stationData.predictions
 
                 with codecs.open(exportFile, 'w', encoding='utf-8') as f:
-                    f.write('''{
-"type": "FeatureCollection",
-"name": "tidalPredictions",
-"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-"features": [
-''')
-                    firstFeature = True
-                    for stationFeature in stations:
-                        self.reportInfo('Station {}:'.format(stationFeature['station']))
-                        self.stationData = self.predictionManager.getDataPromise(stationFeature, dt.date())
-                        self.stationData.start()
-                        for feature in self.stationData.predictions:
-                            if not firstFeature:
-                                f.write(''',
-''')
-                            f.write(exporter.exportFeature(feature))
-                            firstFeature = False
-                    f.write(']}')
+                    f.write(exporter.exportFeatures(features))
 
-                dt = dt.addDays(1)
+            dt = dt.addDays(1)
 
         self.reportInfo("Export complete.")
         self.report.write('</body></html>')
