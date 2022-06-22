@@ -57,6 +57,34 @@
     <timezone_offset/>
     <harmonicConstituents self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT0926/harcon.xml"/>
   </Station>
+  <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="currPredStation" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT1236.xml">
+    <id>ACT1236</id>
+    <name>Mystic River Bridge, 0.1 n.mi. west of</name>
+    <lat>42.38583</lat>
+    <lng>-71.05033</lng>
+    <affiliations/>
+    <portscode/>
+    <expand>currentpredictionoffsets,harcon</expand>
+    <tideType/>
+    <currentpredictionoffsets xsi:type="currentPredictionOffsets" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT1236_1/currentpredictionoffsets.xml">
+    <refStationId>BOS1111</refStationId>
+    <refStationBin>14</refStationBin>
+    <meanFloodDir>267.0</meanFloodDir>
+    <meanEbbDir>93.0</meanEbbDir>
+    <mfcTimeAdjMin>-5</mfcTimeAdjMin>
+    <sbeTimeAdjMin>-51</sbeTimeAdjMin>
+    <mecTimeAdjMin>-28</mecTimeAdjMin>
+    <sbfTimeAdjMin>22</sbfTimeAdjMin>
+    <mfcAmpAdj>0.1</mfcAmpAdj>
+    <mecAmpAdj>0.1</mecAmpAdj>
+    </currentpredictionoffsets>
+    <currbin>1</currbin>
+    <type>S</type>
+    <depth>10.0</depth>
+    <depthType>S</depthType>
+    <timezone_offset/>
+    <harmonicConstituents self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/ACT1236/harcon.xml"/>
+  </Station>
   <Station xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="currPredStation" self="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/SFB1212.xml">
     <id>SFB1212</id>
     <name>Raccoon Strait</name>

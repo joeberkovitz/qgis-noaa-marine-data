@@ -38,6 +38,8 @@ class PredictionManagerTest(unittest.TestCase):
         self.stationsLayer = self.fixtures.getFixtureLayer('currentRefSub.xml','tideRefSub.xml')
         self.subCurrentStation = next(self.stationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = 'ACT0926_1'")))
+        self.subCurrentStation2 = next(self.stationsLayer.getFeatures(
+            QgsFeatureRequest().setFilterExpression("station = 'ACT1236_1'")))
         self.refCurrentStation = next(self.stationsLayer.getFeatures(
             QgsFeatureRequest().setFilterExpression("station = 'BOS1111_14'")))
         self.refTideStation = next(self.stationsLayer.getFeatures(
@@ -318,6 +320,32 @@ class PredictionManagerTest(unittest.TestCase):
         self.assertTrue(feature['flags'] & PredictionFlags.Surface)
         self.assertEqual(feature['dir'], 259.0)
         self.assertAlmostEqual(feature['magnitude'], 0.683625379859)
+
+    """ Test a CurrentDataPromise for ACT1236_1 on 8/21/2022
+    """
+    @patch.object(PredictionRequest, 'doStart', mock_doStart)
+    def test_subordinate_current2(self):
+        datetime = QDate(2022,8,21)
+        pdp = CurrentDataPromise(
+            self.pm,
+            self.subCurrentStation2,
+            datetime)
+        pdp.start()
+
+        features = pdp.predictions
+        self.assertEqual(len(features), 53)  # 40 time intervals plus 8 events
+
+        currents = list(filter(lambda p: p['flags'] & PredictionFlags.Time, features))
+        self.assertEqual(len(currents), 48)
+        events = list(filter(lambda p: not p['flags'] & PredictionFlags.Time, features))
+        self.assertEqual(len(events), 5)
+
+        feature = currents[6]
+        self.assertEqual(feature['station'], 'ACT1236_1')
+        self.assertEqual(feature['time'], QDateTime(2022, 8, 21, 7, 0, 0, 0, Qt.TimeSpec.UTC))
+        self.assertAlmostEqual(feature['value'], 0.05464339654467293)
+        self.assertTrue(feature['flags'] & PredictionFlags.Time)
+        self.assertTrue(feature['flags'] & PredictionFlags.Surface)
 
     """ Test a TideDataPromise for a harmonic tide station
     """

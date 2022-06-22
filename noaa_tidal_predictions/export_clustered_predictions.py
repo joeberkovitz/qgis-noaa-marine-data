@@ -188,7 +188,6 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
 
             for cluster_id in clusterStations.keys():
                 stations = clusterStations[cluster_id]
-                self.reportInfo('Processing cluster {}; {} stations found.'.format(cluster_id, len(stations)))
 
                 exportDir = clusterDirs[cluster_id]
                 exportFile =  os.path.join(exportDir, dt.toString('yyyyMMdd') + '.geojson')
@@ -201,19 +200,26 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
 
                 features = []
 
-                for stationFeature in stations:
-                    if stationFeature['surface'] == 0:
-                        continue
-                    self.reportInfo('Station {}:'.format(stationFeature['station']))
-                    stationData = self.predictionManager.getDataPromise(stationFeature, dt.date())
-                    stationData.start()
+                for retry_count in range(0,3):   # we will try stations 3 times before giving up
+                    self.reportInfo('Processing cluster {}: {} stations.'.format(cluster_id, len(stations)))
+                    failed_stations = []
+                    for stationFeature in stations:
+                        if stationFeature['surface'] == 0:
+                            continue
+                        stationData = self.predictionManager.getDataPromise(stationFeature, dt.date())
+                        stationData.start()
 
-                    if stationData.state != PredictionPromise.ResolvedState:
-                        # TODO: handle retries somehow
-                        self.reportInfo('Station {} failed with state {}'.format(stationFeature['station'], stationData.state))
-                        continue
+                        if stationData.state != PredictionPromise.ResolvedState:
+                            self.reportInfo('Station {} failed with state {}'.format(stationFeature['station'], stationData.state))
+                            failed_stations.append(stationFeature)
+                            continue
 
-                    features += stationData.predictions
+                        features += stationData.predictions
+
+                    if len(failed_stations) == 0:
+                        break                       # no failures, don't do any retries
+                    else:
+                        stations = failed_stations  # attempt again with the failed stations
 
                 with codecs.open(exportFile, 'w', encoding='utf-8') as f:
                     f.write(exporter.exportFeatures(features))

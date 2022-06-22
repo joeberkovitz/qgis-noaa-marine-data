@@ -1,4 +1,5 @@
 import math
+import traceback
 import numpy as np
 from scipy.interpolate import interp1d
 import xml.etree.ElementTree as ET
@@ -51,7 +52,7 @@ class PredictionManager(QObject):
     def getPromise(self, stationFeature, date, promiseClass, cache):
         key = self.promiseKey(stationFeature, date)
         promise = cache.get(key)
-        if promise is None:
+        if promise is None or promise.state == PredictionPromise.RejectedState:
             # we have no cached data promise. so make one. This implicitly requests the data
             # if it is not already in the predictions layer.
             promise = promiseClass(self, stationFeature, date)
@@ -187,8 +188,14 @@ class PredictionPromise(QObject):
                 allResolved = False
 
         if allResolved:
-            self.doProcessing()
-            self.resolve()
+            try:
+                self.doProcessing()
+                self.resolve()
+            except Exception as e:
+                print('Exception in processing: ', e)
+                traceback.print_exc()
+                self.reject()    
+
 
     def doProcessing(self):
         # subclasses should override this to process dependencies or other intermediate results
@@ -560,26 +567,24 @@ class PredictionInterpolator:
         phase = 0    # unknown whether we are in ebb or flood initially
         subTimes = []
         refTimes = []
-        for (time, ptype, p) in self.subData:
+        for (time, ptype, p) in self.refData:
             if ptype == PredictionFlags.Zero:
                 if phase > 0:
                     # slack before ebb (after flood)
-                    subTimes.append(time)
-                    refTimes.append(time - 60*self.stationFeature['fallingZeroTimeAdj'])
+                    subTimes.append(time + 60*self.stationFeature['fallingZeroTimeAdj'])
+                    refTimes.append(time)
                 elif phase < 0:
                     # slack before flood (after ebb)
-                    subTimes.append(time)
-                    refTimes.append(time - 60*self.stationFeature['risingZeroTimeAdj'])
+                    subTimes.append(time + 60*self.stationFeature['risingZeroTimeAdj'])
+                    refTimes.append(time)
             elif ptype == PredictionFlags.Max:
                 phase = 1
-                subTimes.append(time)
-                refTimes.append(time - 60*self.stationFeature['maxTimeAdj'])
+                subTimes.append(time + 60*self.stationFeature['maxTimeAdj'])
+                refTimes.append(time)
             elif ptype == PredictionFlags.Min:
                 phase = -1
-                subTimes.append(time)
-                refTimes.append(time - 60*self.stationFeature['minTimeAdj'])
-            else:
-                raise Exception('Unexpected event type ' + ptype)
+                subTimes.append(time + 60*self.stationFeature['minTimeAdj'])
+                refTimes.append(time)
 
         return interp1d(subTimes, refTimes, 'linear')
 
@@ -592,12 +597,12 @@ class PredictionInterpolator:
         # search for events, ignoring any initial slack event
         subTimes = []
         refFactors = []
-        for (time, ptype, p) in self.subData:
+        for (time, ptype, p) in self.refData:
             if ptype == PredictionFlags.Max:
-                subTimes.append(time)
+                subTimes.append(time + 60*self.stationFeature['maxTimeAdj'])
                 refFactors.append(self.stationFeature['maxValueAdj'])
             elif ptype == PredictionFlags.Min:
-                subTimes.append(time)
+                subTimes.append(time + 60*self.stationFeature['minTimeAdj'])
                 refFactors.append(self.stationFeature['minValueAdj'])
 
         return interp1d(subTimes, refFactors, 'quadratic')
