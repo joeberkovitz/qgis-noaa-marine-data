@@ -44,8 +44,6 @@ from .resources import *
 from .utils import *
 from .provider import NoaaTidalPredictionsProvider
 from .prediction_expressions import PredictionExpressions
-from .tidal_prediction_tool import TidalPredictionTool
-from .tidal_prediction_widget import TidalPredictionWidget
 
 import os.path
 import processing
@@ -63,10 +61,6 @@ class NoaaTidalPredictions:
         """
         # Save reference to the QGIS interface
         self.iface = iface
-        self.canvas = iface.mapCanvas()
-        self.provider = NoaaTidalPredictionsProvider()
-        self.toolbar = self.iface.addToolBar('NOAA Tidal Predictions Toolbar')
-        self.toolbar.setObjectName('NoaaTidalPredictionsToolbar')
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
@@ -86,16 +80,11 @@ class NoaaTidalPredictions:
         # Declare instance attributes
         self.actions = []
         self.menu = tr(u'&NOAA Tidal Predictions')
-
-        self.dock = TidalPredictionWidget(None, self.canvas)
-        self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dock)
-        self.dock.hide()
-
-        self.predictionTool = None
-
-        QgsApplication.processingRegistry().addProvider(self.provider)
-
         PredictionExpressions.registerFunctions()
+
+    def initProcessing(self):
+        self.provider = NoaaTidalPredictionsProvider()
+        QgsApplication.processingRegistry().addProvider(self.provider)
 
     def add_action(
         self,
@@ -121,10 +110,6 @@ class NoaaTidalPredictions:
         if whats_this is not None:
             action.setWhatsThis(whats_this)
 
-        if add_to_toolbar:
-            # Adds plugin icon to Plugins toolbar
-            self.toolbar.addAction(action)
-
         if add_to_menu:
             self.iface.addPluginToMenu(
                 self.menu,
@@ -138,6 +123,8 @@ class NoaaTidalPredictions:
         return action
 
     def initGui(self):
+        self.initProcessing()
+        
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
         self.add_action(
@@ -152,54 +139,19 @@ class NoaaTidalPredictions:
             callback=self.exportClusteredPredictions,
             parent=self.iface.mainWindow())
 
-        self.predictionAction = self.add_action(
-            os.path.join(self.plugin_dir, 'svg/get_tidal_predictions.svg'),
-            text=tr(u'Get Tidal Predictions'),
-            callback=self.getTidalPredictions,
-            checkable_flag=True,
-            parent=self.iface.mainWindow())
-
-        self.savedMapTool = self.canvas.mapTool()
-        if self.predictionTool == None:
-            self.predictionTool = TidalPredictionTool(self.canvas, self.dock)
-
-        self.canvas.mapToolSet.connect(self.unsetTool)
-
-    def unsetTool(self, tool):
-        try:
-            if not isinstance(tool, TidalPredictionTool):
-                self.predictionAction.setChecked(False)
-        except Exception:
-            pass
-
-    def deactivatePredictionTool(self):
-        self.dock.hide()
-        if self.canvas.mapTool() == self.predictionTool:
-            self.canvas.setMapTool(self.savedMapTool)
-
     def unload(self):
-        self.deactivatePredictionTool()
-
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
             self.iface.removePluginMenu(
                 self.menu,
                 action)
-            self.iface.removeToolBarIcon(action)
 
         QgsApplication.processingRegistry().removeProvider(self.provider)
 
         PredictionExpressions.unregisterFunctions()
 
     def addStationsLayer(self):
-        self.deactivatePredictionTool()
         processing.execAlgorithmDialog('NoaaTidalPredictions:addtidalstationslayer', {})
 
     def exportClusteredPredictions(self):
-        self.deactivatePredictionTool()
         processing.execAlgorithmDialog('NoaaTidalPredictions:exportclusteredpredictions', {})
-
-    def getTidalPredictions(self):
-        self.predictionAction.setChecked(True)
-        self.canvas.setMapTool(self.predictionTool)
-

@@ -36,6 +36,8 @@ from .prediction_manager import PredictionManager, PredictionPromise
 
 class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
     PrmStationsLayer = 'StationsLayer'
+    PrmAllStationsLayer = 'AllStationsLayer'
+    PrmPredictionsLayer = 'PredictionsLayer'
     PrmExportDirectory = 'ExportDirectory'
     PrmExportNewOnly = 'ExportNewOnly'
     PrmExportClusterStations = 'ExportClusterStations'
@@ -63,7 +65,21 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.PrmStationsLayer,
-                tr('Clustered stations layer'),
+                tr('Input stations layer'),
+                [QgsProcessing.TypeVectorPoint]
+                )
+            )
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.PrmAllStationsLayer,
+                tr('Full stations layer'),
+                [QgsProcessing.TypeVectorPoint]
+                )
+            )
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.PrmPredictionsLayer,
+                tr('Predictions layer'),
                 [QgsProcessing.TypeVectorPoint]
                 )
             )
@@ -117,6 +133,14 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
         if self.clusteredStationsLayer is None:
             raise QgsProcessingException(self.invalidSourceError(parameters, self.PrmStationsLayer))
 
+        self.stationsLayer = self.parameterAsSource(self.parameters, self.PrmAllStationsLayer, self.context)
+        if self.stationsLayer is None:
+            raise QgsProcessingException(self.invalidSourceError(parameters, self.PrmAllStationsLayer))
+
+        self.predictionsLayer = self.parameterAsSource(self.parameters, self.PrmPredictionsLayer, self.context)
+        if self.predictionsLayer is None:
+            raise QgsProcessingException(self.invalidSourceError(parameters, self.PrmPredictionsLayer))
+
     def determineClusterIds(self):
         fields = QgsFields()
         self.cluster_ids = []
@@ -142,8 +166,6 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
             self.report.write('</p>')
 
     def exportClusters(self):
-        self.stationsLayer = getStationsLayer()
-        self.predictionsLayer = getPredictionsLayer()
         self.predictionManager = PredictionManager(self.stationsLayer, self.predictionsLayer)
         self.predictionManager.blocking = True
         self.predictionManager.savePredictions = False
@@ -171,10 +193,10 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
                 os.makedirs(exportDir)
             clusterDirs[cluster_id] = exportDir
 
-            if self.parameters[self.PrmExportClusterStations]:
+            if self.parameterAsBoolean(self.parameters, self.PrmExportClusterStations, self.context):
                 clusterFile = os.path.join(exportDir, 'stations.geojson')
                 exporter = QgsJsonExporter()
-                exporter.setVectorLayer(self.stationsLayer)
+                # exporter.setVectorLayer(self.stationsLayer)
                 exporter.setAttributes(stationFieldIndices)
 
                 with codecs.open(clusterFile, 'w', encoding='utf-8') as f:
@@ -182,8 +204,9 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
 
 
         # now loop over dates, then clusters, then stations
-        dt = self.parameters[self.PrmStartDate]
-        while dt < self.parameters[self.PrmEndDate]:
+        dt = self.parameterAsDateTime(self.parameters, self.PrmStartDate, self.context)
+        enddt = self.parameterAsDateTime(self.parameters, self.PrmEndDate, self.context)
+        while dt < enddt:
             self.reportInfo('Date: {}'.format(dt.date().toString()))
 
             for cluster_id in clusterStations.keys():
@@ -192,10 +215,10 @@ class ExportClusteredPredictionsAlgorithm(QgsProcessingAlgorithm):
                 exportDir = clusterDirs[cluster_id]
                 exportFile =  os.path.join(exportDir, dt.toString('yyyyMMdd') + '.geojson')
                 # If the path already exists, don't regenerate this data
-                if self.parameters[self.PrmExportNewOnly] and os.path.exists(exportFile):
+                if self.parameterAsBoolean(self.parameters, self.PrmExportNewOnly, self.context) and os.path.exists(exportFile):
                     continue
                 exporter = QgsJsonExporter()
-                exporter.setVectorLayer(self.predictionsLayer)
+                # exporter.setVectorLayer(self.predictionsLayer)
                 exporter.setAttributes(predictionFieldIndices)
 
                 features = []

@@ -104,46 +104,13 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
             self.PrmPredictionsLayer: predictions_dest_id
         }
 
-    def stationFields(self):
-        fields = QgsFields()
-        fields.append(QgsField("station", QVariant.String,'', 16))
-        fields.append(QgsField("id", QVariant.String,'', 12))
-        fields.append(QgsField("name", QVariant.String, '', 64))
-        fields.append(QgsField("flags", QVariant.Int))
-        fields.append(QgsField("bin", QVariant.String,'', 4))
-        fields.append(QgsField("timeZoneId", QVariant.String, '', 32))
-        fields.append(QgsField("timeZoneUTC", QVariant.String, '', 32))
-        fields.append(QgsField("refStation", QVariant.String,'', 12))
-        fields.append(QgsField("depth",  QVariant.Double))
-        fields.append(QgsField("depthType",  QVariant.String, '', 1))
-        fields.append(QgsField("meanFloodDir", QVariant.Double))
-        fields.append(QgsField("meanEbbDir", QVariant.Double))
-        fields.append(QgsField("maxTimeAdj", QVariant.Double))
-        fields.append(QgsField("minTimeAdj", QVariant.Double))
-        fields.append(QgsField("risingZeroTimeAdj", QVariant.Double))
-        fields.append(QgsField("fallingZeroTimeAdj", QVariant.Double))
-        fields.append(QgsField("maxValueAdj", QVariant.Double))
-        fields.append(QgsField("minValueAdj", QVariant.Double))
-        return fields
-
-    def predictionFields(self):
-        fields = QgsFields()
-        fields.append(QgsField("station", QVariant.String,'',16))
-        fields.append(QgsField("depth",  QVariant.Double))
-        fields.append(QgsField("time",  QVariant.DateTime))
-        fields.append(QgsField("value", QVariant.Double))  # signed value, on flood/ebb dimension for current
-        fields.append(QgsField("flags", QVariant.Int))
-        fields.append(QgsField("dir", QVariant.Double))
-        fields.append(QgsField("magnitude", QVariant.Double))  # value along direction if known
-        return fields
-
     def getPredictions(self):
         if getPredictionsLayer() != None:
             raise QgsProcessingException(tr('Existing tidal layers must be removed before creating new ones.'))
 
         (predictionsSink, predictions_dest_id) = self.parameterAsSink(
             self.parameters, self.PrmPredictionsLayer, self.context,
-            self.predictionFields(),
+            predictionFields(),
             QgsWkbTypes.Point, epsg4326)
 
         if self.context.willLoadLayerOnCompletion(predictions_dest_id):
@@ -190,7 +157,7 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
         (stationSink, stations_dest_id) = self.parameterAsSink(
             self.parameters, self.PrmStationsLayer, self.context,
-            self.stationFields(),
+            stationFields(),
             QgsWkbTypes.Point, epsg4326)
 
         self.getTideStations(stationSink)
@@ -220,7 +187,7 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
         tzl = TimeZoneLookup()
 
-        fields = self.stationFields()
+        fields = stationFields()
         for s in stations: 
             tpo = s.find('tidepredoffsets')
 
@@ -297,7 +264,7 @@ class AddStationsLayerAlgorithm(QgsProcessingAlgorithm):
 
         tzl = TimeZoneLookup()
 
-        fields = self.stationFields()
+        fields = stationFields()
         for key, s in stationMap.items():
             cpo = s.find('currentpredictionoffsets')
 

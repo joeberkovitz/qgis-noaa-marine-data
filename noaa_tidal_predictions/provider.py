@@ -1,4 +1,3 @@
-import os
 from qgis.core import QgsProcessingProvider
 from qgis.PyQt.QtGui import QIcon
 from .add_station_layers import AddStationsLayerAlgorithm
@@ -20,3 +19,4 @@ class NoaaTidalPredictionsProvider(QgsProcessingProvider):
 
     def longName(self):
         return self.name()
+

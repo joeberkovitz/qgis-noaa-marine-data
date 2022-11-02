@@ -21,7 +21,7 @@ repository=https://github.com/joeberkovitz/qgis-noaa-tidal-predictions
 
 # Recommended items:
 
-hasProcessingProvider=no
+hasProcessingProvider=yes
 
 changelog=0.1: initial release
 

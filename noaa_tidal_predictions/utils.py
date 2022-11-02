@@ -1,6 +1,6 @@
 import os
-from qgis.PyQt.QtCore import QCoreApplication, Qt, QTimeZone, QByteArray
-from qgis.core import QgsProject, QgsUnitTypes, QgsPointXY, QgsCoordinateReferenceSystem
+from qgis.PyQt.QtCore import QCoreApplication, Qt, QTimeZone, QByteArray, QVariant
+from qgis.core import QgsProject, QgsFields, QgsField, QgsUnitTypes, QgsPointXY, QgsCoordinateReferenceSystem
 
 epsg4326 = QgsCoordinateReferenceSystem("EPSG:4326")
 
@@ -65,6 +65,40 @@ def getPredictionsLayer():
 
 def layerStoragePath():
     return os.path.join(QgsProject.instance().homePath(), 'noaa_tidal_predictions')
+
+def stationFields():
+    fields = QgsFields()
+    fields.append(QgsField("station", QVariant.String,'', 16))
+    fields.append(QgsField("id", QVariant.String,'', 12))
+    fields.append(QgsField("name", QVariant.String, '', 64))
+    fields.append(QgsField("flags", QVariant.Int))
+    fields.append(QgsField("bin", QVariant.String,'', 4))
+    fields.append(QgsField("timeZoneId", QVariant.String, '', 32))
+    fields.append(QgsField("timeZoneUTC", QVariant.String, '', 32))
+    fields.append(QgsField("refStation", QVariant.String,'', 12))
+    fields.append(QgsField("depth",  QVariant.Double))
+    fields.append(QgsField("depthType",  QVariant.String, '', 1))
+    fields.append(QgsField("meanFloodDir", QVariant.Double))
+    fields.append(QgsField("meanEbbDir", QVariant.Double))
+    fields.append(QgsField("maxTimeAdj", QVariant.Double))
+    fields.append(QgsField("minTimeAdj", QVariant.Double))
+    fields.append(QgsField("risingZeroTimeAdj", QVariant.Double))
+    fields.append(QgsField("fallingZeroTimeAdj", QVariant.Double))
+    fields.append(QgsField("maxValueAdj", QVariant.Double))
+    fields.append(QgsField("minValueAdj", QVariant.Double))
+    return fields
+
+def predictionFields():
+    fields = QgsFields()
+    fields.append(QgsField("station", QVariant.String,'',16))
+    fields.append(QgsField("depth",  QVariant.Double))
+    fields.append(QgsField("time",  QVariant.DateTime))
+    fields.append(QgsField("value", QVariant.Double))  # signed value, on flood/ebb dimension for current
+    fields.append(QgsField("flags", QVariant.Int))
+    fields.append(QgsField("dir", QVariant.Double))
+    fields.append(QgsField("magnitude", QVariant.Double))  # value along direction if known
+    return fields
+
 
 def stationTimeZone(stationFeature):
     timeZoneId = stationFeature['timeZoneId']
